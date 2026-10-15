@@ -1,8 +1,11 @@
 # Database Schema
 
-Status: **DESIGN ONLY — no migrations have been written yet.** This document is
-the design that Phase 2 will implement. It describes the target schema, not
-verified deployed structure. See `docs/DEVELOPMENT_ROADMAP.md`.
+Status: **IMPLEMENTED and applied** to the staging project
+`whpozrnyressiznzdhpc` (PostgreSQL 17.11). 14 migrations, 38 tables, RLS
+verified by 59 live assertions (`npm run test:rls`).
+
+This document describes the deployed structure. It was written as a design
+first and revised as testing found real defects — see `docs/CHANGELOG.md` 0.2.0.
 
 Database: **Supabase PostgreSQL**. All migrations live in
 `supabase/migrations/` as version-controlled SQL.
@@ -359,25 +362,61 @@ pinned to defeat search-path hijacking.
 | Table | anon | authenticated | Notes |
 | --- | --- | --- | --- |
 | `scholarships` | SELECT `status='published'` | SELECT published; full CRUD with permission | Anonymous cannot write |
-| `articles` | SELECT `status='published' AND published_at<=now()` | SELECT published; CRUD with permission | Scheduled/draft hidden |
+| `articles` | SELECT public & due | SELECT unpublished w/ `article.manage`/`article.review`/own draft | Authors limited to own `draft`/`in_review` |
 | `categories`, `tags`, `education_levels`, `academic_fields`, `locations` | SELECT `status='active'` | SELECT; write with permission | |
-| `media_assets` | SELECT (public bucket) | SELECT; INSERT with `media.upload` | |
-| `profiles` | none | SELECT own; SELECT all for admins | |
-| `user_roles` | none | SELECT own | Admin management via server actions |
-| `newsletter_subscribers` | none | INSERT only (server-side, service role) | Fully private |
-| `consent_records` | INSERT/SELECT own `visitor_id` | same | |
-| `audit_logs` | none | SELECT with `audit.view` | No UPDATE/DELETE for app roles |
+| `media_assets` | SELECT (public only) | SELECT; INSERT with `media.upload` | |
+| `profiles` | none | SELECT own; UPDATE own | SELECT restored in migration 014 |
+| `user_roles` | none | SELECT own | No write policy at all; managed server-side |
+| `newsletter_subscribers` | none | **none** | Zero client privileges |
+| `contact_submissions` | none | **none** | Zero client privileges |
+| `audit_logs` | none | SELECT with `audit.view` | No INSERT/UPDATE/DELETE policy for any app role |
 | `site_settings` | SELECT where `is_public` | SELECT + write with `settings.manage` | |
 | `redirects` | none | SELECT/manage with permission | |
 
 **Global rule:** no `INSERT`/`UPDATE`/`DELETE` policy is ever created for the
-`anon` or `authenticated` roles on content tables.
+`anon` role, except `INSERT` on `content_reports` and `consent_records`.
+
+### Permission model (corrected in migration 012)
+
+`article.manage` originally doubled as both "edit any article" and "authored
+article", which let authors publish their own drafts. The capability is now
+split so that each role grant and each policy branch mean the same thing:
+
+| Permission | Grants | Held by |
+| --- | --- | --- |
+| `article.create` | Create a new own draft | author, reviewer, editor, admin |
+| `article.edit_own` | Edit **own** article, only while `draft`/`in_review` | author, editor, admin |
+| `article.manage` | Edit **any** article in any status | editor, admin |
+| `article.publish` | Publish / schedule / archive | editor, admin |
+| `article.review` | Read unpublished content, record review decisions | reviewer, editor, admin |
+
+The author UPDATE branch is bounded three ways — permission, ownership, and
+resulting status — so self-publishing fails even if the grant is widened.
+
+### Table privileges vs. RLS
+
+RLS is the primary control. Table grants are a second layer, tightened in
+migration 013:
+
+- Supabase grants `ALL` to `anon`/`authenticated` by default. That was revoked.
+- **RLS does not filter `TRUNCATE`**, so the default `TRUNCATE` privilege was
+  particularly dangerous. `anon` and `authenticated` now hold no `TRUNCATE`,
+  `TRIGGER` or `REFERENCES` on any public table.
+- `anon` holds `SELECT` only, plus `INSERT` on exactly two tables.
+- `alter default privileges` was updated so future tables do not re-inherit
+  blanket grants.
+- Migration 013 ends with an assertion that fails the migration if a dangerous
+  privilege reappears.
 
 ### Testing RLS
 
-Policies must be verified with three distinct identities: anonymous, a student
-account, and an administrator account — covering both the allowed and the denied
-path. See `docs/DEVELOPMENT_ROADMAP.md` Phase 2 acceptance criteria.
+`supabase/tests/rls-policy-tests.mjs` runs 59 live assertions against five
+identities. Run with `npm run test:rls`.
+
+Negative assertions verify **resulting data state via the service role**, not
+HTTP status codes: PostgREST returns `204` (not `403`) when RLS filters a row so
+zero rows match, and a role may legitimately be unable to read back the very row
+it just modified when read anonymously.
 
 ---
 

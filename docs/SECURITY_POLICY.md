@@ -1,8 +1,13 @@
 # Security Policy
 
-Status: **Phase 1 controls implemented.** Controls marked *(planned)* land in
-later phases. This document defines the target security posture and the rules
-that every change must uphold.
+Status: **Phase 1 and Phase 2 controls implemented and verified against a live
+database.** Controls marked *(planned)* land in later phases. This document
+defines the target security posture and the rules that every change must
+uphold.
+
+Current verified state: 38/38 tables have RLS enabled; the RLS policy suite
+(`npm run test:rls`) passes 59/59 live assertions. Three defects were found by
+that suite and fixed — see `docs/CHANGELOG.md` 0.2.0.
 
 ---
 
@@ -103,7 +108,26 @@ intended policy:
 
 Report-only mode will be deployed first, then enforced.
 
-### 4.2 Authorization *(Phase 2 / 4)*
+### 4.2 Authorization *(Phase 2 — database layer done; app layer in Phase 2b/4)*
+
+**Implemented in the database:**
+
+- `SECURITY DEFINER` helpers (`has_role`, `has_any_role`, `has_permission`,
+  `can`, `is_cms_role`, `can_publish`, `is_article_author`) with
+  `search_path` pinned to `public, pg_temp` to defeat search-path hijacking.
+  All identities derive from `auth.uid()`, i.e. the verified JWT.
+- `public.revoke ... from public` on every helper, with explicit `grant execute`
+  to `anon`, `authenticated` and `service_role`.
+- Six granular article permissions so a role grant and a policy branch mean the
+  same thing (`article.create` / `edit_own` / `manage` / `publish` / `review`).
+- RLS on 38/38 tables, with `FORCE ROW LEVEL SECURITY` on the six highest-risk.
+- Table grants revoked to least privilege, because RLS does not filter
+  `TRUNCATE` and must not be the only control.
+- `audit_logs` has a SELECT policy only. Writes go through
+  `public.write_audit_log()` (SECURITY DEFINER), so clients cannot forge or
+  tamper with entries.
+
+**Still to implement (Phase 2b / 4):**
 
 - `requireUser()` — verified identity, else redirect to sign-in.
 - `requirePermission(key)` — verified role grants the permission, else 403.

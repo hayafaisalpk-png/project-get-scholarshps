@@ -5,7 +5,19 @@ only when its acceptance criteria have actually been verified by running them.
 
 Legend: `[ ]` not started · `[~]` in progress · `[x]` complete · `[!]` blocked
 
-Last updated: 2026-10-15
+Last updated: 2026-10-15 (Phase 2 complete)
+
+---
+
+## Explicitly not claimed
+
+- No scholarship, article or taxonomy *content* record has been created. The
+  database contains only reference data (roles, permissions, taxonomy,
+  settings, navigation).
+- No user account exists in the database; all test identities were removed.
+- No application code reads the database yet (that is Phase 2b).
+- No AdSense or GA4 integration exists (Phase 6).
+- Nothing has been deployed.
 
 ---
 
@@ -32,33 +44,49 @@ Last updated: 2026-10-15
 
 ---
 
-## Phase 2 — Database and security foundation · **NOT STARTED**
+## Phase 2 — Database and security foundation · **COMPLETE**
 
-> Blocked on: Supabase project credentials (URL + publishable key + service
-> role key). Schema design is complete in `docs/DATABASE_SCHEMA.md`.
+Supabase staging project `whpozrnyressiznzdhpc` provisioned and migrated.
 
-- [ ] Provision Supabase project (staging first)
-- [ ] `supabase/config.toml`, CLI linked to the project
-- [ ] Migration: extensions, enums, `updated_at` trigger helper
-- [ ] Migration: identity — `profiles`, `roles`, `permissions`,
+- [x] Provision Supabase project (staging)
+- [x] `supabase/config.toml` + CLI linked
+- [x] Migration: extensions, `updated_at` trigger helper
+- [x] Migration: enums for every status-like column
+- [x] Migration: identity — `profiles`, `roles`, `permissions`,
       `role_permissions`, `user_roles`
-- [ ] Migration: taxonomy — `categories`, `tags`, `education_levels`,
-      `academic_fields`, `locations`
-- [ ] Migration: scholarships + join tables + sources + verification logs
-- [ ] Migration: generated `tsvector` column and GIN index for search
-- [ ] Migration: articles, revisions, reviews, authors, article↔scholarship
-- [ ] Migration: media, settings, navigation, homepage sections, ad placements
-- [ ] Migration: newsletter, contact, consent, redirects, audit logs, reports
-- [ ] Enable RLS on every table
-- [ ] `SECURITY DEFINER` helper functions for role lookup
-- [ ] Write policies: anon read published only; authenticated role-scoped
-- [ ] Storage buckets + upload policies
-- [ ] Safe `seed.sql` (roles, permissions, taxonomy, settings)
-- [ ] Test RLS as anonymous, student and admin
+- [x] Migration: authorization helpers (`SECURITY DEFINER`, pinned
+      `search_path`)
+- [x] Migration: taxonomy — categories, levels, fields, locations, tags
+- [x] Migration: media assets
+- [x] Migration: scholarships + join tables + sources + verification logs
+- [x] Migration: generated weighted `tsvector` column + GIN index
+- [x] Migration: articles, revisions, reviews, authors, article↔scholarship
+- [x] Migration: settings, navigation, homepage, ads, redirects, newsletter,
+      contact, consent, reports, audit logs
+- [x] Migration: RLS on all 38 tables with role-scoped policies
+- [x] Migration: storage buckets (image-only, 5 MB) + policies
+- [x] Safe `seed.sql` — roles, 22 permissions, taxonomy, settings, navigation
+- [x] RLS tested as anonymous / student / author / reviewer / super_admin
 
-**Acceptance criteria:** migrations run cleanly on a fresh database; anonymous
-write attempts are rejected; students cannot read draft content; administrators
-can. Each tested with actual queries, not assumed.
+**Acceptance criteria:** met — 59/59 live RLS assertions pass.
+
+**Corrective migrations issued after testing** (see CHANGELOG 0.2.0):
+- `012` — fixed a privilege-escalation flaw in the article permission model.
+- `013` — revoked blanket `anon`/`authenticated` table privileges inherited
+  from Supabase defaults, including `TRUNCATE`, which RLS cannot filter.
+- `014` — restored a `SELECT` grant on `profiles` that `013` removed by
+  mistake.
+
+---
+
+## Phase 2b — Application data access layer · **NOT STARTED**
+
+- [ ] Typed Supabase client wrappers and error mapping
+- [ ] `requireUser()` / `requirePermission()` server-side authorization
+- [ ] Scholarship query layer (search, filters, facets, pagination)
+- [ ] Site settings / navigation / homepage section readers
+- [ ] Audit logging on privileged mutations
+- [ ] Profile bootstrap on signup
 
 ---
 
@@ -190,12 +218,3 @@ can. Each tested with actual queries, not assumed.
 5. **Legal/privacy review** — required before monetised launch, given the
    audience's likely jurisdiction.
 
----
-
-## Explicitly not claimed
-
-- No scholarship, article or taxonomy record has been created.
-- No Supabase project has been provisioned or connected.
-- No migration has been written or executed.
-- No AdSense or GA4 integration is live.
-- No deployment has occurred.

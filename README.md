@@ -6,11 +6,21 @@ Scholarship discovery and educational content platform for
 Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4,
 Supabase (PostgreSQL + Auth + Storage) and Row Level Security.
 
-**Status: Phase 1 complete — foundation only.** The public website, search
-engine and CMS are not built yet. See
+**Status: Phase 2 complete — database, RLS and storage are applied and
+verified against a live Supabase project.** The public website, search engine
+and CMS are not built yet; no application code reads the database yet. See
 [`docs/DEVELOPMENT_ROADMAP.md`](docs/DEVELOPMENT_ROADMAP.md) for the
 authoritative status and [`docs/CHANGELOG.md`](docs/CHANGELOG.md) for what has
 actually been implemented and verified.
+
+**Current verified state**
+
+- `npm run verify` → typecheck, lint, unit tests, production build all pass.
+- 14 migrations applied; **38/38 tables have RLS enabled**.
+- `npm run test:rls` → **59/59** live policy assertions pass across five
+  identities (anonymous, student, author, reviewer, super_admin).
+- Three security defects were found by that suite and fixed; all are documented
+  in the changelog.
 
 ---
 
@@ -45,6 +55,7 @@ variables are missing or malformed.
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm run lint` | ESLint (flat config) |
 | `npm run test` | Vitest unit + integration tests |
+| `npm run test:rls` | Live RLS policy tests against Supabase (requires a project) |
 | `npm run test:coverage` | Vitest with V8 coverage |
 | `npm run test:e2e` | Playwright end-to-end tests |
 | `npm run verify` | typecheck → lint → test → build |
@@ -76,9 +87,20 @@ src/
 ├── lib/           supabase | seo | security | validation | env
 ├── types/         Shared TypeScript types
 └── proxy.ts       Supabase session refresh (Next 16 `proxy` convention)
-supabase/          Migrations and seed data
+supabase/          Migrations, seed data and RLS policy tests
 tests/             unit | integration | e2e
 docs/              Technical and operational documentation
+```
+
+## Database
+
+Schema, RLS and storage live in `supabase/migrations/` and are applied to the
+staging project. Useful commands:
+
+```bash
+npm run test:rls                 # 59 live policy assertions, self-cleaning
+supabase db push                 # apply pending migrations (needs CLI login)
+supabase db reset                # local only — NEVER against production
 ```
 
 ## Documentation

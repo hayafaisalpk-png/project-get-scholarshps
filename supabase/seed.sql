@@ -39,7 +39,9 @@ insert into public.permissions (key, category, description) values
   ('scholarship.publish',      'scholarship', 'Publish, schedule or expire scholarships'),
   ('scholarship.delete',       'scholarship', 'Permanently delete scholarship records'),
   ('scholarship.verify',       'scholarship', 'Record verification results'),
-  ('article.manage',           'article',     'Create and edit any article'),
+  ('article.manage',           'article',     'Edit any article in any status (editor and above)'),
+  ('article.create',           'article',     'Create a new article draft'),
+  ('article.edit_own',         'article',     'Edit one''s own article while it is a draft or in review'),
   ('article.publish',          'article',     'Publish, schedule or archive articles'),
   ('article.delete',           'article',     'Delete articles'),
   ('article.review',           'article',     'Approve or reject submitted articles'),
@@ -64,8 +66,15 @@ on conflict (key) do update
 -- -----------------------------------------------------------------------------
 -- Role -> permission grants
 --
--- Author deliberately lacks every *.publish and *.delete permission.
--- Reviewer may review but not publish.
+-- Author deliberately holds NEITHER article.manage (edit any article in any
+-- status) NOR any *.publish permission. An author may only create and edit
+-- their OWN draft, and the articles RLS policy independently blocks any
+-- resulting status outside draft/in_review — so self-publishing is impossible
+-- even if the grant were widened.
+--
+-- Reviewer may read unpublished content and record decisions, but may not edit
+-- or publish articles.
+--
 -- Student receives no permissions at all.
 -- -----------------------------------------------------------------------------
 insert into public.role_permissions (role_id, permission_id)
@@ -82,7 +91,8 @@ cross join public.permissions p
 where r.key = 'admin'
   and p.key in (
     'scholarship.manage', 'scholarship.publish', 'scholarship.delete', 'scholarship.verify',
-    'article.manage', 'article.publish', 'article.delete', 'article.review',
+    'article.manage', 'article.create', 'article.edit_own',
+    'article.publish', 'article.delete', 'article.review',
     'taxonomy.manage', 'media.upload', 'media.manage',
     'user.manage', 'role.manage',
     'settings.manage', 'navigation.manage', 'homepage.manage',
@@ -98,7 +108,7 @@ cross join public.permissions p
 where r.key = 'editor'
   and p.key in (
     'scholarship.manage', 'scholarship.publish', 'scholarship.verify',
-    'article.manage', 'article.publish',
+    'article.manage', 'article.create', 'article.edit_own', 'article.publish',
     'taxonomy.manage', 'media.upload', 'media.manage',
     'navigation.manage', 'homepage.manage',
     'report.manage', 'seo.manage'
@@ -110,7 +120,7 @@ select r.id, p.id
 from public.roles r
 cross join public.permissions p
 where r.key = 'author'
-  and p.key in ('article.manage', 'media.upload')
+  and p.key in ('article.create', 'article.edit_own', 'media.upload')
 on conflict do nothing;
 
 insert into public.role_permissions (role_id, permission_id)
@@ -118,7 +128,7 @@ select r.id, p.id
 from public.roles r
 cross join public.permissions p
 where r.key = 'reviewer'
-  and p.key in ('article.review', 'article.manage', 'scholarship.verify', 'report.manage')
+  and p.key in ('article.review', 'article.create', 'scholarship.verify', 'report.manage')
 on conflict do nothing;
 
 -- -----------------------------------------------------------------------------

@@ -216,14 +216,28 @@ service is not configured, say so and describe what configuration is required.
 
 ---
 
-## 11. Known environment gaps (as of Phase 1)
+## 11. Known environment gaps
 
 These are **not** implemented yet and must not be reported as working:
 
-- No Supabase project is provisioned. `src/lib/supabase/*` is wired but has
-  never been exercised against a live project.
-- `.env.local` on the maintainer's machine contains **placeholder** values.
-- No migrations have been written (Phase 2).
-- No Google AdSense or GA4 property exists (Phase 6).
+- **No application code reads the database.** The schema, RLS and storage are
+  applied and verified, but there is no query layer, no `requirePermission()`,
+  and no auth UI. That is Phase 2b and Phase 4.
+- **No scholarship or article content exists.** The database contains only
+  reference data (roles, permissions, taxonomy, settings, navigation). Content
+  must arrive through the verified editorial workflow — never fabricated.
+- **No user account exists in the database.** All RLS test identities were
+  removed after testing. The first real administrator is created in Phase 4.
+- No AdSense or GA4 property exists (Phase 6).
+- No Content-Security-Policy is deployed; it is deferred to Phase 7 because it
+  cannot be finalised before the ad and analytics origins are known.
 
-See `docs/DEVELOPMENT_ROADMAP.md` for the authoritative status.
+### Verified
+
+- Phase 1: `npm run verify` passes (typecheck, lint, test, build).
+- Phase 2: 14 migrations applied to staging; RLS on 38/38 tables;
+  `npm run test:rls` passes 59/59 live assertions.
+
+See `docs/DEVELOPMENT_ROADMAP.md` for the authoritative status and
+`docs/CHANGELOG.md` for the full record, including three security defects that
+testing found and fixed.
