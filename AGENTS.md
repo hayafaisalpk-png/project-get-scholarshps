@@ -220,10 +220,15 @@ service is not configured, say so and describe what configuration is required.
 
 These are **not** implemented yet and must not be reported as working:
 
-- **No UI exists yet.** The data-access layer (Phase 2b) is built and verified,
-  but no page renders it. The homepage is still the Phase 1 placeholder, and
-  there is no auth UI, search page or admin panel. That is Phase 3 and Phase 4.
-- Site settings, navigation and homepage-section readers are not written yet.
+- **Part of the public site does not exist yet.** The homepage, scholarship
+  search, scholarship detail and taxonomy landing pages are built and verified.
+  Articles, the static informational pages (About, Contact, Help, Privacy,
+  Terms, Editorial Standards), the "report incorrect information" handler, the
+  newsletter form, robots.txt and the sitemap do not. The header and footer
+  already link to the static pages, so those links currently 404.
+- **The site launches empty.** There are no scholarship records. Do not seed
+  invented ones — content must come through the verified editorial workflow
+  (Phase 4) or a licensed source.
 - **No scholarship or article content exists.** The database contains only
   reference data (roles, permissions, taxonomy, settings, navigation). Content
   must arrive through the verified editorial workflow — never fabricated.
@@ -236,10 +241,12 @@ These are **not** implemented yet and must not be reported as working:
 ### Verified
 
 - Phase 1: `npm run verify` passes (typecheck, lint, test, build).
-- Phase 2: 18 migrations applied to staging; RLS on 38/38 tables;
+- Phase 2: 19 migrations applied to staging; RLS on 38/38 tables;
   `npm run test:rls` passes 66/66 live assertions.
 - Phase 2b: 69 unit tests; `npm run verify` clean; scholarship search and
   authorization verified end-to-end through the real Next.js request path.
+- Phase 3 part 1: 95 unit tests; homepage, search, detail and taxonomy landing
+  pages verified against the live database, including correct 404 status codes.
 
 See `docs/DEVELOPMENT_ROADMAP.md` for the authoritative status and
 `docs/CHANGELOG.md` for the full record, including the security defects that

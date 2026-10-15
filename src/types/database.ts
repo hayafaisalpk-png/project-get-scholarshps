@@ -751,6 +751,7 @@ export type Database = {
         created_at: string
         updated_at: string
         archived_at: string | null
+        description: string | null
       }
         Insert: {
         id: string | null
@@ -767,6 +768,7 @@ export type Database = {
         created_at: string | null
         updated_at: string | null
         archived_at: string | null
+        description: string | null
       }
         Update: {
         id: string | null
@@ -783,6 +785,7 @@ export type Database = {
         created_at: string | null
         updated_at: string | null
         archived_at: string | null
+        description: string | null
       }
         Relationships: [
         {"foreignKeyName":"locations_parent_id_fkey","columns":["parent_id"],"isOneToOne":false,"referencedRelation":"locations","referencedColumns":["id"]}

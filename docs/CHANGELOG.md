@@ -10,7 +10,107 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
-Next up: Phase 3 — the public website. See `docs/DEVELOPMENT_ROADMAP.md`.
+Next up: remaining Phase 3 work — static informational pages, the article
+listing and detail pages, and the accessibility pass. See
+`docs/DEVELOPMENT_ROADMAP.md`.
+
+---
+
+## [0.4.0] — 2026-10-15
+
+Phase 3 (part 1): the core public website — design system, site chrome,
+homepage, scholarship search, scholarship detail, and taxonomy landing pages.
+
+### Added
+
+**Design system** (`src/components/ui/`, `src/components/layout/`)
+- Button (with Link and external variants), Badge, Alert, EmptyState, Skeleton,
+  Pagination, layout primitives.
+- Site header with responsive navigation and an accessible mobile menu; footer
+  with database-driven columns and legal links.
+- Every interactive element has a visible focus ring, and status is conveyed by
+  text as well as by colour.
+
+**Readers** — `src/lib/settings.ts`, `navigation.ts`, `homepage.ts`,
+`taxonomy.ts`. All memoised per request with React `cache`.
+
+**Pages**
+- Homepage assembled from `homepage_sections`, with real aggregate statistics.
+- `/scholarships` — server-side search with filters, sorting, pagination,
+  shareable URLs and an honest empty state.
+- `/scholarships/[slug]` — detail page.
+- Four taxonomy landing routes over a shared renderer.
+
+**Formatting** — `src/lib/format.ts`, with 26 unit tests covering currency,
+deadlines and date parsing.
+
+### Design decisions worth recording
+
+**No `loading.tsx` in the scholarships segment.** A route-segment
+`loading.tsx` opens a Suspense boundary above the page, so the shell is flushed
+with `200` before the page resolves, and any `notFound()` below it renders the
+404 UI with a `200` status — a soft 404.
+
+Measured: with `loading.tsx` present, `/scholarships/nonexistent-slug` returned
+`200` containing the 404 page. Without it, the same URL returns `404`. Correct
+status codes beat a loading skeleton. If loading states return, wrap the results
+in a `<Suspense>` inside the page, after the notFound() decision.
+
+**Filtered search pages are `noindex, follow`.** Filter permutations are useful
+to a visitor but must not flood the index with near-duplicates. The canonical
+URL for a filtered page points at `/scholarships`.
+
+**Taxonomy landing pages 404 when empty.** A page matching zero scholarships
+would be thin content, so it is not published. The rationale is commented in
+`taxonomy-landing.tsx` so it is not later mistaken for a bug.
+
+**Homepage blocks with no content are omitted entirely**, rather than rendering
+empty headings. The genuine "nothing published yet" case is handled once, in the
+hero, with an explanation of the verification policy.
+
+### Fixed
+
+- **`locations` had no `description` column** (migration 019). It was the only
+  taxonomy table created without one, and both `getTermBySlug` and
+  `getLocations` select it, so every query failed with
+  `42703 column locations.description does not exist`. Consequences:
+  `/scholarships/location/texas` 404ed despite three matching scholarships, and
+  the homepage's location block was silently empty. Found only by exercising the
+  site — the reader logs the error and returns an empty list, which is the right
+  failure mode but easy to miss.
+- `error.tsx` required the `'use client'` directive; without it the whole
+  `(public)` group failed to compile.
+- A `<Link>` nested inside a `<Button>` in two places — invalid HTML and a
+  nested interactive element. Replaced with `ButtonLink`.
+- `TAXONOMY_KINDS` typed as `Record<string, TaxonomyKind>` made every lookup
+  `TaxonomyKind | undefined` under `noUncheckedIndexedAccess`. Changed to
+  `as const satisfies`.
+- The mobile menu closed its panel from a `useEffect`, which the React 19 lint
+  rule flags as a cascading render. Replaced with the documented pattern of
+  adjusting state during render.
+
+### Verified
+
+Against the live database, using clearly-labelled fictional fixtures that were
+deleted afterwards:
+
+```
+/                                       200
+/scholarships                           200   5 scholarships listed
+/scholarships?q=nursing                 200   correct result
+/scholarships?deadline=closed           200   correct result
+/scholarships?sort=amount_desc          200
+/scholarships/education-level/[slug]    200
+/scholarships/field/nursing             200
+/scholarships/category/merit-based      200
+/scholarships/location/texas            200   after migration 019
+/scholarships/[slug]                    200
+/scholarships/[closed scholarship]      200   shows "Applications have closed"
+/scholarships/[draft]                   404   drafts stay invisible
+/unknown-page                           404
+```
+
+Plus `npm run verify` clean and 95 unit tests passing.
 
 ---
 

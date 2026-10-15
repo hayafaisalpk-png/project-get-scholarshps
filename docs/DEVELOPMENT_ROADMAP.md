@@ -14,12 +14,18 @@ Last updated: 2026-10-15 (Phase 2 complete)
 - No scholarship, article or taxonomy *content* record exists. The database
   contains only reference data (roles, permissions, taxonomy, settings,
   navigation). Test fixtures used during development were clearly-labelled
-  fictional records and have been deleted.
+  fictional records and have been deleted, so the live site currently renders
+  its "database is being prepared" empty state.
+- **The site will launch empty unless scholarship data is sourced.** This is a
+  content-acquisition decision, not a code one — see "Open decisions" below.
 - No user account exists in the database; all test identities were removed.
-- **No UI exists yet.** The data layer is built and verified, but no page renders
-  it beyond a temporary verification route used in Phase 2b (since removed).
-- Site settings, navigation and homepage-section **readers** are not written
-  yet - the data layer covers scholarships and auth only.
+- Articles are not implemented: no query layer, listing or detail pages.
+- The static informational pages (About, Contact, Help, Privacy, Terms,
+  Editorial Standards) do not exist yet. The header and footer link to them, so
+  those links currently 404.
+- The "Report incorrect information" link is present on scholarship pages but has
+  no submission handler behind it yet.
+- No robots.txt, sitemap.xml or Open Graph images yet (Phase 5).
 - No AdSense or GA4 integration exists (Phase 6).
 - Nothing has been deployed.
 
@@ -114,28 +120,39 @@ live search and auth verified.
 
 ---
 
-## Phase 3 — Public website · **NOT STARTED**
+## Phase 3 - Public website - PART 1 COMPLETE
 
-- [ ] Design system primitives: Button, Input, Select, Card, Badge, Alert,
-      Dialog, Dropdown, Pagination, Skeleton, EmptyState
-- [ ] Responsive header with dropdown navigation and accessible mobile menu
-- [ ] Footer
-- [ ] Homepage driven by `homepage_sections` (hero, search, featured,
-      deadlines, recent, by level, by field, by location, by category, tips,
-      articles, FAQ, newsletter, trust)
-- [ ] Real statistics from aggregate queries — never invented
-- [ ] Scholarship search: server-side, indexed filters, full-text, pagination,
-      sorting, URL state, clear-filters, empty states
-- [ ] Scholarship detail pages at `/scholarships/[slug]`
-- [ ] Lifecycle handling: expired scholarships keep their page and show status
-- [ ] Related scholarships and articles
-- [ ] "Report incorrect information" flow
-- [ ] Category / level / field / location landing pages
-- [ ] Articles: listing and detail
-- [ ] About, Contact, Help, Privacy, Terms
-- [ ] Loading skeletons, empty states, error boundaries, 404
-- [ ] Accessibility pass (WCAG 2.2 AA), keyboard and mobile verification
+### Part 1 complete (0.4.0)
 
+- [x] Design system primitives: Button, Badge, Alert, EmptyState, Skeleton,
+      Pagination, layout primitives
+- [x] Responsive header with dropdown navigation and accessible mobile menu
+- [x] Footer with database-driven columns and legal links
+- [x] Homepage driven by `homepage_sections`; real aggregate statistics only
+- [x] Scholarship search: server-side, indexed, full-text relevance, filtering,
+      sorting, pagination, shareable URLs, clear-filters, honest empty states
+- [x] Scholarship detail pages at `/scholarships/[slug]`
+- [x] Lifecycle handling: expired scholarships keep their page and status
+- [x] Related scholarships and taxonomy links on the detail page
+- [x] Category / level / field / location landing pages; 404 when thin
+- [x] 404 page, route error boundary, skip link, reduced-motion support
+- [x] Correct HTTP status codes verified on every route
+- [x] 95 unit tests; `npm run verify` clean
+
+### Part 2 outstanding
+
+- [ ] Articles: query layer, listing page, detail page
+- [ ] About, Contact, Help, Privacy, Terms, Editorial Standards pages
+- [ ] "Report incorrect information" handler (link exists; no submission yet)
+- [ ] Newsletter signup form and handler
+- [ ] robots.txt, sitemap.xml, Open Graph images
+- [ ] Accessibility pass (WCAG 2.2 AA) with keyboard and screen-reader checks
+- [ ] Responsive verification on real pages with content
+
+> Deliberately NOT added: a `loading.tsx` in the scholarships segment. It opens
+> a Suspense boundary above the page, so the shell is flushed with 200 before
+> the page resolves and `notFound()` produces a soft 404. Measured and removed;
+> the rationale is in the changelog and in the page file.
 ---
 
 ## Phase 4 — Administration and CMS · **NOT STARTED**
