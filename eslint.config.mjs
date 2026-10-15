@@ -19,6 +19,10 @@ const config = [
       'playwright-report/**',
       'test-results/**',
       'next-env.d.ts',
+      // Generated from the live database schema. Its shape (an empty `Args: {}`
+      // for zero-argument functions, `CompositeTypes: {}`) is intentional and
+      // does not follow application lint rules.
+      'src/types/database.ts',
     ],
   },
   ...nextCoreWebVitals,

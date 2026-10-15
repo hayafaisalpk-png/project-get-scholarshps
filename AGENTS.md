@@ -220,9 +220,10 @@ service is not configured, say so and describe what configuration is required.
 
 These are **not** implemented yet and must not be reported as working:
 
-- **No application code reads the database.** The schema, RLS and storage are
-  applied and verified, but there is no query layer, no `requirePermission()`,
-  and no auth UI. That is Phase 2b and Phase 4.
+- **No UI exists yet.** The data-access layer (Phase 2b) is built and verified,
+  but no page renders it. The homepage is still the Phase 1 placeholder, and
+  there is no auth UI, search page or admin panel. That is Phase 3 and Phase 4.
+- Site settings, navigation and homepage-section readers are not written yet.
 - **No scholarship or article content exists.** The database contains only
   reference data (roles, permissions, taxonomy, settings, navigation). Content
   must arrive through the verified editorial workflow — never fabricated.
@@ -235,9 +236,21 @@ These are **not** implemented yet and must not be reported as working:
 ### Verified
 
 - Phase 1: `npm run verify` passes (typecheck, lint, test, build).
-- Phase 2: 14 migrations applied to staging; RLS on 38/38 tables;
-  `npm run test:rls` passes 59/59 live assertions.
+- Phase 2: 18 migrations applied to staging; RLS on 38/38 tables;
+  `npm run test:rls` passes 66/66 live assertions.
+- Phase 2b: 69 unit tests; `npm run verify` clean; scholarship search and
+  authorization verified end-to-end through the real Next.js request path.
 
 See `docs/DEVELOPMENT_ROADMAP.md` for the authoritative status and
-`docs/CHANGELOG.md` for the full record, including three security defects that
-testing found and fixed.
+`docs/CHANGELOG.md` for the full record, including the security defects that
+testing found and fixed in Phases 2 and 2b.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -10,8 +10,136 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
-Next up: Phase 2b — the application data-access layer (typed query helpers and
-server-side authorization). See `docs/DEVELOPMENT_ROADMAP.md`.
+Next up: Phase 3 — the public website. See `docs/DEVELOPMENT_ROADMAP.md`.
+
+---
+
+## [0.3.0] — 2026-10-15
+
+Phase 2b: the application data-access layer. Verified end-to-end against the
+live database through the real Next.js request path, not against mocks.
+
+### Added
+
+**Typed database access**
+- `supabase/scripts/generate-database-types.mjs` generates
+  `src/types/database.ts` (38 tables, 4 views, 15 enums, 7 functions) by
+  introspecting the live schema. It exists because `supabase gen types` requires
+  CLI authentication, which is not available in every environment.
+- All three Supabase clients are now typed against `Database`.
+
+**Authorization** (`src/lib/auth/`)
+- `session.ts` — identity from `auth.getClaims()` (signature-verified, never
+  `getSession()`), plus roles, permissions and profile in one nested query,
+  memoised per request with React `cache`.
+- `guards.ts` — `requireUser`, `requireRole`, `requirePermission`,
+  `requireAnyPermission`, `requireCmsUser`.
+- `permissions.ts` — the role and permission vocabulary as compile-time unions,
+  so a typo is a build error rather than a silently denied permission.
+
+**Data access**
+- `src/lib/db/errors.ts` — maps SQLSTATE/PostgREST codes to a typed
+  `DatabaseError` with a `userMessage` that never leaks schema details.
+- `src/features/scholarships/search-params.ts` — pure parsing, validation,
+  canonical serialisation and RPC argument mapping.
+- `src/features/scholarships/queries.ts` — search, detail, curated lists and
+  related scholarships. Always uses the SESSION client, so RLS applies to our
+  own queries exactly as it does to everyone else's.
+
+**Tests** — 69 unit tests.
+
+### Changed
+
+Scholarship search moved from PostgREST `.or()` chains to a single SQL function,
+`public.search_scholarships()`.
+
+### Why search moved to SQL
+
+Live verification found the PostgREST approach could not work correctly:
+
+1. supabase-js `.order('published_at.desc.nullslast')` **appends** a direction,
+   producing `published_at.desc.nullslast.asc` — a parse error.
+2. Sorting by relevance requires ordering by `ts_rank(...)`, which is not a real
+   column and cannot appear in PostgREST's `order=` at all.
+3. Five taxonomy groups meant stacking `.or()` calls, each ANDed, which is easy
+   to get subtly wrong.
+
+One SQL function is a single round trip, gives correct rank ordering, and
+returns the total count via `count(*) over ()`. It is `SECURITY INVOKER`, so the
+caller's RLS still applies and drafts cannot leak.
+
+PostgreSQL rejects a variable `OFFSET`, so pagination uses `row_number()`
+windowing instead. The cost is materialising the ordered set rather than
+skipping rows — noted for revisiting if the table grows.
+
+### Fixed
+
+- **`search-params.ts`**: `amountInput` used `.nullable()`, which rejects
+  `undefined`. The object therefore failed `safeParse`, so **every search filter
+  was silently discarded** and every request returned the default search.
+  Rewritten so each field sanitises its own input and cannot fail.
+- **`search-params.ts`**: filter lists were serialised as repeated query
+  parameters, which silently collapse to a single value under
+  `URLSearchParams.get()` and `Object.fromEntries()`. Now emitted as one
+  comma-joined value.
+- **`search-params.ts`**: filter lists are now sorted at parse time, so two
+  visitors who pick the same filters in a different order get byte-identical
+  canonical URLs.
+- **Migration 018**: migration 013 granted INSERT/UPDATE/DELETE on
+  `scholarship_sources` to `authenticated` but never SELECT, so no editor or
+  administrator could read a scholarship's provenance at all — the verification
+  workflow was unusable. Caught by the RLS suite.
+
+### Security decision documented
+
+**Migrations 016 → 017.** The public detail page must show source provenance,
+but `scholarship_sources` is CMS-only because its `notes` column is editorial.
+
+Migration 016 first created the view with `security_invoker = true`, which
+changed nothing: under security invoker, anon still needed SELECT on the base
+table and got `42501`. Migration 017 makes the view owner-executed instead, and
+documents that this is deliberate:
+
+- Exposed: `source_url`, `source_name`, `retrieved_at`, only for published
+  scholarships.
+- Not exposed: `notes`, and any draft/pending/archived record.
+- Migration 017 ends with assertions that fail it if the view ever exposes
+  `notes`, contains a non-published row, or if anon gains SELECT on the base
+  table.
+
+The alternative — granting anon SELECT on the base table and filtering with RLS
+— would expose `notes` to every visitor, a strictly larger disclosure.
+
+### Test methodology
+
+The RLS suite grew to **66 assertions** and now covers the provenance view: anon
+can read published provenance, cannot read draft provenance, the view has no
+`notes` column, and neither anon nor a student can read the base table.
+
+Two further assertions were corrected from status-code checks to data-state
+checks — the same trap as before. A student's read of `scholarship_sources`
+returns `200` with zero rows because RLS filtered it; that is correct, not a
+failure.
+
+### Verification
+
+Run live, through the Next.js request path with the session cookie replayed:
+
+```
+Search cases:     17/17 correct (filters, sorting, paging, AND/OR, injection)
+Curated lists:    featured 1, closing-soon 3, recent 3
+Detail:           sources 1, taxonomy 5 groups, required docs
+Related:          2
+Auth (editor):    roles [editor], 14 permissions, audit.view denied
+Auth (anonymous): no user, no roles, no permissions
+RLS policy suite: 66 passed, 0 failed
+Unit tests:       69 passed, 4 files
+npm run verify:   typecheck, lint, test, build all clean
+Database state:   0 scholarships, 0 articles, 0 users — fixtures removed
+```
+
+All fixtures were clearly-labelled fictional records and were deleted afterwards.
+No fabricated scholarship data remains in the database.
 
 ---
 

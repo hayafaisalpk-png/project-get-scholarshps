@@ -162,6 +162,12 @@ try {
   fixtures.articleIds = artRes.json.map((r) => r.id)
   console.log(`  created ${fixtures.scholarshipIds.length} scholarships, ${fixtures.articleIds.length} articles`)
 
+  // Look up by slug rather than relying on insert order.
+  const allIds = await api('/rest/v1/scholarships?select=id,slug', svc())
+  const publishedSchId = allIds.json?.find((r) => r.slug === 'rlspub')?.id
+  const draftSchId = allIds.json?.find((r) => r.slug === 'rlsdraft')?.id
+  if (!publishedSchId || !draftSchId) throw new Error('fixture lookup failed')
+
   // Read-back helpers use the SERVICE ROLE as ground truth.
   //
   // This matters: verifying a negative assertion through the same identity
@@ -314,6 +320,39 @@ try {
   check('CANNOT forge audit rows', !(await api('/rest/v1/audit_logs', { token: admin.token, method: 'POST', body: { action: 'forged', entity_type: 'test', entity_id: '1' } })).ok)
   check('CANNOT update audit rows', !(await api('/rest/v1/audit_logs', { token: admin.token, method: 'PATCH', body: { action: 'tampered' } })).ok)
   check('CANNOT delete audit rows', !(await api('/rest/v1/audit_logs', { token: admin.token, method: 'DELETE' })).ok)
+
+  // --------------------------------------------------- provenance view ----
+  // Migration 016/017: public provenance lives in an owner-executed view that
+  // exposes exactly three columns and only published scholarships. The base
+  // table stays CMS-only. Both halves of that promise are asserted here.
+  console.log('\n=== PUBLIC PROVENANCE VIEW ===')
+  await api('/rest/v1/scholarship_sources', {
+    ...svcCall('POST'),
+    body: [
+      { scholarship_id: publishedSchId, source_url: 'https://example.org/pub', source_name: 'Public source', retrieved_at: new Date().toISOString() },
+      { scholarship_id: draftSchId, source_url: 'https://example.org/draft', source_name: 'Draft source', retrieved_at: new Date().toISOString() },
+    ],
+  })
+
+  const anonSources = await api('/rest/v1/published_scholarship_sources?select=source_url,source_name,retrieved_at')
+  check('anon CAN read published provenance', anonSources.ok, `status=${anonSources.status} ${anonSources.text.slice(0, 160)}`)
+
+  const anonSourceUrls = (anonSources.json ?? []).map((r) => r.source_url)
+  check('provenance includes the published record', anonSourceUrls.includes('https://example.org/pub'))
+  check('provenance EXCLUDES the draft record', !anonSourceUrls.includes('https://example.org/draft'))
+  check('provenance view has no `notes` column', !(anonSources.json ?? []).some((r) => 'notes' in r))
+
+  const anonBase = await api('/rest/v1/scholarship_sources?select=*')
+  check('anon CANNOT read the sources base table', anonBase.status !== 200, `status=${anonBase.status}`)
+
+  // A student holds no table-level grant difference, so the request succeeds at
+  // the privilege layer and is then filtered to zero rows by RLS. Assert on the
+  // resulting data, not the status code: a filtered read is a legitimate 200.
+  const studentBase = await api('/rest/v1/scholarship_sources?select=*', { token: student.token })
+  check('student CANNOT read the sources base table', (studentBase.json ?? []).length === 0, `status=${studentBase.status} rows=${studentBase.json?.length}`)
+
+  const adminBase = await api('/rest/v1/scholarship_sources?select=source_name,notes', { token: admin.token })
+  check('admin CAN read the sources base table including notes', adminBase.ok, `status=${adminBase.status}`)
 } catch (err) {
   console.error('\nSUITE ERROR:', err.message)
   failures.push('suite error: ' + err.message)

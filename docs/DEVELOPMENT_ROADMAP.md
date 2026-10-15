@@ -11,11 +11,15 @@ Last updated: 2026-10-15 (Phase 2 complete)
 
 ## Explicitly not claimed
 
-- No scholarship, article or taxonomy *content* record has been created. The
-  database contains only reference data (roles, permissions, taxonomy,
-  settings, navigation).
+- No scholarship, article or taxonomy *content* record exists. The database
+  contains only reference data (roles, permissions, taxonomy, settings,
+  navigation). Test fixtures used during development were clearly-labelled
+  fictional records and have been deleted.
 - No user account exists in the database; all test identities were removed.
-- No application code reads the database yet (that is Phase 2b).
+- **No UI exists yet.** The data layer is built and verified, but no page renders
+  it beyond a temporary verification route used in Phase 2b (since removed).
+- Site settings, navigation and homepage-section **readers** are not written
+  yet - the data layer covers scholarships and auth only.
 - No AdSense or GA4 integration exists (Phase 6).
 - Nothing has been deployed.
 
@@ -79,14 +83,34 @@ Supabase staging project `whpozrnyressiznzdhpc` provisioned and migrated.
 
 ---
 
-## Phase 2b — Application data access layer · **NOT STARTED**
+## Phase 2b — Application data access layer · **COMPLETE**
 
-- [ ] Typed Supabase client wrappers and error mapping
-- [ ] `requireUser()` / `requirePermission()` server-side authorization
-- [ ] Scholarship query layer (search, filters, facets, pagination)
-- [ ] Site settings / navigation / homepage section readers
-- [ ] Audit logging on privileged mutations
-- [ ] Profile bootstrap on signup
+- [x] Typed database layer (`src/types/database.ts`) generated from the live
+      schema by `supabase/scripts/generate-database-types.mjs`
+- [x] All Supabase clients typed against `Database`
+- [x] Identity via `auth.getClaims()`; roles/permissions/profile in one nested
+      query, memoised per request
+- [x] `requireUser` / `requireRole` / `requirePermission` / `requireCmsUser`
+- [x] Permission and role vocabulary as compile-time unions
+- [x] Typed database error mapping with safe user-facing messages
+- [x] Scholarship search parameters: validate, canonicalise, serialise
+- [x] Scholarship search in SQL (`public.search_scholarships`) with weighted
+      full-text relevance, five taxonomy groups, deadline windows, sorting,
+      pagination and total count
+- [x] Scholarship detail with taxonomy, sources and required documents
+- [x] Curated lists (featured, closing soon, recent) and related scholarships
+- [x] 69 unit tests
+- [x] Verified end-to-end through the real Next.js request path, signed in and
+      signed out
+
+**Acceptance criteria:** met — `npm run verify` clean; 66/66 RLS assertions;
+live search and auth verified.
+
+**Corrective migrations issued during this phase:**
+- `015` — search function (new).
+- `016` / `017` — public provenance view; `017` documents a deliberate
+  owner-executed view privilege decision with assertions.
+- `018` — restore `SELECT` on `scholarship_sources` for authenticated users.
 
 ---
 

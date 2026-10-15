@@ -6,21 +6,39 @@ Scholarship discovery and educational content platform for
 Built with Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4,
 Supabase (PostgreSQL + Auth + Storage) and Row Level Security.
 
-**Status: Phase 2 complete — database, RLS and storage are applied and
-verified against a live Supabase project.** The public website, search engine
-and CMS are not built yet; no application code reads the database yet. See
-[`docs/DEVELOPMENT_ROADMAP.md`](docs/DEVELOPMENT_ROADMAP.md) for the
-authoritative status and [`docs/CHANGELOG.md`](docs/CHANGELOG.md) for what has
-actually been implemented and verified.
+**Status: Phase 2b complete - database, RLS and the application data-access
+layer are applied and verified against a live Supabase project.** No UI exists
+yet: the homepage is still a placeholder, and there is no search page, auth UI
+or admin panel. See [`docs/DEVELOPMENT_ROADMAP.md`](docs/DEVELOPMENT_ROADMAP.md)
+for the authoritative status and
+[`docs/CHANGELOG.md`](docs/CHANGELOG.md) for what has actually been implemented
+and verified.
 
 **Current verified state**
 
-- `npm run verify` → typecheck, lint, unit tests, production build all pass.
-- 14 migrations applied; **38/38 tables have RLS enabled**.
-- `npm run test:rls` → **59/59** live policy assertions pass across five
+- `npm run verify` - typecheck, lint, unit tests, production build all pass.
+- 18 migrations applied; **38/38 tables have RLS enabled**.
+- `npm run test:rls` - **66/66** live policy assertions pass across five
   identities (anonymous, student, author, reviewer, super_admin).
-- Three security defects were found by that suite and fixed; all are documented
-  in the changelog.
+- 69 unit tests cover search parsing, canonical URLs, error mapping and the
+  permission vocabulary.
+- Scholarship search (weighted full-text relevance, five taxonomy groups,
+  deadline windows, sorting, pagination) and authorization were verified
+  end-to-end through the real Next.js request path, signed in and signed out.
+- Five security defects were found by testing and fixed; all are documented in
+  the changelog.
+  permission vocabulary.
+- Scholarship search (weighted full-text relevance, five taxonomy groups,
+  deadline windows, sorting, pagination) and authorization were verified
+  end-to-end through the real Next.js request path, signed in and signed out.
+- Five security defects were found by testing and fixed; all are documented in
+  the changelog.
+  permission vocabulary.
+- Scholarship search (weighted full-text relevance, five taxonomy groups,
+  deadline windows, sorting, pagination) and authorization were verified
+  end-to-end through the real Next.js request path, signed in and signed out.
+- Five security defects were found by testing and fixed; all are documented in
+  the changelog.
 
 ---
 

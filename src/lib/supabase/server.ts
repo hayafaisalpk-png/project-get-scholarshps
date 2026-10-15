@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
 import { getPublicEnv } from '@/lib/env'
+import type { Database } from '@/types/database'
 
 /**
  * Supabase server client for Server Components, Server Actions and Route
@@ -21,7 +22,7 @@ export async function createClient() {
   const { NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY } =
     getPublicEnv()
 
-  return createServerClient(
+  return createServerClient<Database>(
     NEXT_PUBLIC_SUPABASE_URL,
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
     {
@@ -43,3 +44,5 @@ export async function createClient() {
     },
   )
 }
+
+export type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>

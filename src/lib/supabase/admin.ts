@@ -1,6 +1,7 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 
 import { getServerEnv } from '@/lib/env'
+import type { Database } from '@/types/database'
 
 /**
  * Supabase admin client (service-role).
@@ -23,7 +24,7 @@ export function createAdminClient() {
     )
   }
 
-  return createSupabaseClient(
+  return createSupabaseClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.SUPABASE_SERVICE_ROLE_KEY,
     {
@@ -35,6 +36,8 @@ export function createAdminClient() {
     },
   )
 }
+
+export type SupabaseAdminClient = ReturnType<typeof createAdminClient>
 
 /**
  * True when privileged server operations are available.
