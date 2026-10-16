@@ -9,7 +9,7 @@ create table public.scholarships (
   id                uuid primary key default gen_random_uuid(),
 
   -- Immutable once published. A slug change requires a redirect entry.
-  slug              citext not null unique,
+  slug              extensions.citext not null unique,
   title             text not null,
   sponsor_name      text not null,
 

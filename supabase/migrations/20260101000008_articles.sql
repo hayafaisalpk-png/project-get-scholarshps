@@ -9,7 +9,7 @@
 -- -----------------------------------------------------------------------------
 create table public.authors (
   id          uuid primary key default gen_random_uuid(),
-  slug        citext not null unique,
+  slug        extensions.citext not null unique,
   full_name   text not null,
   bio         text,
   avatar_url  text,
@@ -31,7 +31,7 @@ select public.attach_updated_at_trigger('authors');
 -- -----------------------------------------------------------------------------
 create table public.articles (
   id             uuid primary key default gen_random_uuid(),
-  slug           citext not null unique,
+  slug           extensions.citext not null unique,
   title          text not null,
   excerpt        text,
 

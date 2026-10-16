@@ -1,8 +1,13 @@
 # Database Schema
 
-Status: **IMPLEMENTED and applied** to the staging project
-`whpozrnyressiznzdhpc` (PostgreSQL 17.11). 14 migrations, 38 tables, RLS
-verified by 59 live assertions (`npm run test:rls`).
+Status: **IMPLEMENTED and applied** to the project
+`nnufigsnijqzcojnpyuw` (PostgreSQL 17.11, Storage v1.80.2, GoTrue v2.197.0).
+19 migrations, 38 tables, RLS verified by 66 live assertions
+(`npm run test:rls`).
+
+> Re-provisioned 2026-10-16. The previous project `whpozrnyressiznzdhpc` was
+> deleted; all migrations were replayed from scratch onto the replacement
+> project. See `docs/CHANGELOG.md`.
 
 This document describes the deployed structure. It was written as a design
 first and revised as testing found real defects — see `docs/CHANGELOG.md` 0.2.0.

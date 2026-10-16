@@ -12,7 +12,7 @@
 -- -----------------------------------------------------------------------------
 create table public.categories (
   id               uuid primary key default gen_random_uuid(),
-  slug             citext not null unique,
+  slug             extensions.citext not null unique,
   name             text not null,
   description      text,
   icon             text,
@@ -37,7 +37,7 @@ select public.attach_updated_at_trigger('categories');
 -- -----------------------------------------------------------------------------
 create table public.education_levels (
   id               uuid primary key default gen_random_uuid(),
-  slug             citext not null unique,
+  slug             extensions.citext not null unique,
   name             text not null,
   description      text,
   -- Higher rank sorts later (postgraduate above undergraduate).
@@ -63,7 +63,7 @@ select public.attach_updated_at_trigger('education_levels');
 -- -----------------------------------------------------------------------------
 create table public.academic_fields (
   id               uuid primary key default gen_random_uuid(),
-  slug             citext not null unique,
+  slug             extensions.citext not null unique,
   name             text not null,
   description      text,
   -- Broad grouping, e.g. 'stem' | 'health' | 'arts' | 'business' | 'other'.
@@ -93,7 +93,7 @@ select public.attach_updated_at_trigger('academic_fields');
 -- -----------------------------------------------------------------------------
 create table public.locations (
   id               uuid primary key default gen_random_uuid(),
-  slug             citext not null unique,
+  slug             extensions.citext not null unique,
   name             text not null,
   type             public.location_type not null,
   parent_id        uuid references public.locations (id) on delete set null,
@@ -125,7 +125,7 @@ select public.attach_updated_at_trigger('locations');
 -- -----------------------------------------------------------------------------
 create table public.tags (
   id               uuid primary key default gen_random_uuid(),
-  slug             citext not null unique,
+  slug             extensions.citext not null unique,
   name             text not null,
   description      text,
   status           public.taxonomy_status not null default 'active',
@@ -146,7 +146,7 @@ select public.attach_updated_at_trigger('tags');
 -- -----------------------------------------------------------------------------
 create table public.article_categories (
   id               uuid primary key default gen_random_uuid(),
-  slug             citext not null unique,
+  slug             extensions.citext not null unique,
   name             text not null,
   description      text,
   status           public.taxonomy_status not null default 'active',
@@ -166,7 +166,7 @@ select public.attach_updated_at_trigger('article_categories');
 
 create table public.article_tags (
   id               uuid primary key default gen_random_uuid(),
-  slug             citext not null unique,
+  slug             extensions.citext not null unique,
   name             text not null,
   status           public.taxonomy_status not null default 'active',
   created_at       timestamptz not null default now(),

@@ -73,7 +73,7 @@ select public.attach_updated_at_trigger('navigation_items');
 -- -----------------------------------------------------------------------------
 create table public.homepage_sections (
   id          uuid primary key default gen_random_uuid(),
-  key         citext not null unique,
+  key         extensions.citext not null unique,
   heading     text,
   subheading  text,
   is_visible  boolean not null default true,
@@ -96,7 +96,7 @@ select public.attach_updated_at_trigger('homepage_sections');
 -- -----------------------------------------------------------------------------
 create table public.ad_placements (
   id                 uuid primary key default gen_random_uuid(),
-  key                citext not null unique,
+  key                extensions.citext not null unique,
   display_name       text not null,
   description        text,
   is_enabled         boolean not null default false,
@@ -141,7 +141,7 @@ select public.attach_updated_at_trigger('redirects');
 -- -----------------------------------------------------------------------------
 create table public.newsletter_subscribers (
   id                uuid primary key default gen_random_uuid(),
-  email             citext not null unique,
+  email             extensions.citext not null unique,
   status            public.newsletter_status not null default 'pending',
   consent_given_at  timestamptz,
   -- Salted hash only; the raw IP is never stored.
@@ -162,7 +162,7 @@ select public.attach_updated_at_trigger('newsletter_subscribers');
 create table public.contact_submissions (
   id          uuid primary key default gen_random_uuid(),
   name        text not null,
-  email       citext not null,
+  email       extensions.citext not null,
   subject     text not null,
   message     text not null,
   status      public.contact_status not null default 'new',
@@ -211,7 +211,7 @@ create table public.content_reports (
   id             uuid primary key default gen_random_uuid(),
   scholarship_id uuid references public.scholarships (id) on delete cascade,
   article_id     uuid references public.articles (id) on delete cascade,
-  reporter_email citext,
+  reporter_email extensions.citext,
   reason         public.report_reason not null,
   details        text,
   status         public.report_status not null default 'open',

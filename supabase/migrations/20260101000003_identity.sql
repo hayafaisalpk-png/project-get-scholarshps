@@ -36,7 +36,7 @@ select public.attach_updated_at_trigger('profiles');
 -- -----------------------------------------------------------------------------
 create table public.roles (
   id          uuid primary key default gen_random_uuid(),
-  key         citext not null unique,
+  key         extensions.citext not null unique,
   name        text not null,
   description text,
   -- System roles back the authorization model and must never be deleted.
@@ -53,7 +53,7 @@ comment on table public.roles is
 -- -----------------------------------------------------------------------------
 create table public.permissions (
   id          uuid primary key default gen_random_uuid(),
-  key         citext not null unique,
+  key         extensions.citext not null unique,
   description text,
   -- Grouping used by the admin UI, e.g. 'scholarship', 'article', 'settings'.
   category    text not null,

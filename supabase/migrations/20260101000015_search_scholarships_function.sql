@@ -45,7 +45,7 @@ create or replace function public.search_scholarships(
 )
 returns table (
   id                      uuid,
-  slug                    citext,
+  slug                    extensions.citext,
   title                   text,
   sponsor_name            text,
   summary                 text,

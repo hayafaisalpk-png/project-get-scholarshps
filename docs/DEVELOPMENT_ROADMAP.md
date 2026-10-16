@@ -5,35 +5,39 @@ only when its acceptance criteria have actually been verified by running them.
 
 Legend: `[ ]` not started · `[~]` in progress · `[x]` complete · `[!]` blocked
 
-Last updated: 2026-10-16 (repository recovered; database lost)
+Last updated: 2026-10-16 (new Supabase project provisioned; Phase 2 re-verified)
 
 ---
 
-## 🔴 Current blocker — the database no longer exists
+## ✅ Resolved — database re-provisioned
 
-The Supabase project documented below (`whpozrnyressiznzdhpc`) returns **NXDOMAIN**
-from public DNS and has been deleted, together with a second project
-(`cacqrlityxkmhfwyektv`). General connectivity is unaffected.
+The replacement project **`nnufigsnijqzcojnpyuw`** is provisioned, linked and
+fully migrated. All 19 migrations plus `supabase/seed.sql` applied cleanly
+(`supabase db push --include-seed`, exit 0).
 
-Consequences:
+**A real migration bug was found and fixed in the process.** `citext` was
+created in the `extensions` schema but referenced unqualified in 18 column
+definitions across migrations 003, 005, 007, 008, 009 and 015. This worked on
+the deleted project only because its `search_path` happened to include
+`extensions`; the Supabase CLI connects through a temporary login role that does
+not, so migration 003 failed with `type "citext" does not exist`. Every
+reference is now schema-qualified (`extensions.citext`), matching the
+`extensions.gin_trgm_ops` style already used for the pg_trgm indexes.
 
-- **Every database-dependent claim below is historical.** Phases 2, 2b and 3
-  part 1 were genuinely verified against the old project, but that verification
-  can no longer be reproduced and must be re-earned.
-- `npm run test:rls` currently fails (`fetch failed`).
-- No database-backed feature may be reported as working until the migrations
-  are replayed and the RLS suite passes again.
+Re-verified on the new project:
 
-The source of that work is **not lost**: 19 migrations, the RLS policies, seed
-data and `src/types/database.ts` are all committed.
+- `npm run test:rls` — **66 passed, 0 failed**, cleanup removed its 4 test users
+  and 10 fixture records.
+- `npm run verify` — exit 0 (typecheck, lint, 95 tests, production build).
+- Seeded reference data: 6 roles, 24 permissions, 69 role-permissions, 6
+  categories, 6 education levels, 9 academic fields, 19 site settings,
+  14 navigation items, 14 homepage sections, 1 author.
+- **scholarships 0, articles 0, media 0** — no fabricated content, as required.
+- Public routes against the live database: `/` 200, `/scholarships` 200,
+  filtered search 200, thin taxonomy landing 404 (correct), unknown route 404.
 
-Required to resume:
-
-1. Provision a new Supabase project.
-2. Link the CLI (`supabase link --project-ref <ref>`).
-3. `supabase db push` to replay all 19 migrations.
-4. Re-run `npm run test:rls` and `npm run verify`.
-5. Re-verify the public pages against real data, then start Phase 4.
+The database claims below are therefore re-earned, not historical. Next:
+Phase 4 (administration and CMS).
 
 ---
 
@@ -84,7 +88,9 @@ Required to resume:
 
 ## Phase 2 — Database and security foundation · **COMPLETE**
 
-Supabase staging project `whpozrnyressiznzdhpc` provisioned and migrated.
+Supabase project provisioned and migrated. Originally
+`whpozrnyressiznzdhpc` (deleted 2026-10-16); re-provisioned as
+`nnufigsnijqzcojnpyuw` and fully re-verified — 66/66 live RLS assertions.
 
 - [x] Provision Supabase project (staging)
 - [x] `supabase/config.toml` + CLI linked

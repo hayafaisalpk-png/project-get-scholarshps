@@ -49,26 +49,48 @@ internals. `HEAD` was already the latest source state.
   <https://www.topuniversities.com/>. `ipassgenerator.online` is recorded as
   the functional reference for the administration CMS.
 
-### 🔴 Blocker — the Supabase project no longer exists
+### 🔴 Resolved — Supabase project re-provisioned
 
-**Both** known Supabase project references now return NXDOMAIN from public DNS:
+Both previous Supabase projects returned NXDOMAIN from public DNS and had been
+deleted (`whpozrnyressiznzdhpc`, the documented staging project, and
+`cacqrlityxkmhfwyektv`). General connectivity was unaffected — `supabase.com`
+returned 200 — so this was not a network fault.
 
-| Project ref | Status |
-| --- | --- |
-| `whpozrnyressiznzdhpc` (documented staging project) | NXDOMAIN |
-| `cacqrlityxkmhfwyektv` (found in a local credential backup) | NXDOMAIN |
+Replaced with **`nnufigsnijqzcojnpyuw`**, linked via the Supabase CLI, and
+applied all 19 migrations plus the seed with `supabase db push --include-seed`
+(exit 0).
 
-General connectivity is fine (`supabase.com` returns 200), so this is not a
-network fault. **The database described throughout these documents no longer
-exists.** `npm run test:rls` currently fails with `fetch failed`.
+### Fixed — unqualified `citext` broke migrations on any freshly provisioned project
 
-Nothing is lost in source terms: all 19 migrations, the RLS policies, the seed
-data and `src/types/database.ts` are committed and can be replayed onto a fresh
-project. Until that is done, **no database-backed behaviour can be verified**,
-and per rule 6 no such feature may be reported as working.
+Replaying the migrations on a new project failed at migration 003 with
+`type "citext" does not exist (SQLSTATE 42704)`.
 
-Next up: provision a replacement Supabase project, replay the migrations,
-re-run the RLS suite, then begin Phase 4 (administration and CMS).
+Migration 001 creates `citext` in the `extensions` schema, which is the correct
+Supabase convention, but 18 column definitions across migrations 003, 005, 007,
+008, 009 and 015 referenced the bare type name. That resolved only because the
+deleted project's `search_path` happened to include `extensions`. The CLI
+connects through a temporary login role that does not, so the reference did not
+resolve.
+
+All 18 are now schema-qualified as `extensions.citext`, consistent with the
+`extensions.gin_trgm_ops` operators the same migrations already used for the
+pg_trgm indexes. This makes the migrations independent of session
+`search_path` and safe to replay on any project.
+
+### Verified on the new project
+
+- `npm run test:rls` — **66 passed, 0 failed**; cleanup removed the 4 test users
+  and 10 fixture records it created.
+- `npm run verify` — exit 0: typecheck, lint, 95 unit tests, production build.
+- Seeded reference data present: 6 roles, 24 permissions, 69 role-permissions,
+  6 categories, 6 education levels, 9 academic fields, 19 site settings,
+  14 navigation items, 14 homepage sections, 1 author.
+- **No fabricated content:** 0 scholarships, 0 articles, 0 media assets.
+- Public routes served against the live database: `/` 200, `/scholarships` 200,
+  filtered search 200, thin taxonomy landing 404 (documented behaviour),
+  unknown route 404. Homepage renders 64 KB of database-driven content.
+
+Next up: Phase 4 — administration and CMS.
 
 ---
 
