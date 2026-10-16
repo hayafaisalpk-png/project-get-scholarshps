@@ -2,8 +2,8 @@ import 'server-only'
 
 import { redirect } from 'next/navigation'
 
-import { type AppRole, type Permission } from '@/lib/auth/permissions'
-import { getAuthState } from '@/lib/auth/session'
+import type { AppRole, Permission } from '@/lib/auth/permissions'
+import { type AuthState, getAuthState } from '@/lib/auth/session'
 
 /**
  * Route and mutation guards.
@@ -79,7 +79,7 @@ export async function requireUserOrThrow(): Promise<{
 export async function requireRole(
   allowed: readonly AppRole[],
   options: { redirectTo?: string } = {},
-): Promise<Awaited<ReturnType<typeof getAuthState>>> {
+): Promise<AuthenticatedState> {
   const state = await requireAuthState(options)
 
   const permitted = state.roles.some((role) => allowed.includes(role))
@@ -96,7 +96,7 @@ export async function requireRole(
 export async function requirePermission(
   permission: Permission,
   options: { redirectTo?: string } = {},
-): Promise<Awaited<ReturnType<typeof getAuthState>>> {
+): Promise<AuthenticatedState> {
   const state = await requireAuthState(options)
 
   if (!state.permissions.includes(permission)) throw new AuthorizationError()
@@ -114,7 +114,7 @@ export async function requirePermission(
 export async function requireAnyPermission(
   permissions: readonly Permission[],
   options: { redirectTo?: string } = {},
-): Promise<Awaited<ReturnType<typeof getAuthState>>> {
+): Promise<AuthenticatedState> {
   const state = await requireAuthState(options)
 
   const permitted = permissions.some((p) => state.permissions.includes(p))
@@ -132,7 +132,7 @@ export async function requireAnyPermission(
  */
 export async function requireCmsUser(
   options: { redirectTo?: string } = {},
-): Promise<Awaited<ReturnType<typeof getAuthState>>> {
+): Promise<AuthenticatedState> {
   const state = await requireAuthState(options)
 
   const isAdmin = state.roles.some((role) => role !== 'student')
@@ -145,7 +145,19 @@ export async function requireCmsUser(
 /* Internals                                                                   */
 /* -------------------------------------------------------------------------- */
 
-async function requireAuthState(options: { redirectTo?: string } = {}) {
+/**
+ * Authenticated state: identical to `AuthState`, but with the user narrowed to
+ * non-null.
+ *
+ * Every guard below has already redirected when there is no user, so callers
+ * should not have to re-narrow by hand. Keeping the narrowing here is what
+ * makes `requireUser()`'s cast unnecessary at every call site.
+ */
+type AuthenticatedState = AuthState & { user: NonNullable<AuthState['user']> }
+
+async function requireAuthState(
+  options: { redirectTo?: string } = {},
+): Promise<AuthenticatedState> {
   const state = await getAuthState()
 
   if (!state.user) {
@@ -155,5 +167,5 @@ async function requireAuthState(options: { redirectTo?: string } = {}) {
     redirect(target)
   }
 
-  return state
+  return { ...state, user: state.user }
 }
