@@ -5,7 +5,35 @@ only when its acceptance criteria have actually been verified by running them.
 
 Legend: `[ ]` not started · `[~]` in progress · `[x]` complete · `[!]` blocked
 
-Last updated: 2026-10-15 (Phase 2 complete)
+Last updated: 2026-10-16 (repository recovered; database lost)
+
+---
+
+## 🔴 Current blocker — the database no longer exists
+
+The Supabase project documented below (`whpozrnyressiznzdhpc`) returns **NXDOMAIN**
+from public DNS and has been deleted, together with a second project
+(`cacqrlityxkmhfwyektv`). General connectivity is unaffected.
+
+Consequences:
+
+- **Every database-dependent claim below is historical.** Phases 2, 2b and 3
+  part 1 were genuinely verified against the old project, but that verification
+  can no longer be reproduced and must be re-earned.
+- `npm run test:rls` currently fails (`fetch failed`).
+- No database-backed feature may be reported as working until the migrations
+  are replayed and the RLS suite passes again.
+
+The source of that work is **not lost**: 19 migrations, the RLS policies, seed
+data and `src/types/database.ts` are all committed.
+
+Required to resume:
+
+1. Provision a new Supabase project.
+2. Link the CLI (`supabase link --project-ref <ref>`).
+3. `supabase db push` to replay all 19 migrations.
+4. Re-run `npm run test:rls` and `npm run verify`.
+5. Re-verify the public pages against real data, then start Phase 4.
 
 ---
 
@@ -155,7 +183,19 @@ live search and auth verified.
 > the rationale is in the changelog and in the page file.
 ---
 
-## Phase 4 — Administration and CMS · **NOT STARTED**
+## Phase 4 — Administration and CMS · **NOT STARTED — ACTIVE PHASE**
+
+> Promoted ahead of Phase 3 part 2 by decision on 2026-10-16: content cannot be
+> created until the CMS exists, so articles and static pages are blocked behind
+> it. Phase 3 part 2 remains required and is not cancelled.
+
+> Blocked until a Supabase project is provisioned and the migrations are
+> replayed — see the blocker section at the top of this document.
+
+> Visual design direction for all new UI follows `AGENTS.md` §1
+> (topuniversities.com). Administrative behaviour follows ipassgenerator.online
+> where it can actually be inspected; where it cannot, the uncertainty must be
+> recorded rather than guessed.
 
 - [ ] Auth: register, email verification, login, logout, password reset/update
 - [ ] Protected `/admin` with role-aware navigation

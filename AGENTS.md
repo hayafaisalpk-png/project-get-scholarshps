@@ -15,10 +15,18 @@ platform for <https://getscholarship.online>. It is a database-driven
 application with a public website, a scholarship search engine, and a protected
 administrative CMS.
 
-Reference site for UX inspiration only: <https://www.scholarships.com/>.
-**Never copy its source code, brand identity, editorial content, or visual
-assets.** Information architecture and user-journey patterns may inform our
-design; original implementation, branding, copy and assets are required.
+Reference site for visual design direction only:
+<https://www.topuniversities.com/>. The authoritative higher-education look —
+navy/blue/white palette, typography hierarchy, generous whitespace, card and
+section rhythm — is modelled on that site.
+
+Functional reference for the administration CMS is the existing
+ipassgenerator.online project. Where a specific administrative behaviour cannot
+be inspected, say so rather than guessing.
+
+**Never copy either site's source code, brand identity, editorial content, or
+visual assets.** Information architecture and user-journey patterns may inform
+our design; original implementation, branding, copy and assets are required.
 
 ---
 

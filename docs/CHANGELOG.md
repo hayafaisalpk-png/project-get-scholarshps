@@ -10,9 +10,65 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
-Next up: remaining Phase 3 work — static informational pages, the article
-listing and detail pages, and the accessibility pass. See
-`docs/DEVELOPMENT_ROADMAP.md`.
+### Incident — repository deleted and recovered (2026-10-16)
+
+The working directory `D:\xampp\htdocs\getscholarship` was deleted in two
+stages: the working tree at 22:10, then `.git` at 22:34. At the worst point the
+directory was completely empty and the local history was unrecoverable, because
+the repository had **no remote**.
+
+**Recovered.** Both deletions had gone to the Windows Recycle Bin on `D:`. The
+repository was restored from `$R2NJU9I\.git` (copied, not moved, so the Bin
+remained available as a fallback).
+
+- `git fsck` reports no errors; all 5 commits are intact up to `96748c5`.
+- All 89 tracked files restored from `HEAD`; `git diff` is empty and the tree
+  is clean. Confirmed byte-identical (0 numstat lines, matching blob hashes).
+- `.env.local` restored from `$RVU2LLS.local`.
+- `node_modules` rebuilt with `npm ci`.
+
+**No source work was lost.** The Recycle Bin was searched for files newer than
+the last commit; the only such files were `.next` build artefacts and `.git`
+internals. `HEAD` was already the latest source state.
+
+### Fixed
+
+- `npm run test:rls` could never have succeeded unattended: the script reads
+  `process.env`, but nothing loaded `.env.local` into it. The script now runs
+  `node --env-file=.env.local`.
+- The first `npm ci` produced a **corrupt** `node_modules` (`TAR_ENTRY_ERROR`,
+  leaving `eslint-config-next/dist/index.js` missing and breaking `npm run
+  lint`). A clean reinstall fixed it. Watch for this on Windows.
+- Four orphaned `next dev` / `npm run verify` Node processes from before the
+  deletion were still running and holding the Next.js build lock; they were
+  stopped.
+
+### Changed
+
+- `AGENTS.md` §1: the visual design reference is now
+  <https://www.topuniversities.com/>. `ipassgenerator.online` is recorded as
+  the functional reference for the administration CMS.
+
+### 🔴 Blocker — the Supabase project no longer exists
+
+**Both** known Supabase project references now return NXDOMAIN from public DNS:
+
+| Project ref | Status |
+| --- | --- |
+| `whpozrnyressiznzdhpc` (documented staging project) | NXDOMAIN |
+| `cacqrlityxkmhfwyektv` (found in a local credential backup) | NXDOMAIN |
+
+General connectivity is fine (`supabase.com` returns 200), so this is not a
+network fault. **The database described throughout these documents no longer
+exists.** `npm run test:rls` currently fails with `fetch failed`.
+
+Nothing is lost in source terms: all 19 migrations, the RLS policies, the seed
+data and `src/types/database.ts` are committed and can be replayed onto a fresh
+project. Until that is done, **no database-backed behaviour can be verified**,
+and per rule 6 no such feature may be reported as working.
+
+Next up: provision a replacement Supabase project, replay the migrations,
+re-run the RLS suite, then begin Phase 4 (administration and CMS).
 
 ---
 
