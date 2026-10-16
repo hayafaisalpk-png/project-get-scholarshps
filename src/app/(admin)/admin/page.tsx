@@ -56,7 +56,7 @@ export default async function AdminDashboardPage() {
       </div>
 
       {!hasContent ? (
-        <div className="rounded-xl border border-brand-200 bg-brand-50 p-6">
+        <div className="rounded-sm border border-brand-200 bg-brand-50 p-6">
           <h2 className="text-base font-semibold text-brand-900">
             No content has been published yet
           </h2>
@@ -71,7 +71,7 @@ export default async function AdminDashboardPage() {
       ) : null}
 
       {stats.unavailable.length > 0 ? (
-        <p className="rounded-lg bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200 ring-inset">
+        <p className="rounded-sm bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200 ring-inset">
           Some figures could not be read: {stats.unavailable.join(', ')}. They
           are shown as “—” rather than as zero, because zero would be a claim
           about the data.
@@ -154,11 +154,11 @@ export default async function AdminDashboardPage() {
           </h2>
 
           {stats.recentActivity.length === 0 ? (
-            <p className="rounded-xl border border-ink-200 bg-white p-6 text-sm text-ink-600">
+            <p className="rounded-sm border border-ink-200 bg-white p-6 text-sm text-ink-600">
               No administrative actions have been recorded yet.
             </p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-ink-200 bg-white">
+            <div className="overflow-x-auto rounded-sm border border-ink-200 bg-white">
               <table className="w-full text-left text-sm">
                 <caption className="sr-only">
                   The ten most recent administrative actions

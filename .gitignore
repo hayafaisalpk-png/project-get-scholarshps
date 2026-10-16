@@ -45,6 +45,14 @@ supabase/.temp/
 supabase/.env
 supabase/config.toml.local
 
+# Verification artefacts
+# Screenshots and ad-hoc scripts written during end-to-end checks. These are
+# throwaway debugging output and must never be committed.
+verify-*.png
+radius-*.png
+*.tmp.mjs
+screenshots/
+
 # Editors and OS
 .vscode/*
 !.vscode/extensions.json

@@ -88,7 +88,7 @@ function ArticleFormFields({
         <Alert tone="success">{state.message}</Alert>
       ) : null}
 
-      <section className="rounded-xl border border-ink-200 bg-white p-6 shadow-xs">
+      <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
         <h2 className="text-lg font-semibold text-ink-900">Essentials</h2>
 
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -170,7 +170,7 @@ function ArticleFormFields({
         </div>
       </section>
 
-      <section className="rounded-xl border border-ink-200 bg-white p-6 shadow-xs">
+      <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
         <h2 className="text-lg font-semibold text-ink-900">Body</h2>
         <p className="mt-1 mb-5 text-sm text-ink-600">
           Saved as sanitised HTML. Scripts, embedded frames and unsafe links are
@@ -196,7 +196,7 @@ function ArticleFormFields({
         </p>
       </section>
 
-      <section className="rounded-xl border border-ink-200 bg-white p-6 shadow-xs">
+      <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
         <h2 className="text-lg font-semibold text-ink-900">Publishing</h2>
 
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -233,7 +233,7 @@ function ArticleFormFields({
         </div>
       </section>
 
-      <section className="rounded-xl border border-ink-200 bg-white p-6 shadow-xs">
+      <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
         <h2 className="text-lg font-semibold text-ink-900">Classification</h2>
 
         <div className="mt-5 space-y-5">
@@ -259,7 +259,7 @@ function ArticleFormFields({
         </div>
       </section>
 
-      <section className="rounded-xl border border-ink-200 bg-white p-6 shadow-xs">
+      <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
         <h2 className="text-lg font-semibold text-ink-900">SEO</h2>
 
         <div className="mt-5 grid gap-5 sm:grid-cols-2">
@@ -397,7 +397,7 @@ function CheckboxGroup({
           {options.map((option) => (
             <label
               key={option.id}
-              className="flex items-center gap-2.5 rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+              className="flex items-center gap-2.5 rounded-sm border border-ink-200 px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
             >
               <input
                 type="checkbox"

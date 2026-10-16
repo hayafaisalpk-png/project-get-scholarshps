@@ -87,7 +87,17 @@
   /* -- Ring (focus) ------------------------------------------------------- */
   --color-ring: var(--color-brand-500);
 
-  /* -- Radii -------------------------------------------------------------- */
+  /*
+   * -- Radii --------------------------------------------------------------
+   *
+   * `sm` is the DEFAULT radius for the whole system: buttons, inputs, cards,
+   * panels and dialogs all use it. `md` and above are reserved for genuinely
+   * oversized surfaces, and `full` for shapes that are meant to read as
+   * circles (avatars, status pills).
+   *
+   * Keep new components on `rounded-sm`. Do not introduce a bespoke radius
+   * inline — add a token here if a new step is genuinely needed.
+   */
   --radius-xs: 0.25rem;
   --radius-sm: 0.375rem;
   --radius-md: 0.5rem;

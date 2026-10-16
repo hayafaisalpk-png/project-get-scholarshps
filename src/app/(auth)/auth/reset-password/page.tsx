@@ -27,7 +27,7 @@ export default async function ResetPasswordPage({
   const error = Array.isArray(params.error) ? params.error[0] : params.error
 
   return (
-    <div className="rounded-xl border border-ink-200 bg-white p-8 shadow-sm">
+    <div className="rounded-sm border border-ink-200 bg-white p-8 shadow-sm">
       <h1 className="text-2xl font-bold text-ink-900">Choose a new password</h1>
 
       <div className="mt-2 mb-7">

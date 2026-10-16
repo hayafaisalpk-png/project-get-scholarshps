@@ -38,7 +38,7 @@ export default async function LoginPage({
   const returnTo = raw ? safeReturnPath(raw, '') : undefined
 
   return (
-    <div className="rounded-xl border border-ink-200 bg-white p-8 shadow-sm">
+    <div className="rounded-sm border border-ink-200 bg-white p-8 shadow-sm">
       <div className="mb-7">
         <p className="text-sm font-semibold tracking-wide text-brand-700 uppercase">
           GetScholarship

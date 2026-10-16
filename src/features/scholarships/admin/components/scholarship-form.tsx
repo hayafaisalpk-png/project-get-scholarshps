@@ -596,7 +596,7 @@ function Fieldset({
   children: React.ReactNode
 }) {
   return (
-    <section className="rounded-xl border border-ink-200 bg-white p-6 shadow-xs">
+    <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
       <h2 className="text-lg font-semibold text-ink-900">{title}</h2>
       {description ? (
         <p className="mt-1 mb-5 text-sm text-ink-600">{description}</p>
@@ -681,7 +681,7 @@ function CheckboxGroup({
           {options.map((option) => (
             <label
               key={option.id}
-              className="flex items-center gap-2.5 rounded-lg border border-ink-200 px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
+              className="flex items-center gap-2.5 rounded-sm border border-ink-200 px-3 py-2 text-sm text-ink-800 hover:bg-ink-50"
             >
               <input
                 type="checkbox"

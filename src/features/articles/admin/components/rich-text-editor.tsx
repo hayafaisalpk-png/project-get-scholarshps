@@ -185,7 +185,7 @@ export function RichTextEditor({
   if (!editor) {
     return (
       <div
-        className="min-h-96 rounded-b-xl border border-t-0 border-ink-300 bg-ink-50"
+        className="min-h-96 rounded-b-sm border border-t-0 border-ink-300 bg-ink-50"
         aria-busy="true"
       />
     )
@@ -224,7 +224,7 @@ export function RichTextEditor({
 
   return (
     <div>
-      <div className="rounded-t-xl border border-ink-300 bg-ink-50">
+      <div className="rounded-t-sm border border-ink-300 bg-ink-50">
         <div
           role="toolbar"
           aria-label={`${label} formatting`}
@@ -418,19 +418,19 @@ export function RichTextEditor({
                 }
                 if (e.key === 'Escape') setLinkOpen(false)
               }}
-              className="min-w-48 flex-1 rounded-lg border border-ink-300 px-3 py-1.5 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none"
+              className="min-w-48 flex-1 rounded-sm border border-ink-300 px-3 py-1.5 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none"
             />
             <button
               type="button"
               onClick={applyLink}
-              className="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+              className="rounded-sm bg-brand-700 px-3 py-1.5 text-xs font-semibold text-white hover:bg-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
             >
               Apply
             </button>
             <button
               type="button"
               onClick={() => setLinkOpen(false)}
-              className="rounded-lg border border-ink-300 px-3 py-1.5 text-xs font-semibold text-ink-700 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+              className="rounded-sm border border-ink-300 px-3 py-1.5 text-xs font-semibold text-ink-700 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
             >
               Cancel
             </button>
@@ -440,7 +440,7 @@ export function RichTextEditor({
 
       <EditorContent
         editor={editor}
-        className="rounded-b-xl border-x border-b border-ink-300 bg-white"
+        className="rounded-b-sm border-x border-b border-ink-300 bg-white"
       />
 
       {/*
@@ -480,7 +480,7 @@ function ToolbarButton({
       aria-label={label}
       title={label}
       aria-pressed={pressed}
-      className="inline-flex size-8 items-center justify-center rounded-md text-ink-700 transition-colors hover:bg-ink-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none disabled:opacity-40 aria-pressed:bg-brand-100 aria-pressed:text-brand-800"
+      className="inline-flex size-8 items-center justify-center rounded-sm text-ink-700 transition-colors hover:bg-ink-200 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none disabled:opacity-40 aria-pressed:bg-brand-100 aria-pressed:text-brand-800"
     >
       {text ? <span className="text-xs font-bold">{text}</span> : children}
     </button>

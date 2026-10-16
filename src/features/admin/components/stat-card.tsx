@@ -24,10 +24,10 @@ export function StatCard({
   const showEmDash = unavailable || value === null
 
   return (
-    <div className="rounded-xl border border-ink-200 bg-white p-5 shadow-xs">
+    <div className="rounded-sm border border-ink-200 bg-white p-5 shadow-xs">
       <div className="flex items-start justify-between gap-3">
         <p className="text-sm font-medium text-ink-600">{label}</p>
-        <span className="rounded-lg bg-brand-50 p-2 text-brand-700">
+        <span className="rounded-sm bg-brand-50 p-2 text-brand-700">
           <Icon className="size-5" aria-hidden="true" />
         </span>
       </div>

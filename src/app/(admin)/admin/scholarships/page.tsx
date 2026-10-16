@@ -92,7 +92,7 @@ export default async function AdminScholarshipsPage({
       <form
         action="/admin/scholarships"
         method="get"
-        className="flex flex-wrap items-end gap-3 rounded-xl border border-ink-200 bg-white p-4"
+        className="flex flex-wrap items-end gap-3 rounded-sm border border-ink-200 bg-white p-4"
       >
         <div className="min-w-56 flex-1">
           <label
@@ -107,7 +107,7 @@ export default async function AdminScholarshipsPage({
             type="search"
             defaultValue={q}
             placeholder="Title or sponsor"
-            className="block w-full rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none"
+            className="block w-full rounded-sm border border-ink-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none"
           />
         </div>
 
@@ -122,7 +122,7 @@ export default async function AdminScholarshipsPage({
             id="status"
             name="status"
             defaultValue={activeStatus}
-            className="rounded-lg border border-ink-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none"
+            className="rounded-sm border border-ink-300 bg-white px-3 py-2 text-sm focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none"
           >
             <option value="">All statuses</option>
             {SCHOLARSHIP_STATUSES.map((status) => (
@@ -135,7 +135,7 @@ export default async function AdminScholarshipsPage({
 
         <button
           type="submit"
-          className="rounded-lg bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+          className="rounded-sm bg-brand-700 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-800 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
         >
           Apply
         </button>
@@ -175,7 +175,7 @@ export default async function AdminScholarshipsPage({
             table has too many columns to read on a phone, and truncating the
             title would be worse than scrolling.
           */}
-          <div className="overflow-x-auto rounded-xl border border-ink-200 bg-white">
+          <div className="overflow-x-auto rounded-sm border border-ink-200 bg-white">
             <table className="w-full min-w-3xl text-left text-sm">
               <caption className="sr-only">
                 Scholarships matching the current filters

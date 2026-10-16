@@ -56,7 +56,7 @@ export function Pagination({
 
   const itemClasses = (active: boolean) =>
     cn(
-      'inline-flex h-10 min-w-10 items-center justify-center rounded-lg px-3 text-sm font-semibold transition-colors',
+      'inline-flex h-10 min-w-10 items-center justify-center rounded-sm px-3 text-sm font-semibold transition-colors',
       active
         ? 'bg-brand-700 text-white'
         : 'text-ink-700 hover:bg-ink-100 active:bg-ink-200',

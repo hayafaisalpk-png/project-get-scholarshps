@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
@@ -82,7 +82,7 @@ export function MobileNav({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-ink-700 hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+        className="inline-flex h-11 w-11 items-center justify-center rounded-sm text-ink-700 hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
       >
         <span className="sr-only-focusable">
           {open ? 'Close main menu' : 'Open main menu'}
@@ -142,7 +142,7 @@ export function NavLink({
   const external = item.opens_in_new_tab || /^https?:\/\//.test(item.href)
 
   const classes = cn(
-    'rounded-md px-3 py-2 text-sm font-medium transition-colors',
+    'rounded-sm px-3 py-2 text-sm font-medium transition-colors',
     isCurrent
       ? 'bg-brand-50 text-brand-800'
       : 'text-ink-700 hover:bg-ink-100 hover:text-ink-900',

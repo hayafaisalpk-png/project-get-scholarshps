@@ -38,7 +38,7 @@ const SIZES: Record<ButtonSize, string> = {
 }
 
 const BASE =
-  'inline-flex items-center justify-center rounded-lg font-semibold transition-colors ' +
+  'inline-flex items-center justify-center rounded-sm font-semibold transition-colors ' +
   'disabled:pointer-events-none disabled:opacity-55 select-none whitespace-nowrap'
 
 export function buttonClasses({

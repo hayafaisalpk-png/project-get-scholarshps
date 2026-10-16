@@ -313,7 +313,7 @@ export default async function ScholarshipDetailPage({ params }: Params) {
               </section>
             ) : null}
 
-            <section className="mt-10 rounded-xl border border-ink-200 bg-surface p-5">
+            <section className="mt-10 rounded-sm border border-ink-200 bg-surface p-5">
               <h2 className="text-base font-semibold text-ink-900">
                 About this information
               </h2>
@@ -372,7 +372,7 @@ export default async function ScholarshipDetailPage({ params }: Params) {
 
           {/* --------------------------------------------------------- Sidebar */}
           <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-xl border border-ink-200 bg-white p-5">
+            <div className="rounded-sm border border-ink-200 bg-white p-5">
               <h2 className="text-sm font-semibold text-ink-900">Key details</h2>
               <dl className="mt-3 space-y-3 text-sm">
                 <Detail

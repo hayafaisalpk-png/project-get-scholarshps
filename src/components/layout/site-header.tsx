@@ -1,4 +1,4 @@
-﻿import { Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import Link from 'next/link'
 
 import { ButtonLink } from '@/components/ui/button'
@@ -32,7 +32,7 @@ export async function SiteHeader() {
           >
             <span
               aria-hidden="true"
-              className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-white"
+              className="inline-flex h-9 w-9 items-center justify-center rounded-sm bg-brand-700 text-white"
             >
               G
             </span>
@@ -52,7 +52,7 @@ export async function SiteHeader() {
           <div className="flex items-center gap-2">
             <Link
               href="/scholarships"
-              className="hidden h-11 items-center gap-2 rounded-lg border border-ink-300 px-4 text-sm font-semibold text-ink-800 transition-colors hover:bg-ink-50 sm:inline-flex"
+              className="hidden h-11 items-center gap-2 rounded-sm border border-ink-300 px-4 text-sm font-semibold text-ink-800 transition-colors hover:bg-ink-50 sm:inline-flex"
             >
               <Search className="h-4 w-4" aria-hidden="true" />
               Search

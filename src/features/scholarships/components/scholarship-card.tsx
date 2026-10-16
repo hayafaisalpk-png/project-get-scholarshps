@@ -34,7 +34,7 @@ export function ScholarshipCard({
   )
 
   return (
-    <article className="group relative flex h-full flex-col rounded-xl border border-ink-200 bg-white p-5 transition-shadow hover:shadow-md focus-within:shadow-md">
+    <article className="group relative flex h-full flex-col rounded-sm border border-ink-200 bg-white p-5 transition-shadow hover:shadow-md focus-within:shadow-md">
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <DeadlineBadge state={deadlineState} note={deadlineNote} />
         {scholarship.is_renewable ? (
@@ -105,7 +105,7 @@ export function ScholarshipCardCompact({
   scholarship: ScholarshipCardData
 }) {
   return (
-    <article className="relative rounded-lg border border-ink-200 bg-white p-4 transition-shadow hover:shadow-sm">
+    <article className="relative rounded-sm border border-ink-200 bg-white p-4 transition-shadow hover:shadow-sm">
       <h3 className="text-sm font-semibold leading-snug text-ink-900">
         <Link
           href={`/scholarships/${scholarship.slug}`}

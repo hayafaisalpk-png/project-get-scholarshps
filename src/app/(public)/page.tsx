@@ -1,4 +1,4 @@
-﻿import { Award, BookOpen, GraduationCap, MapPin, Search } from 'lucide-react'
+import { Award, BookOpen, GraduationCap, MapPin, Search } from 'lucide-react'
 import Link from 'next/link'
 
 import { Container, Section, SectionHeading } from '@/components/layout/container'
@@ -93,7 +93,7 @@ export default async function HomePage() {
                     type="search"
                     name="q"
                     placeholder="Search by keyword, sponsor or subject"
-                    className="h-13 w-full rounded-lg border border-ink-300 bg-white pl-12 pr-4 text-base text-ink-900 placeholder:text-ink-400 focus:border-brand-500"
+                    className="h-13 w-full rounded-sm border border-ink-300 bg-white pl-12 pr-4 text-base text-ink-900 placeholder:text-ink-400 focus:border-brand-500"
                   />
                 </div>
                 <ButtonLink href="/scholarships" size="lg" className="shrink-0">
@@ -103,7 +103,7 @@ export default async function HomePage() {
             </form>
 
             {isEmpty ? (
-              <div className="mx-auto mt-8 max-w-xl rounded-xl border border-ink-200 bg-white p-5 text-left">
+              <div className="mx-auto mt-8 max-w-xl rounded-sm border border-ink-200 bg-white p-5 text-left">
                 <h2 className="text-base font-semibold text-ink-900">
                   Our scholarship database is being prepared
                 </h2>
@@ -123,7 +123,7 @@ export default async function HomePage() {
       {stats.totalScholarships > 0 ? (
         <Section className="py-8">
           <Container>
-            <dl className="grid grid-cols-2 gap-6 rounded-xl border border-ink-200 bg-white p-6 sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-6 rounded-sm border border-ink-200 bg-white p-6 sm:grid-cols-4">
               <Stat
                 icon={<Award className="h-5 w-5" aria-hidden="true" />}
                 value={stats.totalScholarships.toLocaleString('en-US')}
@@ -290,11 +290,11 @@ export default async function HomePage() {
       {/* -------------------------------------------------------------- Editorial */}
       <Section className="bg-surface">
         <Container>
-          <div className="mx-auto max-w-3xl rounded-xl border border-ink-200 bg-white p-8">
+          <div className="mx-auto max-w-3xl rounded-sm border border-ink-200 bg-white p-8">
             <div className="flex items-start gap-4">
               <span
                 aria-hidden="true"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700"
+                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-brand-50 text-brand-700"
               >
                 <BookOpen className="h-5 w-5" />
               </span>
@@ -337,7 +337,7 @@ function Stat({
     <div className="text-center">
       <span
         aria-hidden="true"
-        className="mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700"
+        className="mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-sm bg-brand-50 text-brand-700"
       >
         {icon}
       </span>
@@ -358,7 +358,7 @@ function TaxonomyGrid({
         <li key={item.href}>
           <Link
             href={item.href}
-            className="flex h-full flex-col rounded-xl border border-ink-200 bg-white p-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
+            className="flex h-full flex-col rounded-sm border border-ink-200 bg-white p-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
           >
             <span className="font-semibold text-ink-900">{item.name}</span>
             {item.description ? (
@@ -408,7 +408,7 @@ function FaqSection() {
             description="Common questions from students."
           />
 
-          <div className="divide-y divide-ink-200 rounded-xl border border-ink-200 bg-white">
+          <div className="divide-y divide-ink-200 rounded-sm border border-ink-200 bg-white">
             {faqs.map((faq) => (
               <details key={faq.q} className="group px-5 py-4">
                 <summary className="cursor-pointer list-none font-semibold text-ink-900 marker:hidden">

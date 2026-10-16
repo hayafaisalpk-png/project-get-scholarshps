@@ -1,4 +1,4 @@
-﻿import type { Metadata } from 'next'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import { Container, Section } from '@/components/layout/container'
@@ -266,7 +266,7 @@ export default async function ScholarshipsPage({
                 {filtered ? (
                   <Link
                     href="/scholarships"
-                    className="inline-flex h-9 items-center rounded-lg px-3 text-sm font-semibold text-ink-700 hover:bg-ink-100"
+                    className="inline-flex h-9 items-center rounded-sm px-3 text-sm font-semibold text-ink-700 hover:bg-ink-100"
                   >
                     Clear all
                   </Link>
@@ -292,7 +292,7 @@ export default async function ScholarshipsPage({
                   id="sort"
                   name="sort"
                   defaultValue={search.sort}
-                  className="h-9 rounded-lg border border-ink-300 bg-white px-2 text-sm text-ink-900"
+                  className="h-9 rounded-sm border border-ink-300 bg-white px-2 text-sm text-ink-900"
                 >
                   {SORT_OPTIONS.filter((option) =>
                     option === 'relevance' ? search.q.length > 0 : true,

@@ -31,7 +31,7 @@ export function Alert({
     <div
       role={tone === 'error' ? 'alert' : 'status'}
       className={cn(
-        'rounded-lg px-4 py-3 text-sm ring-1 ring-inset',
+        'rounded-sm px-4 py-3 text-sm ring-1 ring-inset',
         TONES[tone],
         className,
       )}

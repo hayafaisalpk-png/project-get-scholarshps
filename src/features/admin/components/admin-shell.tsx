@@ -106,7 +106,7 @@ export function AdminShell({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="rounded-lg p-2 text-ink-600 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+                className="rounded-sm p-2 text-ink-600 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
               >
                 <X className="size-5" aria-hidden="true" />
                 <span className="sr-only">Close navigation</span>
@@ -128,7 +128,7 @@ export function AdminShell({
               onClick={() => setOpen(true)}
               aria-expanded={open}
               aria-controls="admin-sidebar"
-              className="rounded-lg p-2 text-ink-700 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none lg:hidden"
+              className="rounded-sm p-2 text-ink-700 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none lg:hidden"
             >
               <Menu className="size-5" aria-hidden="true" />
               <span className="sr-only">Open navigation</span>
@@ -155,9 +155,9 @@ export function AdminBrand() {
   return (
     <Link
       href="/admin"
-      className="flex items-center gap-2 rounded-lg focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+      className="flex items-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
     >
-      <span className="flex size-8 items-center justify-center rounded-lg bg-brand-700 text-sm font-bold text-white">
+      <span className="flex size-8 items-center justify-center rounded-sm bg-brand-700 text-sm font-bold text-white">
         GS
       </span>
       <span className="text-base font-bold text-ink-900">GetScholarship</span>

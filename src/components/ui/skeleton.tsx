@@ -14,7 +14,7 @@ export function Skeleton({
   return (
     <div
       aria-hidden="true"
-      className={cn('animate-pulse rounded-md bg-ink-200/70', className)}
+      className={cn('animate-pulse rounded-sm bg-ink-200/70', className)}
       {...props}
     />
   )
@@ -36,7 +36,7 @@ export function SkeletonText({ lines = 3 }: { lines?: number }) {
 /** Matches the shape of a scholarship card so the layout does not shift. */
 export function ScholarshipCardSkeleton() {
   return (
-    <div className="rounded-xl border border-ink-200 bg-white p-5">
+    <div className="rounded-sm border border-ink-200 bg-white p-5">
       <Skeleton className="h-5 w-3/4" />
       <Skeleton className="mt-2 h-4 w-1/2" />
       <Skeleton className="mt-4 h-4 w-full" />

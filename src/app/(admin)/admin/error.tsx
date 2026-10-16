@@ -26,7 +26,7 @@ export default function AdminError({
 
   if (isAuthorization) {
     return (
-      <div className="mx-auto max-w-lg rounded-xl border border-ink-200 bg-white p-8 text-center shadow-xs">
+      <div className="mx-auto max-w-lg rounded-sm border border-ink-200 bg-white p-8 text-center shadow-xs">
         <h1 className="text-xl font-bold text-ink-900">
           You do not have access to this area
         </h1>
@@ -45,7 +45,7 @@ export default function AdminError({
   }
 
   return (
-    <div className="mx-auto max-w-lg rounded-xl border border-red-200 bg-white p-8 text-center shadow-xs">
+    <div className="mx-auto max-w-lg rounded-sm border border-red-200 bg-white p-8 text-center shadow-xs">
       <h1 className="text-xl font-bold text-ink-900">
         Something went wrong
       </h1>
