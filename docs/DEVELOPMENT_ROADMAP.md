@@ -213,6 +213,48 @@ live search and auth verified.
 - [ ] **Verify the authenticated session path** — needs an operator-created
       account (`npm run admin:create -- <email>`)
 
+### 🔴 Open defect — scholarship form submit is broken
+
+Submitting **create** or **edit** fails. Everything else about the screens
+works.
+
+**Reproduction:** sign in as an administrator, open
+`/admin/scholarships/new`, fill title / sponsor / application link, submit.
+
+**Observed:**
+- `POST /admin/scholarships/new` returns **200** with a 404 payload.
+- The response carries `Set-Cookie: sb-<ref>-auth-token=; Max-Age=0` — the
+  session cookie is explicitly deleted.
+- The browser lands on `/auth/login` and the user appears signed out.
+
+**Ruled out by direct observation:**
+- The session is valid at that moment: the `proxy`'s `getClaims()` on the same
+  POST returns no error and reports a valid `sub`.
+- The access token is not expired (verified: 1-hour expiry, `exp` in the future).
+- `createScholarshipAction` **is** present in the production build.
+- The action body is never entered — its guard does not log.
+- The form action id resolves correctly (`$ACTION_2:0` carries a valid id).
+- Login, sign-out, the dashboard and every admin GET work.
+- An **unauthenticated** POST is correctly refused with a 307 and creates
+  **zero** rows — the guard is not the problem.
+
+**Not yet established:** why the request-scoped Supabase client inside the
+Server Action reports no session when the `proxy`'s client, handling the same
+request, reports a valid one. The leading suspicion is the interaction between
+`proxy.ts`'s cookie `setAll` handling and Server Action requests, since the
+cookie deletion originates from a client that is not the proxy's.
+
+### Increment 2 — PARTIAL: scholarship management
+
+- [x] List with server-side search, status filter, status counts, pagination
+- [x] Create and edit screens (award, timeline, eligibility, documents,
+      classification, publishing, verification, featured/noindex, SEO)
+- [x] Lifecycle actions with two-step destructive confirmation
+- [x] Validation mirroring the database CHECK constraints; HTTPS-only links
+- [x] Integer-cents money handling, covered by tests
+- [x] Server-side authorisation + audit logging on every mutation
+- [ ] **Form submit is broken — see the defect note below**
+
 ### Remaining in Phase 4
 
 - [ ] Scholarship management: create, edit, preview, publish, schedule, expire,
