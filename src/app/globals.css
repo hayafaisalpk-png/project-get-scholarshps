@@ -130,6 +130,28 @@
     border-color: var(--color-border);
   }
 
+  /*
+   * Default radius for inputs, dropdowns and textboxes.
+   *
+   * Every text-entry control is `rounded-sm` (6px) unless it explicitly asks
+   * for something else.
+   *
+   * Living in the BASE layer makes this a default rather than an override:
+   * Tailwind emits utilities in a later cascade layer, so any radius class on
+   * the element still wins. That is the point — it fixes the default for
+   * controls added later that simply forget a radius class, while leaving
+   * deliberate exceptions (a pill-shaped control, say) working as intended.
+   *
+   * Checkboxes and radios are excluded: they are small controls whose square
+   * native appearance is deliberate, and rounding them would fight the
+   * platform rather than the design system.
+   */
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    border-radius: var(--radius-sm);
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
     scroll-behavior: smooth;
