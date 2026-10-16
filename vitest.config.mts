@@ -15,6 +15,13 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
+      // `server-only` throws when imported from a browser-like environment,
+      // which includes Vitest's jsdom. Aliasing it to a stub lets unit tests
+      // cover genuinely server-only modules without weakening the guard that
+      // protects them in real builds.
+      'server-only': fileURLToPath(
+        new URL('./tests/stubs/server-only.ts', import.meta.url),
+      ),
     },
   },
   test: {

@@ -100,6 +100,84 @@ sign-out action was dispatched instead of save. Confirmed from the request
 headers, which carried the sign-out action id. Admin journeys must scope
 selectors to the form under test.
 
+### Added — article CMS with rich-text editor
+
+**Editor** (`src/features/articles/admin/components/rich-text-editor.tsx`)
+- TipTap editor reusing the same `.prose-editorial` typography as the public
+  article page, so what an editor sees is what a reader will see.
+- Headings 1–6, bold, italic, underline, strikethrough, inline code, bullet and
+  numbered lists, blockquote, link insert/edit/remove with bare-domain
+  normalisation, images, tables, horizontal rules, undo/redo and clear
+  formatting.
+- Toolbar is a real `role="toolbar"` of `<button>` elements with `aria-pressed`
+  reflecting the active mark, so the state is announced rather than only shown.
+- `immediatelyRender: false` to avoid a hydration mismatch.
+
+**Sanitisation** (`src/lib/sanitize.ts`)
+- Allowlist-based, deny-by-default, applied on write AND on render.
+- Removes script/style/iframe/form/svg/meta bodies *with their contents*,
+  strips every `on*` handler, and rejects `javascript:`, `data:` and
+  protocol-relative URLs.
+- Adds `rel="noopener noreferrer nofollow"` to every link and an `alt`
+  attribute to every image.
+- Idempotent, so applying it twice changes nothing.
+- Derives `content_plain`, `word_count` and `reading_time_minutes` in one pass.
+
+**Content model**
+- Draft / in review / scheduled / published / archived, with scheduling.
+- Categories, tags and related-scholarship linking (RLS-scoped, so only
+  published scholarships can be linked).
+- SEO title, description, canonical URL, noindex and sitemap controls.
+- Revision snapshots are produced by the existing database trigger; verified to
+  fire on both content and title changes.
+- Delete requires `article.delete`; authors are limited by the UPDATE policy to
+  their own drafts and cannot self-publish.
+
+### Fixed — article body was silently discarded
+
+The editor's hidden input carried the HTML, but React owned its `value`
+attribute. Changing an unrelated field — the title — re-rendered the form,
+React re-applied the remembered empty `defaultValue` to the attribute, and the
+attribute write reset the property. The result: typing in the title wiped the
+article body, and saving stored an empty article that still reported success.
+
+The input now carries no `value` and no `defaultValue` at all; the editor
+writes to it directly, so React has nothing to re-assert.
+
+### Fixed — toolbar showed stale active state
+
+TipTap 3 defaults `shouldRerenderOnTransaction` to `false`. The toolbar only
+refreshed as a side effect of the word-count state changing, so toggling a
+heading — which alters structure but not text — left the button looking
+inactive and reported `aria-pressed="false"` even though the heading had been
+applied. Now set to `true`.
+
+### Fixed — `htmlToPlainText` merged words across block elements
+
+`<p>One</p><p>Two</p>` became the single token `OneTwo`, which understated the
+word count, shortened the reading time and corrupted the search index. Found by
+a test written specifically to check for it. Block-level tags are now replaced
+with a space before stripping.
+
+### Dependency added
+
+`@tiptap/extension-text-align@3.32.0` — the specification requires text
+alignment, and no installed package provides it (StarterKit 3 bundles link,
+underline, undoRedo and code blocks but not alignment). Version matches the
+other TipTap packages exactly; no existing version was changed.
+
+### Verified end to end — 23/23
+
+Real browser session against the live database: editor mounts, toolbar reports
+correct pressed state for bold and heading, table/heading/bold/list markup is
+produced, save redirects to the editor with the session intact, stored content
+contains the allowed markup with no script, `word_count` 13 and reading time
+derived server-side, `content_plain` populated, an edit persists and triggers a
+revision snapshot, and publish sets status and `published_at`. No hydration
+mismatch. Fixtures deleted; the database holds no test records.
+
+`npm run verify` exit 0: typecheck, lint, 185 tests, production build.
+
 ### Incident — repository deleted and recovered (2026-10-16)
 
 The working directory `D:\xampp\htdocs\getscholarship` was deleted in two

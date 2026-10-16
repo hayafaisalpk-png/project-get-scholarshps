@@ -114,6 +114,13 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
     permissions: ['scholarship.manage'],
     match: 'prefix',
   },
+  {
+    href: '/admin/articles',
+    label: 'Articles',
+    icon: 'articles',
+    permissions: ['article.manage', 'article.create', 'article.edit_own'],
+    match: 'prefix',
+  },
 ]
 
 /**
@@ -124,7 +131,6 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
  * should happen with the route, not before it.
  */
 export const ADMIN_NAV_PLANNED = [
-  { href: '/admin/articles', label: 'Articles', icon: 'articles' },
   { href: '/admin/taxonomy', label: 'Categories & fields', icon: 'taxonomy' },
   { href: '/admin/tags', label: 'Tags', icon: 'tags' },
   { href: '/admin/media', label: 'Media library', icon: 'media' },

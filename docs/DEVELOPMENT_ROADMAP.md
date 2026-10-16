@@ -263,12 +263,29 @@ form on the page.
 - [x] Server-side authorisation + audit logging on every mutation
 - [x] Create / edit / publish / public page verified end to end
 
+### Increment 3 — COMPLETE: article CMS and rich-text editor
+
+- [x] TipTap editor: headings 1–6, bold, italic, underline, strikethrough,
+      inline code, lists, blockquote, links, images, tables, horizontal rules,
+      undo/redo, clear formatting
+- [x] Accessible toolbar (`role="toolbar"`, `aria-pressed` per control)
+- [x] Server-side allowlist sanitisation applied on write and on render
+- [x] Derived plain text, word count and reading time
+- [x] Draft / review / scheduled / published / archived workflow
+- [x] Categories, tags and related scholarships
+- [x] SEO title, description, canonical URL, noindex, sitemap controls
+- [x] Revision snapshots confirmed firing on content and title changes
+- [x] 23/23 end-to-end checks against the live database
+
 ### Remaining in Phase 4
 
 - [ ] Scholarship management: create, edit, preview, publish, schedule, expire,
       archive, restore, bulk actions, verification
 - [ ] Article CMS: TipTap editor, autosave, preview, featured image, SEO fields,
       scheduling, revisions, review workflow, server-side sanitisation
+      → **editor, sanitisation, workflow, revisions and SEO are done**
+      (increment 3). Outstanding: autosave, preview, featured-image selection,
+      media library, and the review-decision UI.
 - [ ] Media library on Supabase Storage with MIME/size validation
 - [ ] Taxonomy, user and role management, site settings, navigation and
       homepage composition editors, audit log viewer
