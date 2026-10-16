@@ -10,6 +10,66 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Phase 4 increment 1 — authentication, admin shell and dashboard
+
+Sign-up is **closed**: the CMS is invitation-only, so accounts are created by an
+administrator rather than by the public.
+
+**Authentication** (`src/features/auth/`, `src/app/(auth)/`)
+- Sign in, sign out, password-reset request and password update.
+- Recovery uses Supabase's PKCE flow via `/auth/confirm`, a Route Handler
+  because the cookie write cannot happen during a Server Component render.
+- Password policy is length-only (minimum 12). Composition rules are
+  deliberately excluded: they push people towards predictable substitutions.
+
+**Security decisions worth recording**
+- `safeReturnPath` is the open-redirect defence. It rejects absolute URLs,
+  protocol-relative URLs (`//host`), backslash variants browsers normalise,
+  control characters and absurd lengths. Applied both when rendering the
+  form *and* again in the action, so a hostile value never round-trips.
+- Sign-in and password-reset failures return identical messages regardless of
+  whether the address is registered, so neither form is an account-enumeration
+  oracle.
+- Authentication is not treated as authorisation. A valid session with no CMS
+  role is refused and signed out rather than reaching a dashboard where every
+  query would fail.
+- The reset form requires an explicit recovery session via `auth.getUser()` and
+  deliberately does not fall back to the request cookie, which would let
+  anyone reaching the page rewrite an arbitrary account's password.
+
+**Administration** (`src/app/(admin)/`, `src/features/admin/`)
+- `/admin` layout guarded by `requireCmsUser`, with a permission-filtered
+  sidebar, skip link, mobile drawer and a 403 error boundary.
+- Dashboard driven entirely by live aggregate queries. Figures that cannot be
+  read render as an em dash, never as zero — zero would be a claim about the
+  data rather than about the query.
+- The sidebar lists only implemented sections. Planned sections are recorded
+  separately in `ADMIN_NAV_PLANNED` and deliberately not rendered, so there are
+  no links to screens that would 404.
+
+**Bootstrap** — `supabase/scripts/create-first-admin.mjs`
+- Closed sign-up would otherwise leave no way to create the first account.
+  Refuses to run without a service-role key, refuses to grant a second
+  `super_admin` unless explicitly allowed, and is safe to re-run.
+  `npm run admin:create -- you@example.com`
+
+**Fixed**
+- `requireAuthState` and the guards that wrap it now return a type narrowed to
+  an authenticated user, removing a cast at every call site.
+- `src/types/database.ts` regenerated from the replacement project. The
+  previous file predated it and did not know `write_audit_log` existed.
+
+**Verified** — `npm run verify` exit 0 (typecheck, lint, 117 tests, build).
+`/admin` returns 307 to `/auth/login?returnTo=%2Fadmin`; the three auth pages
+return 200; the login page emits `noindex, nofollow, nocache` and does not
+reflect a hostile `returnTo` into any field.
+
+> Not yet verified: the authenticated session path. Creating an administrator
+> requires a real account, which the operator must create with
+> `npm run admin:create`. Until that is done, sign-in, the dashboard queries
+> and the 403 boundary are verified structurally but not against a live
+> session.
+
 ### Incident — repository deleted and recovered (2026-10-16)
 
 The working directory `D:\xampp\htdocs\getscholarship` was deleted in two

@@ -189,19 +189,39 @@ live search and auth verified.
 > the rationale is in the changelog and in the page file.
 ---
 
-## Phase 4 — Administration and CMS · **NOT STARTED — ACTIVE PHASE**
+## Phase 4 — Administration and CMS · **IN PROGRESS (increment 1 of n)**
 
 > Promoted ahead of Phase 3 part 2 by decision on 2026-10-16: content cannot be
 > created until the CMS exists, so articles and static pages are blocked behind
 > it. Phase 3 part 2 remains required and is not cancelled.
 
-> Blocked until a Supabase project is provisioned and the migrations are
-> replayed — see the blocker section at the top of this document.
-
 > Visual design direction for all new UI follows `AGENTS.md` §1
 > (topuniversities.com). Administrative behaviour follows ipassgenerator.online
 > where it can actually be inspected; where it cannot, the uncertainty must be
 > recorded rather than guessed.
+
+### Increment 1 — COMPLETE: authentication, /admin shell, dashboard
+
+- [x] Sign-in / sign-out with Supabase SSR cookie sessions
+- [x] Password reset request, PKCE code exchange, password update
+- [x] Open-redirect defence (`safeReturnPath`), applied in page and action
+- [x] No account enumeration on sign-in or reset
+- [x] Authentication distinguished from authorisation (no role ⇒ signed out)
+- [x] Protected `/admin` layout, role-aware sidebar, 403 boundary
+- [x] Dashboard from live aggregate queries only
+- [x] First-administrator bootstrap script
+- [ ] **Verify the authenticated session path** — needs an operator-created
+      account (`npm run admin:create -- <email>`)
+
+### Remaining in Phase 4
+
+- [ ] Scholarship management: create, edit, preview, publish, schedule, expire,
+      archive, restore, bulk actions, verification
+- [ ] Article CMS: TipTap editor, autosave, preview, featured image, SEO fields,
+      scheduling, revisions, review workflow, server-side sanitisation
+- [ ] Media library on Supabase Storage with MIME/size validation
+- [ ] Taxonomy, user and role management, site settings, navigation and
+      homepage composition editors, audit log viewer
 
 - [ ] Auth: register, email verification, login, logout, password reset/update
 - [ ] Protected `/admin` with role-aware navigation
