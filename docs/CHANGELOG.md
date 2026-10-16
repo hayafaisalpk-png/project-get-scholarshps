@@ -70,6 +70,36 @@ reflect a hostile `returnTo` into any field.
 > and the 403 boundary are verified structurally but not against a live
 > session.
 
+### Fixed — hydration mismatch across the admin area
+
+`AdminNav` re-derived the navigation list from the permission array inside a
+Client Component while the surrounding sidebar was a Server Component. Both
+sides filtered independently and could disagree on the item count, so React
+reported a hydration mismatch on every admin page.
+
+Filtering now happens once, on the server, and the result is passed as plain
+data. Icons are referenced by string key because a React component cannot cross
+the server/client boundary as a prop.
+
+This was not merely cosmetic: React discards the server tree and rebuilds it
+when hydration fails, which destroys the Server Action reference bound to any
+form inside it.
+
+### Scholarship management — verified end to end
+
+Create, edit, publish and the resulting public page were exercised through a
+real browser session against the live database: `7500.00` stored as `750000`
+integer cents, an edit to `900000`, publish setting `status = published` and a
+`published_at` timestamp, and the public `/scholarships/<slug>` page rendering
+the title. Fixtures were deleted afterwards; the database holds no test records.
+
+While verifying, a persistent "submit is broken" failure turned out to be a
+fault in the test, not the application: `page.click('button[type="submit"]')`
+matched the sidebar's "Sign out" button, which renders before `<main>`, so the
+sign-out action was dispatched instead of save. Confirmed from the request
+headers, which carried the sign-out action id. Admin journeys must scope
+selectors to the form under test.
+
 ### Incident — repository deleted and recovered (2026-10-16)
 
 The working directory `D:\xampp\htdocs\getscholarship` was deleted in two

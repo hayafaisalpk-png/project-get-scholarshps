@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import type { Permission } from '@/lib/auth/permissions'
+import { adminNavigation } from '@/lib/admin/navigation'
 
 import { AdminBrand } from './admin-shell'
 import { AdminNav } from './admin-nav'
@@ -32,7 +33,12 @@ export function AdminSidebar({
       </div>
 
       <nav aria-label="Administration" className="flex-1 overflow-y-auto p-3">
-        <AdminNav permissions={permissions} />
+        {/*
+          Filtering happens HERE, once, on the server. The client component
+          renders exactly this list, so both sides always agree on how many
+          items exist.
+        */}
+        <AdminNav items={adminNavigation(permissions)} />
       </nav>
 
       <div className="border-t border-ink-200 p-4">

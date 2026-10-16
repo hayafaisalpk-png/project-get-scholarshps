@@ -3,31 +3,30 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
-import { ADMIN_NAV } from '@/lib/admin/navigation'
-import type { Permission } from '@/lib/auth/permissions'
+import { ADMIN_ICONS, type AdminNavItem, isActiveNavItem } from '@/lib/admin/navigation'
 import { cn } from '@/lib/utils/cn'
 
 /**
  * Administration navigation links.
  *
- * Client-side only because it marks the active item from `usePathname()`.
- * `ADMIN_NAV` is static data with icon references, so it is imported directly
- * here rather than passed across the server/client boundary — component
- * references are not serialisable props.
+ * Renders exactly the items it is given — it does NOT filter by permission.
  *
- * Filtering by permission is presentation. Every route re-ch authorisation
- * server-side, and RLS is the enforcement boundary.
+ * That split is deliberate and is what prevents a hydration mismatch. The
+ * previous version re-derived the item list from the permission array inside
+ * this client component, while the surrounding sidebar was a Server Component.
+ * Server and client then ran the filter independently, and when they disagreed
+ * the item count differed between the server HTML and the hydrated tree.
+ *
+ * A hydration mismatch is not cosmetic: React discards the server-rendered tree
+ * and rebuilds it on the client, which destroys the Server Action reference
+ * bound to any form inside it. That is why a mismatch on this component made
+ * scholarship form submits 404 and sign the user out.
+ *
+ * The active item is still derived from `usePathname()`, which is stable across
+ * the hydration boundary.
  */
-export function AdminNav({
-  permissions,
-}: {
-  permissions: readonly Permission[]
-}) {
+export function AdminNav({ items }: { items: AdminNavItem[] }) {
   const pathname = usePathname()
-
-  const items = ADMIN_NAV.filter((item) =>
-    item.permissions.some((p) => permissions.includes(p)),
-  )
 
   if (items.length === 0) {
     return (
@@ -40,12 +39,8 @@ export function AdminNav({
   return (
     <ul className="space-y-1">
       {items.map((item) => {
-        const active =
-          item.match === 'exact'
-            ? pathname === item.href
-            : pathname === item.href || pathname.startsWith(`${item.href}/`)
-
-        const Icon = item.icon
+        const active = isActiveNavItem(item, pathname)
+        const Icon = ADMIN_ICONS[item.icon]
 
         return (
           <li key={item.href}>

@@ -213,38 +213,46 @@ live search and auth verified.
 - [ ] **Verify the authenticated session path** — needs an operator-created
       account (`npm run admin:create -- <email>`)
 
-### 🔴 Open defect — scholarship form submit is broken
+### Resolved — scholarship form submit, and a real hydration bug
 
-Submitting **create** or **edit** fails. Everything else about the screens
-works.
+**The form was never broken.** The reported failure — "POST returns 200 with a
+404 payload, `Set-Cookie: …auth-token=; Max-Age=0`, browser lands on
+`/auth/login`" — came from the verification script, not the application.
 
-**Reproduction:** sign in as an administrator, open
-`/admin/scholarships/new`, fill title / sponsor / application link, submit.
+`page.click('button[type="submit"]')` matches the **first** submit button in the
+document, and the sidebar's "Sign out" button renders before `<main>`. Every
+run therefore dispatched the **sign-out** action instead of save. That accounts
+for all three symptoms at once: the cookie was cleared, the redirect went to
+`/auth/login`, and `createScholarshipAction` never executed.
 
-**Observed:**
-- `POST /admin/scholarships/new` returns **200** with a 404 payload.
-- The response carries `Set-Cookie: sb-<ref>-auth-token=; Max-Age=0` — the
-  session cookie is explicitly deleted.
-- The browser lands on `/auth/login` and the user appears signed out.
+Confirmed by inspecting the request headers: the POST carried
+`next-action: 0033b790…`, which is the sign-out action id.
 
-**Ruled out by direct observation:**
-- The session is valid at that moment: the `proxy`'s `getClaims()` on the same
-  POST returns no error and reports a valid `sub`.
-- The access token is not expired (verified: 1-hour expiry, `exp` in the future).
-- `createScholarshipAction` **is** present in the production build.
-- The action body is never entered — its guard does not log.
-- The form action id resolves correctly (`$ACTION_2:0` carries a valid id).
-- Login, sign-out, the dashboard and every admin GET work.
-- An **unauthenticated** POST is correctly refused with a 307 and creates
-  **zero** rows — the guard is not the problem.
+Selectors in admin journeys must be scoped to the form under test, e.g.
+`form:has(#title) button[type="submit"]`.
 
-**Not yet established:** why the request-scoped Supabase client inside the
-Server Action reports no session when the `proxy`'s client, handling the same
-request, reports a valid one. The leading suspicion is the interaction between
-`proxy.ts`'s cookie `setAll` handling and Server Action requests, since the
-cookie deletion originates from a client that is not the proxy's.
+Verified working end to end afterwards: create → edit → publish → public page,
+with `7500.00` stored as `750000` integer cents and an edit to `900000`.
 
-### Increment 2 — PARTIAL: scholarship management
+### Fixed — hydration mismatch in the admin sidebar
+
+A genuine bug, found while investigating the above.
+
+`AdminNav` was a Client Component that re-derived the navigation list from the
+permission array, while the surrounding sidebar was a Server Component. Server
+and client filtered independently and could disagree on the number of `<li>`
+elements, so every admin page failed hydration.
+
+Fixed by filtering once on the server and passing the result as plain data.
+Icons are referenced by string key rather than by component, because a React
+component is not a serialisable prop.
+
+A hydration mismatch is not cosmetic. React discards the server-rendered tree
+and rebuilds it on the client, which destroys the Server Action reference bound
+to any form inside it — so a mismatch in shared chrome can silently break every
+form on the page.
+
+### Increment 2 — COMPLETE: scholarship management
 
 - [x] List with server-side search, status filter, status counts, pagination
 - [x] Create and edit screens (award, timeline, eligibility, documents,
@@ -253,7 +261,7 @@ cookie deletion originates from a client that is not the proxy's.
 - [x] Validation mirroring the database CHECK constraints; HTTPS-only links
 - [x] Integer-cents money handling, covered by tests
 - [x] Server-side authorisation + audit logging on every mutation
-- [ ] **Form submit is broken — see the defect note below**
+- [x] Create / edit / publish / public page verified end to end
 
 ### Remaining in Phase 4
 
