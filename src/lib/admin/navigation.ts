@@ -74,6 +74,13 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
     ],
     match: 'exact',
   },
+  {
+    href: '/admin/scholarships',
+    label: 'Scholarships',
+    icon: GraduationCap,
+    permissions: ['scholarship.manage'],
+    match: 'prefix',
+  },
 ]
 
 /**
@@ -84,7 +91,6 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
  * should happen with the route, not before it.
  */
 export const ADMIN_NAV_PLANNED = [
-  { href: '/admin/scholarships', label: 'Scholarships', icon: GraduationCap },
   { href: '/admin/articles', label: 'Articles', icon: FileText },
   { href: '/admin/taxonomy', label: 'Categories & fields', icon: ListOrdered },
   { href: '/admin/tags', label: 'Tags', icon: Tags },
