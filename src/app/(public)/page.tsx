@@ -105,14 +105,14 @@ export default async function HomePage() {
     <>
       {/* ---------------------------------------------------------------- Hero */}
       <section className="relative overflow-hidden p-0">
-        <div className="relative w-full">
+        <div className="relative min-h-[560px] w-full sm:min-h-[580px] lg:min-h-[600px]">
           <Image
             src="/hero-image.jpg"
             alt=""
-            width={1584}
-            height={672}
+            fill
             priority
-            className="h-auto w-full object-cover"
+            sizes="100vw"
+            className="object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/35 to-black/60" />
           <div className="absolute inset-0 flex items-center justify-center px-4 py-12 sm:py-20">

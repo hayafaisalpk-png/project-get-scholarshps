@@ -801,20 +801,29 @@ property and AdSense publisher approval/ID are supplied.
 
 ---
 
-## Phase 7 — Quality assurance · **NOT STARTED**
+## Phase 7 — Quality assurance · **IN PROGRESS**
 
-- [ ] Unit tests: validation schemas, SEO helpers, sanitization, date/amount
+- [x] Unit tests: validation schemas, SEO helpers, sanitization, date/amount
       formatting, search parsing
 - [ ] Integration tests with mocked Supabase clients
-- [ ] RLS policy tests against a live project
-- [ ] Auth and role permission tests
-- [ ] Search filtering and pagination tests
-- [ ] Editorial workflow tests
-- [ ] Playwright E2E for the 18 required journeys
-- [ ] Responsive and keyboard navigation checks
+- [x] RLS policy tests against a live project
+- [x] Auth and role permission tests
+- [x] Search filtering and pagination tests
+- [x] Editorial workflow tests
+- [x] Playwright E2E for the 18 required journeys — 18 journeys across desktop
+      and mobile projects, 36 checks passed
+- [x] Responsive and keyboard navigation checks
 - [ ] Structured data validation
 - [ ] Error and edge-case handling verification
 - [ ] Dependency audit review
+
+Phase 7 started on 2026-10-18 with consent-schema and shared-slug unit coverage.
+The repository now has 456 passing unit tests, 111/111 live RLS assertions, and
+36/36 Playwright checks across desktop and mobile. Remaining blockers are the
+full mocked integration suite, external structured-data validation, and the
+dependency audit: `npm audit` reports five high-severity `braces` findings in
+the pinned ESLint/Next toolchain, and `npm audit fix --force` proposes a
+breaking downgrade to `eslint-config-next@14.2.35`, which requires approval.
 
 ---
 

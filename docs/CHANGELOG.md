@@ -10,6 +10,14 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Added — Phase 7 QA foundation
+
+- Added unit coverage for consent input validation and taxonomy slug generation.
+- Added 18 public Playwright smoke journeys, exercised in desktop and mobile
+  projects: 36/36 checks passed.
+- The suite now contains 456 passing tests; live RLS verification remains
+  111/111.
+
 ### Added — Phase 6 consent foundation
 
 - Added an accept/reject/manage consent banner with persistent browser
