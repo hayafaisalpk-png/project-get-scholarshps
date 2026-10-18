@@ -48,7 +48,7 @@ export async function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-ink-200 bg-white/90 backdrop-blur-sm">
-      <div className="flex w-full flex-col gap-4 px-4 py-6 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-6 lg:px-8">
+      <div className="flex w-full flex-col items-start gap-4 px-4 pt-4 pb-[5px] sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-6 lg:px-8">
         <div className="flex items-center gap-2">
           {/* Toggle first in the DOM so it sits left of the wordmark on
               mobile, as the reference does. Hidden on desktop, so the

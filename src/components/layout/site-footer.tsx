@@ -21,13 +21,13 @@ export async function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-ink-200 bg-white/90 backdrop-blur-sm">
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col items-center gap-4 py-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
           <p className="text-sm text-ink-500">
             &copy; {new Date().getUTCFullYear()} {siteName}.online
           </p>
 
           {legal.length > 0 ? (
-            <ul className="flex flex-wrap gap-x-6 gap-y-2">
+            <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2">
               {legal.map((item) => (
                 <li key={item.id}>
                   <Link
