@@ -2,7 +2,6 @@ import Link from 'next/link'
 
 import { getLegalNavigation } from '@/lib/navigation'
 import { getString } from '@/lib/settings'
-import { PrivacySettingsButton } from '@/features/consent/consent-manager'
 
 /**
  * Site footer.
@@ -28,7 +27,7 @@ export async function SiteFooter() {
 
           {legal.length > 0 ? (
             <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2">
-              {legal.map((item) => (
+              {legal.filter((item) => item.href !== '/editorial-standards').map((item) => (
                 <li key={item.id}>
                   <Link
                     href={item.href}
@@ -38,7 +37,6 @@ export async function SiteFooter() {
                   </Link>
                 </li>
               ))}
-              <li><PrivacySettingsButton /></li>
             </ul>
           ) : null}
         </div>
