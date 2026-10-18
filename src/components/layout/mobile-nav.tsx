@@ -82,7 +82,7 @@ export function MobileNav({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex h-11 w-11 items-center justify-center rounded-sm text-ink-700 hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
+        className="inline-flex h-10 w-10 items-center justify-center rounded-md text-ink-700 hover:bg-ink-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
       >
         <span className="sr-only-focusable">
           {open ? 'Close main menu' : 'Open main menu'}
@@ -98,7 +98,7 @@ export function MobileNav({
         <div
           id={panelId}
           ref={panelRef}
-          className="fixed inset-x-0 top-[4.5rem] z-40 max-h-[calc(100dvh-4.5rem)] overflow-y-auto border-t border-ink-200 bg-white px-4 py-6 shadow-lg"
+          className="fixed inset-x-0 top-16 z-40 max-h-[calc(100dvh-4rem)] overflow-y-auto border-b border-ink-200 bg-white px-4 py-6 shadow-lg"
         >
           <nav aria-label="Mobile">
             <ul className="space-y-1">
@@ -125,12 +125,27 @@ export function MobileNav({
  * Shared by the desktop and mobile menus so `aria-current` behaves identically
  * in both. `usePathname` is a client hook, so `aria-current` resolves after
  * hydration rather than during the server render.
+ *
+ * `size` is a prop rather than something the caller overrides with `className`:
+ * `cn` is a plain joiner, so passing `text-sm` to a link whose base already sets
+ * `text-base` emits both classes, and which one wins then depends on Tailwind's
+ * internal utility order rather than on anything the caller controls.
  */
+
+const NAV_LINK_SIZES = {
+  // In the 64px header bar.
+  bar: 'px-2.5 py-1.5 text-sm',
+  // In the mobile panel, where each row is a comfortable tap target.
+  panel: 'px-3 py-2 text-base',
+} as const
+
 export function NavLink({
   item,
+  size = 'panel',
   className,
 }: {
   item: NavigationItem
+  size?: keyof typeof NAV_LINK_SIZES
   className?: string
 }) {
   const pathname = usePathname()
@@ -142,10 +157,13 @@ export function NavLink({
   const external = item.opens_in_new_tab || /^https?:\/\//.test(item.href)
 
   const classes = cn(
-    'rounded-sm px-3 py-2 text-sm font-medium transition-colors',
+    // Reference nav links are 500-weight near-black, with a soft tint on the
+    // current page rather than an underline.
+    'rounded-md font-medium transition-colors duration-200',
+    NAV_LINK_SIZES[size],
     isCurrent
-      ? 'bg-brand-50 text-brand-800'
-      : 'text-ink-700 hover:bg-ink-100 hover:text-ink-900',
+      ? 'bg-brand-50 text-brand-700'
+      : 'text-ink-800 hover:bg-ink-100 hover:text-ink-900',
     className,
   )
 
@@ -164,7 +182,21 @@ export function NavLink({
   }
 
   return (
-    <Link href={item.href} className={classes} aria-current={isCurrent || undefined}>
+    <Link
+      href={item.href}
+      className={classes}
+      /*
+       * The TOKEN matters, not just the presence of the attribute.
+       *
+       * `aria-current={isCurrent || undefined}` renders `aria-current="true"`,
+       * because React stringifies the boolean. That is technically valid — `true`
+       * is the default token and is treated as `page` — but it is less precise,
+       * and it does not match the explicit `aria-current="page"` used by the
+       * article category chips and both admin inboxes. A selector or a consumer
+       * looking for the `page` token would find nothing.
+       */
+      aria-current={isCurrent ? 'page' : undefined}
+    >
       {item.label}
     </Link>
   )

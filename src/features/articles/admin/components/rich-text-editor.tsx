@@ -50,12 +50,14 @@ export function RichTextEditor({
   initialContent,
   label,
   onWordCountChange,
+  onHtmlChange,
 }: {
   /** Name of the hidden input the HTML is submitted under. */
   name: string
   initialContent: string
   label: string
   onWordCountChange?: (words: number) => void
+  onHtmlChange?: (html: string) => void
 }) {
   // Word count is derived in the DOM-free way the server also uses; keeping it
   // in React state rather than reading the editor during render avoids the
@@ -150,7 +152,8 @@ export function RichTextEditor({
        * React having no value to manage means nothing can clobber this.
        */
       const html = e.getHTML()
-      if (inputRef.current) inputRef.current.value = html
+       if (inputRef.current) inputRef.current.value = html
+       onHtmlChange?.(html)
 
       const text = e.getText().trim()
       const words = text.length === 0 ? 0 : text.split(/\s+/).length

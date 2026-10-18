@@ -5,15 +5,15 @@ import {
   Images,
   Layers,
   MapPin,
-  ScrollText,
   Tags,
   Users,
 } from 'lucide-react'
 
 import { StatCard } from '@/features/admin/components/stat-card'
+import { UsersTable } from '@/features/users/components/users-table'
+import { listRoles, listUsers, type RoleRow } from '@/features/users/queries'
 import { getDashboardStats } from '@/lib/admin/stats'
 import { requireCmsUser } from '@/lib/auth/guards'
-import { formatTimestamp } from '@/lib/format'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -34,6 +34,11 @@ export default async function AdminDashboardPage() {
   })
 
   const stats = await getDashboardStats(permissions)
+
+  const canManageUsers = permissions.includes('user.manage')
+  const [users, allRoles] = canManageUsers
+    ? await Promise.all([listUsers(), listRoles()])
+    : [[], []]
 
   const hasContent =
     (stats.scholarships?.total ?? 0) > 0 || (stats.articles?.total ?? 0) > 0
@@ -144,73 +149,15 @@ export default async function AdminDashboardPage() {
         </div>
       </section>
 
-      {permissions.includes('audit.view') ? (
-        <section aria-labelledby="activity-heading" className="space-y-4">
+      {canManageUsers ? (
+        <section aria-labelledby="users-heading" className="space-y-4">
           <h2
-            id="activity-heading"
+            id="users-heading"
             className="text-sm font-semibold tracking-wide text-ink-500 uppercase"
           >
-            Recent activity
+            Users
           </h2>
-
-          {stats.recentActivity.length === 0 ? (
-            <p className="rounded-sm border border-ink-200 bg-white p-6 text-sm text-ink-600">
-              No administrative actions have been recorded yet.
-            </p>
-          ) : (
-            <div className="overflow-x-auto rounded-sm border border-ink-200 bg-white">
-              <table className="w-full text-left text-sm">
-                <caption className="sr-only">
-                  The ten most recent administrative actions
-                </caption>
-                <thead className="border-b border-ink-200 bg-ink-50 text-xs tracking-wide text-ink-600 uppercase">
-                  <tr>
-                    <th scope="col" className="px-4 py-3 font-semibold">
-                      Action
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-semibold">
-                      Entity
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-semibold">
-                      Actor
-                    </th>
-                    <th scope="col" className="px-4 py-3 font-semibold">
-                      When
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ink-100">
-                  {stats.recentActivity.map((entry) => (
-                    <tr key={entry.id}>
-                      <td className="px-4 py-3 font-medium text-ink-900">
-                        <span className="inline-flex items-center gap-2">
-                          <ScrollText
-                            className="size-4 text-ink-400"
-                            aria-hidden="true"
-                          />
-                          {entry.action}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-ink-700">
-                        {entry.entityType}
-                        {entry.entityId ? (
-                          <span className="ml-1 text-xs text-ink-400">
-                            ({entry.entityId.slice(0, 8)})
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="px-4 py-3 text-ink-700">
-                        {entry.actorEmail ?? '—'}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-ink-600">
-                        {formatTimestamp(entry.createdAt)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          <UsersTable users={users} roles={allRoles as RoleRow[]} />
         </section>
       ) : null}
     </div>

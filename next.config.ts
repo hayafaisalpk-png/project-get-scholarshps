@@ -11,6 +11,31 @@ const nextConfig: NextConfig = {
 
   poweredByHeader: false,
 
+  experimental: {
+    /*
+     * Server Action request body limit.
+     *
+     * Next.js defaults this to 1 MB and it applies to the WHOLE request, so a
+     * multipart upload through a Server Action is rejected before the action
+     * function ever runs. Left at the default, the media library promised
+     * "maximum 5 MB" — matching `file_size_limit` on the Supabase buckets
+     * (migration 011) — while any file over 1 MB produced a bare 413 with nothing
+     * rendered in the form, because there was no action result to display.
+     *
+     * Deliberately set ABOVE the application's own 5 MB limit rather than equal
+     * to it. The transport limit is silent; the application's check returns a
+     * message. Giving the transport more headroom means a 5–6 MB file is rejected
+     * by `checkUploadFile` with an explanation, and only a file over 8 MB — which
+     * no editor should be uploading anyway — ever reaches the raw transport error.
+     *
+     * These two numbers must stay in step — see `MAX_BYTES` in
+     * `src/features/media/validation.ts`.
+     */
+    serverActions: {
+      bodySizeLimit: '8mb',
+    },
+  },
+
   images: {
     // Only Supabase Storage CDN may serve remote images.
     remotePatterns: [
@@ -60,9 +85,20 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        // Auth pages must not leak via the bfcache after sign-out.
+        // Auth pages must not leak via the bfcache after sign-out, and must not
+        // be indexed.
+        //
+        // The `(auth)` layout already emits `robots: noindex, follow: false` as a
+        // meta tag. The header is added so the instruction is present even to a
+        // consumer that does not parse the document body — and so `/auth` is
+        // covered by the same rule as `/admin`, rather than by a robots.txt rule
+        // alone. `robots.txt` disallowing `/auth` stops the crawl; the header
+        // covers the case where a crawler arrives with the URL already known.
         source: '/auth/:path*',
-        headers: [{ key: 'Cache-Control', value: 'private, no-store, max-age=0' }],
+        headers: [
+          { key: 'X-Robots-Tag', value: 'noindex, nofollow' },
+          { key: 'Cache-Control', value: 'private, no-store, max-age=0' },
+        ],
       },
     ]
   },

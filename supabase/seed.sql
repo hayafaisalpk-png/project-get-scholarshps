@@ -198,7 +198,7 @@ on conflict (slug) do update
 -- -----------------------------------------------------------------------------
 insert into public.homepage_sections (key, heading, subheading, sort_order, config) values
   ('hero',                'Find scholarships that actually fit you',
-   'Search thousands of verified scholarships by level, field and location.',
+   'Search thousands of verified scholarships.',
    1,  '{"layout":"search-first"}'),
   ('stats',               NULL, NULL, 2, '{}'),
   ('featured',            'Featured Scholarships',
@@ -207,13 +207,13 @@ insert into public.homepage_sections (key, heading, subheading, sort_order, conf
    'Applications with the nearest deadlines.', 4, '{"limit":6,"window_days":30}'),
   ('recent',              'Recently Added',
    'The newest opportunities on GetScholarship.', 5, '{"limit":8}'),
-  ('by-level',            'Scholarships by Education Level',
+   ('by-level',            'By Education Level',
    'Find funding for the stage of study you are at.', 6, '{"limit":6}'),
-  ('by-field',            'Scholarships by Field of Study',
+   ('by-field',            'By Field of Study',
    'Funding for the subject you want to study.', 7, '{"limit":6}'),
-  ('by-location',         'Scholarships by Location',
+   ('by-location',         'By Location',
    'Opportunities available where you live or study.', 8, '{"limit":8}'),
-  ('by-category',         'Types of Scholarships',
+   ('by-category',         'By Types',
    'Merit-based, need-based, renewable and more.', 9, '{"limit":6}'),
   ('guides',              'Application Tips and Guides',
    'Practical advice for every stage of the process.', 10, '{"limit":3}'),
@@ -299,15 +299,17 @@ on conflict (key) do update
 -- -----------------------------------------------------------------------------
 -- Primary navigation
 -- -----------------------------------------------------------------------------
+-- The header deliberately does not list "Find Scholarships" or the
+-- browse-by-facet links (/scholarships/education-level, /field, /location).
+-- The header also carries no search button: discovery is reached from the
+-- homepage hero search field, the homepage browse blocks, scholarship detail
+-- pages and the taxonomy landings. See migration 20260101000020 for the
+-- original rationale on the facet links.
 insert into public.navigation_items (label, href, location, sort_order)
 values
-  ('Find Scholarships', '/scholarships', 'header', 1),
-  ('Scholarships by Level', '/scholarships/education-level', 'header', 2),
-  ('Scholarships by Field', '/scholarships/field', 'header', 3),
-  ('Scholarships by Location', '/scholarships/location', 'header', 4),
   ('Articles', '/articles', 'header', 5),
-  ('About', '/about', 'header', 90),
-  ('Contact', '/contact', 'header', 91),
+  ('About Us', '/about', 'header', 90),
+  ('Contact Us', '/contact', 'header', 91),
   ('Help', '/help', 'header', 92)
 on conflict do nothing;
 

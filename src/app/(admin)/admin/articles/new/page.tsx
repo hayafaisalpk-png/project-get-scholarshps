@@ -1,6 +1,7 @@
 import { Alert } from '@/components/ui/alert'
 import { CreateArticleForm } from '@/features/articles/admin/components/article-form'
 import { getArticleFormOptions } from '@/features/articles/admin/queries'
+import { listSelectableAssets } from '@/features/media/queries'
 import { requirePermission } from '@/lib/auth/guards'
 
 export const metadata = { title: 'New article' }
@@ -20,7 +21,10 @@ const EMPTY_RELATIONS = {
 export default async function NewArticlePage() {
   await requirePermission('article.create')
 
-  const options = await getArticleFormOptions()
+  const [options, images] = await Promise.all([
+    getArticleFormOptions(),
+    listSelectableAssets({ page: 1 }),
+  ])
 
   return (
     <div className="space-y-6">
@@ -46,6 +50,8 @@ export default async function NewArticlePage() {
             : { authors: [], categories: [], tags: [], scholarships: [] }
         }
         relations={EMPTY_RELATIONS}
+        images={images.ok ? { items: images.data.items, total: images.data.total } : { items: [], total: 0 }}
+        selectedImage={null}
       />
     </div>
   )

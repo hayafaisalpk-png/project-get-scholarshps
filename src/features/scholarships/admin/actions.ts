@@ -10,9 +10,11 @@ import {
   type ScholarshipStatus,
   scholarshipSchema,
   SCHOLARSHIP_STATUSES,
+  slugify,
 } from '@/lib/validation/scholarship'
 import { createClient } from '@/lib/supabase/server'
 import type { Database } from '@/types/database'
+import { z } from 'zod'
 
 /**
  * Scholarship Server Actions.
@@ -40,6 +42,17 @@ export type ScholarshipActionResult =
       /** Present when the record was created but a later step failed. */
       id?: string
     }
+
+const bulkSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(100),
+  next: z.enum(['draft', 'pending_review', 'published', 'expired', 'archived']),
+})
+
+const verificationSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['unverified', 'pending', 'verified', 'disputed']),
+  note: z.string().trim().max(2000),
+})
 
 /* -------------------------------------------------------------------------- */
 /* FormData -> validated input                                                */
@@ -69,7 +82,7 @@ function text(formData: FormData, key: string): string {
 function buildInput(formData: FormData) {
   return {
     title: text(formData, 'title'),
-    slug: text(formData, 'slug'),
+    slug: text(formData, 'slug') || slugify(text(formData, 'title')),
     sponsor_name: text(formData, 'sponsor_name'),
     summary: text(formData, 'summary'),
     description: text(formData, 'description'),
@@ -543,6 +556,84 @@ export async function setScholarshipStatusAction(
   revalidate(current.slug)
 
   return { ok: true, message: `Moved to ${next.replace('_', ' ')}.` }
+}
+
+/** Apply a lifecycle status to a bounded, explicitly selected set of records. */
+export async function bulkSetScholarshipStatusAction(
+  _previous: ScholarshipActionResult | null,
+  formData: FormData,
+): Promise<ScholarshipActionResult> {
+  const { user } = await requirePermission('scholarship.manage')
+  const parsed = bulkSchema.safeParse({
+    ids: formData.getAll('ids').map(String),
+    next: formData.get('next'),
+  })
+  if (!parsed.success) return { ok: false, message: 'Select at least one scholarship and a valid action.' }
+
+  const supabase = await createClient()
+  const now = new Date().toISOString()
+  const patch: ScholarshipUpdate = { status: parsed.data.next, updated_by: user.id }
+  if (parsed.data.next === 'archived') patch.archived_at = now
+  if (parsed.data.next === 'draft' || parsed.data.next === 'pending_review') patch.archived_at = null
+  if (parsed.data.next === 'published') {
+    patch.published_at = now
+    patch.archived_at = null
+  }
+
+  const { data: rows, error } = await supabase
+    .from('scholarships')
+    .select('id, title, status, application_url, verification_status')
+    .in('id', parsed.data.ids)
+  if (error) return { ok: false, message: 'The selected scholarships could not be loaded.' }
+
+  if (parsed.data.next === 'published' && (rows ?? []).some((row) => !row.application_url || row.verification_status !== 'verified')) {
+    return { ok: false, message: 'Every selected scholarship must have an HTTPS application link and verified information before publishing.' }
+  }
+
+  for (const row of rows ?? []) {
+    const result = await supabase.from('scholarships').update(patch).eq('id', row.id)
+    if (result.error) return { ok: false, message: 'The bulk update stopped before all records were changed.' }
+    await supabase.rpc('write_audit_log', {
+      p_action: 'scholarship.bulk_status_change',
+      p_entity_type: 'scholarship',
+      p_entity_id: row.id,
+      p_before: { status: row.status },
+      p_after: { status: parsed.data.next },
+    })
+  }
+  revalidate()
+  return { ok: true, message: `${(rows ?? []).length} scholarship(s) updated.` }
+}
+
+/** Record a verification decision independently of the editorial lifecycle. */
+export async function setScholarshipVerificationAction(
+  id: string,
+  status: 'unverified' | 'pending' | 'verified' | 'disputed',
+  note: string,
+): Promise<ScholarshipActionResult> {
+  const { user } = await requirePermission('scholarship.verify')
+  const parsed = verificationSchema.safeParse({ id, status, note })
+  if (!parsed.success) return { ok: false, message: 'Choose a valid verification status and note.' }
+  const supabase = await createClient()
+  const { data: before } = await supabase.from('scholarships').select('title, verification_status').eq('id', parsed.data.id).maybeSingle()
+  if (!before) return { ok: false, message: 'That scholarship could not be found.' }
+  const now = new Date().toISOString()
+  const { error } = await supabase.from('scholarships').update({
+    verification_status: parsed.data.status,
+    verified_at: parsed.data.status === 'verified' ? now : null,
+    last_reviewed_at: now,
+    updated_by: user.id,
+  }).eq('id', parsed.data.id)
+  if (error) return { ok: false, message: 'The verification result could not be saved.' }
+  await supabase.rpc('write_audit_log', {
+    p_action: 'scholarship.verify',
+    p_entity_type: 'scholarship',
+    p_entity_id: parsed.data.id,
+    p_before: before,
+    p_after: { verification_status: parsed.data.status, note: parsed.data.note || null },
+  })
+  revalidate()
+  return { ok: true, message: 'Verification result saved.' }
 }
 
 /** Toggle the homepage "featured" flag. */

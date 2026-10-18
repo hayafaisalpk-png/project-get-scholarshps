@@ -8,7 +8,9 @@ import {
   ListOrdered,
   Mail,
   ScrollText,
+  SearchCheck,
   Settings,
+  Shuffle,
   Tags,
   TriangleAlert,
   Users,
@@ -43,8 +45,11 @@ export type AdminIconKey =
   | 'tags'
   | 'media'
   | 'homepage'
+  | 'mail'
   | 'newsletter'
   | 'reports'
+  | 'redirects'
+  | 'seo'
   | 'users'
   | 'audit'
   | 'settings'
@@ -58,8 +63,11 @@ export const ADMIN_ICONS: Record<AdminIconKey, LucideIcon> = {
   tags: Tags,
   media: Images,
   homepage: Home,
+  mail: Mail,
   newsletter: Mail,
   reports: TriangleAlert,
+  redirects: Shuffle,
+  seo: SearchCheck,
   users: Users,
   audit: ScrollText,
   settings: Settings,
@@ -115,10 +123,112 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
     match: 'prefix',
   },
   {
+    href: '/admin/taxonomy',
+    label: 'Taxonomy',
+    icon: 'taxonomy',
+    permissions: ['taxonomy.manage'],
+    match: 'prefix',
+  },
+  {
     href: '/admin/articles',
     label: 'Articles',
     icon: 'articles',
     permissions: ['article.manage', 'article.create', 'article.edit_own'],
+    match: 'prefix',
+  },
+  {
+    // Added with the public contact form. `contact.manage` is required, and the
+    // table's SELECT policy requires the same permission independently.
+    href: '/admin/contact',
+    label: 'Messages',
+    icon: 'mail',
+    permissions: ['contact.manage'],
+    match: 'prefix',
+  },
+  {
+    // Added with the public "report incorrect information" form.
+    href: '/admin/reports',
+    label: 'Reported issues',
+    icon: 'reports',
+    permissions: ['report.manage'],
+    match: 'prefix',
+  },
+  {
+    // Added with the newsletter signup form. Note this table has no client-role
+    // privileges at all, so the route's permission check is the only gate — see
+    // the comment in `src/features/newsletter/admin/queries.ts`.
+    href: '/admin/newsletter',
+    label: 'Newsletter',
+    icon: 'newsletter',
+    permissions: ['newsletter.manage'],
+    match: 'prefix',
+  },
+  {
+    // Added with the media library. Upload and manage are separate permissions,
+    // so `media.upload` alone is enough to reach the page — the editor panels are
+    // hidden without `media.manage`, and both are re-checked server-side.
+    href: '/admin/media',
+    label: 'Media',
+    icon: 'media',
+    permissions: ['media.upload', 'media.manage'],
+    match: 'prefix',
+  },
+  {
+    // Added with Phase 5 increment 2. `redirects` shipped in Phase 2 with
+    // policies but no reader, so a rule could exist and do nothing; this screen
+    // is now the only way one is created, and the proxy is the only thing that
+    // applies it.
+    href: '/admin/redirects',
+    label: 'Redirects',
+    icon: 'redirects',
+    permissions: ['seo.manage'],
+    match: 'prefix',
+  },
+  {
+    // Added with Phase 5 increment 4. The cross-content indexability audit; the
+    // guardrails behind its toggle live in `src/features/seo/guardrails.ts`.
+    href: '/admin/seo',
+    label: 'SEO',
+    icon: 'seo',
+    permissions: ['seo.manage'],
+    match: 'prefix',
+  },
+  {
+    // Site settings, currently the SEO and social groups. Kept separate from the
+    // SEO screen on purpose: deciding what is indexable and rewriting the site's
+    // title are different powers, with different permissions.
+    href: '/admin/settings',
+    label: 'Settings',
+    icon: 'settings',
+    permissions: ['settings.manage'],
+    match: 'prefix',
+  },
+  {
+    href: '/admin/content-pages',
+    label: 'Content pages',
+    icon: 'homepage',
+    permissions: ['settings.manage'],
+    match: 'prefix',
+  },
+  {
+    href: '/admin/navigation',
+    label: 'Navigation',
+    icon: 'settings',
+    permissions: ['navigation.manage'],
+    match: 'prefix',
+  },
+  {
+    href: '/admin/homepage',
+    label: 'Homepage',
+    icon: 'homepage',
+    permissions: ['homepage.manage'],
+    match: 'prefix',
+  },
+  {
+    href: '/admin/audit',
+    label: 'Audit log',
+    icon: 'audit',
+    permissions: ['audit.view'],
     match: 'prefix',
   },
 ]
@@ -131,15 +241,8 @@ export const ADMIN_NAV: readonly AdminNavItem[] = [
  * should happen with the route, not before it.
  */
 export const ADMIN_NAV_PLANNED = [
-  { href: '/admin/taxonomy', label: 'Categories & fields', icon: 'taxonomy' },
   { href: '/admin/tags', label: 'Tags', icon: 'tags' },
-  { href: '/admin/media', label: 'Media library', icon: 'media' },
-  { href: '/admin/homepage', label: 'Homepage', icon: 'homepage' },
-  { href: '/admin/newsletter', label: 'Newsletter', icon: 'newsletter' },
-  { href: '/admin/reports', label: 'Reported issues', icon: 'reports' },
   { href: '/admin/users', label: 'Users', icon: 'users' },
-  { href: '/admin/audit', label: 'Audit log', icon: 'audit' },
-  { href: '/admin/settings', label: 'Site settings', icon: 'settings' },
 ] as const satisfies readonly { href: string; label: string; icon: AdminIconKey }[]
 
 /** The nav for a viewer holding `permissions`, as plain serialisable data. */

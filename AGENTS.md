@@ -16,17 +16,39 @@ application with a public website, a scholarship search engine, and a protected
 administrative CMS.
 
 Reference site for visual design direction only:
-<https://www.topuniversities.com/>. The authoritative higher-education look —
-navy/blue/white palette, typography hierarchy, generous whitespace, card and
-section rhythm — is modelled on that site.
+<https://bold.org/>. The authoritative visual and UX direction — palette,
+typography hierarchy, card anatomy, hero composition, section rhythm, spacing
+and motion — is modelled on that site. <https://www.topuniversities.com/> is
+retained as a secondary reference for higher-education tone only.
+
+**Scope of the Bold.org reference: visual language only.** Bold.org is an
+account-gated, donor-driven platform (matched student profiles, saved
+scholarships, application tracking, donor profiles, rewards). GetScholarship is
+an open editorial directory with invitation-only CMS access. Adopting
+Bold.org's *look* does not license inventing its *features*. Matched
+discovery, saved scholarships, application tracking and donor profiles are out
+of scope until they exist as real, backed functionality — see §2.5 and §11.
 
 Functional reference for the administration CMS is the existing
-ipassgenerator.online project. Where a specific administrative behaviour cannot
-be inspected, say so rather than guessing.
+ipassgenerator.online project. Where a specific administrative behaviour cannot be
+inspected, say so rather than guessing.
 
-**Never copy either site's source code, brand identity, editorial content, or
-visual assets.** Information architecture and user-journey patterns may inform
-our design; original implementation, branding, copy and assets are required.
+**No content image is rendered on any public page except the homepage hero
+banner.** `scholarships.image_id` and `articles.featured_image_id` exist and
+can now be set from the CMS (Phase 4 increment 7), but no public route renders
+a content `<img>` — the OG cards come from `ImageResponse` — apart from the
+homepage hero, which renders `public/hero-image.jpg` (`next/image`, priority).
+Do not describe the site's *editorial* imagery as shipped.
+
+The one exception is the brand mark in the header and footer, which is not CMS
+content: `logo-getscholarship.jpg` in the project root is the operator-supplied
+master, and `src/lib/brand.ts` owns the derived transparent PNG that is rendered
+on every public page. That is the whole of the site's shipped imagery.
+
+**Never copy any reference site's source code, brand identity, editorial
+content, or visual assets.** Information architecture and user-journey patterns
+may inform our design; original implementation, branding, copy and assets are
+required.
 
 ---
 
@@ -228,20 +250,78 @@ service is not configured, say so and describe what configuration is required.
 
 These are **not** implemented yet and must not be reported as working:
 
-- **Part of the public site does not exist yet.** The homepage, scholarship
-  search, scholarship detail and taxonomy landing pages are built and verified.
-  Articles, the static informational pages (About, Contact, Help, Privacy,
-  Terms, Editorial Standards), the "report incorrect information" handler, the
-  newsletter form, robots.txt and the sitemap do not. The header and footer
-  already link to the static pages, so those links currently 404.
+- **The public site is feature-complete for Phase 3**, and **every header and
+  footer link resolves**. The homepage, scholarship search, scholarship detail,
+  taxonomy landings, the articles index and article detail, the contact form, the
+  "report incorrect information" handler, the six static pages, the newsletter
+  signup, `robots.txt`, `sitemap.xml` and Open Graph cards are all built and
+  verified. The site still launches empty — see below.
+- **The newsletter is built but OFF, and should stay off.** `newsletter.enabled`
+  is `false` because no mail provider is configured, so nothing can be sent. The
+  form's copy says so rather than promising an email. Enabling it requires both a
+  provider and something worth sending.
+- **The accessibility pass was mechanical, not a full WCAG 2.2 AA audit.** It
+  covers heading order, landmarks, accessible names, link text, alt text,
+  `aria-current`, skip-link operation, focus-indicator visibility, keyboard
+  reachability and target size. It does **not** cover screen-reader output (NVDA,
+  JAWS, VoiceOver), an automated colour-contrast sweep, or 2.4.11 Focus Not
+  Obscured. Do not describe it as "WCAG 2.2 AA verified".
+- **The newsletter admin list has no RLS behind it.** `newsletter_subscribers` is
+  revoked from every client role, so it is read via the service-role client and
+  `requirePermission('newsletter.manage')` is the *only* boundary. Unlike every
+  other privileged read in this codebase, there is no second layer.
+- **The static-page copy is a DRAFT and needs legal review before launch.** It is
+  stored in `content_pages` (migration 021) and is honest about what does and does
+  not exist, but it has never been reviewed by a lawyer, and there is no CMS
+  editing screen for it yet.
+- **Both admin inboxes (`/admin/contact`, `/admin/reports`) support status
+  changes** (increment 6). Neither has a DELETE, by design — correspondence with
+  a member of the public and a visitor's correction report both stay on the
+  record. Do not add a delete control.
+- **The public forms have no rate limiting.** A honeypot and a fill-time check
+  reject naive scripted submitters. `UPSTASH_REDIS_REST_URL` exists in the
+  environment schema; adding a Redis client needs approval (§2.10).
 - **The site launches empty.** There are no scholarship records. Do not seed
   invented ones — content must come through the verified editorial workflow
   (Phase 4) or a licensed source.
+- **Six `[SAMPLE]` records are loaded in the linked project** for visual review
+  of the redesign (`npm run db:fixtures`). They are invented and are NOT real
+  scholarships. Run `npm run db:fixtures:remove` before any launch. Never let
+  them reach production, and never edit them into looking genuine.
 - **No scholarship or article content exists.** The database contains only
-  reference data (roles, permissions, taxonomy, settings, navigation). Content
-  must arrive through the verified editorial workflow — never fabricated.
-- **No user account exists in the database.** All RLS test identities were
-  removed after testing. The first real administrator is created in Phase 4.
+  reference data (roles, permissions, taxonomy, settings, navigation) and the
+  five static pages. Content must arrive through the verified editorial workflow
+  — never fabricated.
+- **One `super_admin` account now exists in the linked project**, created
+  out of band with `npm run admin:create`. The transient accounts used to verify
+  the media library and inbox triage were destroyed in the same session they were
+  created in, following the pattern in `supabase/tests/rls-policy-tests.mjs`. The
+  inboxes have now been viewed through a signed-in session — see the Verified
+  section — but only with throwaway credentials, never with the real one.
+- **The logo's palette does not match the theme's palette.** The supplied mark is
+  navy; `--color-brand-500` in `src/app/globals.css` is `#7c3aed` (rebranded to the
+  AI accent palette — see CHANGELOG). The mark is
+  rendered as supplied, because recolouring someone's brand asset is not a
+  decision an agent should make unilaterally. Reconciling the two needs a human
+  choice: change the theme to navy, or recolour the artwork. Nothing else on the
+  site was changed to match it.
+- **The wordmark must track the `site.name` setting.** `src/lib/brand.ts` holds
+  the two halves of the name because the brand needs them in different weights. An
+  editor changing the site name in the CMS will change the footer, the copyright
+  and the page titles but NOT the header lockup — that is a code change. This is
+  the one place the brand is deliberately not read from the database, because the
+  split is a typography decision rather than content.
+- **The brand assets are build-time generated, not built by the pipeline.**
+  `public/brand/getscholarship-mark.png` and `src/app/icon.png` are committed
+  artefacts; `npm run brand:assets` must be re-run by hand after the master
+  changes. They are derived deterministically from the master, so this is safe,
+  but it is not automatic.
+- **Replacing the logo requires clearing `.next/cache/images`.** Next's image
+  optimizer caches derivatives keyed by URL, so overwriting the file in place
+  leaves the old artwork being served until that cache is emptied. This was
+  observed, not theorised: the file on disk and the page disagreed, and only some
+  requested widths were stale because each width is its own cache key. Run
+  `rm -rf .next/cache/images` (or `rm -rf .next`) after regenerating the assets.
 - No AdSense or GA4 property exists (Phase 6).
 - No Content-Security-Policy is deployed; it is deferred to Phase 7 because it
   cannot be finalised before the ad and analytics origins are known.
@@ -255,10 +335,140 @@ These are **not** implemented yet and must not be reported as working:
   authorization verified end-to-end through the real Next.js request path.
 - Phase 3 part 1: 95 unit tests; homepage, search, detail and taxonomy landing
   pages verified against the live database, including correct 404 status codes.
+- Phase 3 part 2 + Phase 4 increment 4: 218 unit tests; migrations 021–026
+  applied to staging; `npm run test:rls` passes **86/86** live assertions. All
+  seven formerly-404ing header/footer routes return 200 with real content, and
+  the contact and report Server Actions were driven end-to-end with Playwright,
+  confirming rows actually reach `contact_submissions` and `content_reports`.
+- Phase 3 **complete**: 218 unit tests; `npm run verify` exits 0;
+  `npm run test:rls` 86/86; `robots.txt` and `sitemap.xml` verified against the
+  live database (including that a thin taxonomy landing is excluded and a
+  `noindex` record is dropped); the OG card confirmed a real 1200×630 PNG;
+  the newsletter lifecycle driven end-to-end in a browser with rows confirmed in
+  `newsletter_subscribers`; **126 accessibility and 121 responsive checks pass**.
+  Not covered: screen-reader output and automated contrast — see §11.
+- Phase 4 increment 5 (media library): **247 unit tests**; `npm run verify` exits
+  0; `npm run test:rls` **91/91**; **28 end-to-end browser checks pass against a
+  production build**, including a real upload landing in `private-media`, a signed
+  preview rendering, alt-text persistence, archive, and both sides of the size
+  limit (6 MiB refused with a message, 4.5 MB accepted). Verified with a temporary
+  `super_admin` created and destroyed in the same run, following the pattern in
+  `supabase/tests/rls-policy-tests.mjs`.
+
+- Phase 4 increment 6 (inbox triage): **279 unit tests**; `npm run verify` exits
+  0; `npm run test:rls` **99/99**; **26 end-to-end browser checks pass against a
+  production build and the live database**, with every triage transition
+  confirmed by reading the database row back rather than by the DOM, and five
+  audit rows confirmed with correct `before`/`after` and actor. Migration 028
+  fixed a **fourth** "RLS policy with no table grant" defect: the contact inbox
+  UPDATE policy had existed since migration 022 but no privilege ever backed it,
+  so triage failed with `42501` for an administrator while the suite still
+  passed 91/91. Every new denial is now paired with a positive case.
+  Verified with a temporary `super_admin` created and destroyed in the same run.
+
+- Phase 5 increment 1 (structured data): **306 unit tests**; `npm run verify`
+  exits 0; **62 end-to-end checks** against a production build and the live
+  database. JSON-LD on every public template (Organization, WebSite, WebPage,
+  CollectionPage, BreadcrumbList, BlogPosting, Person, ItemList), with every
+  builder declining to emit rather than guessing — no SearchAction, no
+  page-level data on a `noindex` page, and at the time no logo, which a later
+  increment supplied once a real brand asset existed. `<`/`>`/`&` are escaped on
+  serialisation
+  because titles and bylines are editor-controlled and `JSON.stringify` does not
+  escape `<`.
+  **Found and fixed:** `noindex` on a scholarship was honoured by the sitemap but
+  the detail page emitted no robots meta at all, because `DETAIL_SELECT` never
+  selected the column — so the record was withheld from the sitemap and
+  advertised as indexable at the same time.
+  **Not verified:** Schema Markup Validator and Rich Results Test have not been
+  run.
+- Phase 5 increment 2 (redirect manager and enforcement): **336 unit tests**;
+  `npm run verify` exits 0; `npm run test:rls` **109/109**; **33 end-to-end
+  checks** against a production build and the live database. The `redirects`
+  table had shipped in Phase 2 with policies but **nothing read it** — a rule
+  could exist and do nothing. Enforcement now runs in `src/proxy.ts` before any
+  auth work, with a 15-second TTL cache read via the service-role client.
+  **Migration 029 fixed the fifth "policy with no grant" defect:** migration 013
+  granted INSERT/UPDATE/DELETE but omitted SELECT, so an administrator could
+  write a redirect and not read one back.
+  Two things were measured rather than assumed: `NextResponse.redirect` requires
+  an absolute URL (a relative `Location` throws and returns 500), and
+  `invalidateRedirectCache()` **cannot reach the proxy** — the proxy has its own
+  module registry, so the TTL is the only bound. The admin screen states the
+  delay rather than implying a save is instantly live.
+  `redirects.hit_count` is **not** maintained and is deliberately not displayed.
+- Phase 5 increment 3 (segmented sitemap): **373 unit tests**;
+  `npm run verify` exits 0; **43 end-to-end checks**. `/sitemap.xml` is now a real
+  `<sitemapindex>` split by content type (`pages`, `scholarships`, `articles`,
+  `taxonomy`), served by a Route Handler because Next's metadata route can only
+  emit a `<urlset>`. The 50,000-URL cap is enforced per group. An empty group
+  yields no segment and requesting one is a **404, never an empty `<urlset>`**.
+  Verified invariant: the union of all segments equals the full indexable set,
+  with no duplicates and no `noindex` record — a dropped URL would produce a valid
+  sitemap that silently de-indexes content.
+- Phase 5 increment 4 (SEO admin controls): **406 unit tests**;
+  `npm run verify` exits 0; **36 end-to-end checks**. `/admin/seo`
+  (`seo.manage`) and `/admin/settings` (`settings.manage`) are separate screens
+  on purpose — deciding what is indexable and rewriting the site's title are
+  different powers. Guardrails are pure functions that refuse in words: an
+  unpublished record cannot be made indexable, and `noindex`/`allow_sitemap` move
+  in one write. Private feature switches (`newsletter.enabled`, `ads.enabled`,
+  `site.maintenance_mode`) are unreachable from the settings screen by allowlist.
+  Three defects were found end-to-end: an **inverted index toggle** whose label
+  and action disagreed, a draft **mislabelled "indexable"**, and
+  `site_settings.value_type` never reaching the form — which made an `http://`
+  URL acceptable in a `url` setting. The action now reads `value_type` from the
+  row, never from the client.
+- Phase 4 increment 7 (featured-image picker): **416 unit tests**;
+  `npm run verify` exits 0; **21 end-to-end checks**. `featured_image_id` and
+  `image_id` had existed since Phase 2 with **no CMS control at all** — a column an
+  editor cannot set is a column nobody sets. The picker is where the Phase 5
+  alt-text work becomes user-facing: every thumbnail renders through the single
+  `altAttributeFor`, so an empty `alt=""` for a decorative image is decided once
+  and cannot drift from the public renderer. The round trip is verified explicitly
+  (reopen → still selected; second save → not cleared; Remove → cleared), because
+  the failure mode otherwise loses an image quietly.
+- Phase 5 **COMPLETE** (increment 5): **406 unit tests**;
+  `npm run verify` exits 0; `npm run test:rls` **111/111**; **85 sweep checks**.
+  Migration 030 makes an image either described or explicitly decorative — the
+  previous single `NULL` made enforcement impossible in principle, not merely
+  unimplemented. **Honest limitation, as measured on that day: no content image
+  is rendered on the public site** (no `<img>`/`next/image` for CMS media in any
+  public route), so alt text affected the library and not yet a visitor. The
+  sweep found two real defects: **every page 2+ of
+  `/articles` canonicalised to page 1** (the classic way a paginated index loses
+  its tail), and a **sorted** scholarship view was `index, follow` against a
+  documented `noindex, follow` policy. `/auth/*` also gained `X-Robots-Tag`.
+- Brand asset (operator-supplied logo, not a roadmap phase): **443 unit tests**;
+  `npm run verify` exits 0; **35 end-to-end checks** against a production build.
+  The site renders **`[mark] GetScholarship`** — the name is LIVE TEXT with `Get`
+  in the normal weight (400) and `Scholarship` extrabold (800), not pixels baked
+  into the logo. The master `logo-getscholarship.jpg` is read-only;
+  `npm run brand:assets` derives a transparent 120×101 **mark** and a square
+  favicon, and never serves the master. The header mark renders at **38×32** — the
+  exact box the old placeholder `G` square occupied inside the `h-16` bar — with the
+  file's ratio preserved and a 48px ceiling. Four defects were found by
+  measurement, not by reading the code: **the derived PNG kept the master's pale
+  blue background**; **the favicon came out 512×531, not square**, because `extend`
+  and `resize` chained in one sharp pipeline do not compose; **replacing the asset
+  in place left stale derivatives in `.next/cache/images`**; and **the mark kept the
+  leading "G"** of the wordmark, because two crop rules found a gap *between two
+  letters* — letter-spacing is wider than the mark-to-wordmark gap, and an empty
+  column carries JPEG noise rather than zero ink. All four are now covered, the last
+  by a test asserting the mark has no *internal* low-coverage gap. One test also had
+  to be corrected: it measured the favicon with `sharp().toBuffer()`, which
+  re-encodes and reported 101 KB for a 65 KB file. `Organization.logo`, which Phase 5
+  deliberately withheld because a logo URL that 404s is a fabricated claim, is now
+  emitted and verified to resolve.
+  **Note:** the operator replaced the master *during* this work (481×130 → 527×114),
+  which is why the geometry moved and why the tests assert consistency with the file
+  rather than a literal size. The root master was then removed; the byte-identical
+  provenance copy in `public/brand/` is accepted as an equally valid master, and the
+  generation script reports which path it used rather than deciding silently.
 
 See `docs/DEVELOPMENT_ROADMAP.md` for the authoritative status and
 `docs/CHANGELOG.md` for the full record, including the security defects that
-testing found and fixed in Phases 2 and 2b.
+testing found and fixed in Phases 2, 2b, 4 and 5.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

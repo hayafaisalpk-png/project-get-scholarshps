@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useActionState } from 'react'
 import { useFormStatus } from 'react-dom'
 
@@ -80,15 +79,6 @@ export function LoginForm({ returnTo }: { returnTo?: string | undefined }) {
           )}
         />
       </FormField>
-
-      <div className="flex justify-end">
-        <Link
-          href="/auth/forgot-password"
-          className="text-sm font-medium text-brand-700 hover:text-brand-800 hover:underline"
-        >
-          Forgot your password?
-        </Link>
-      </div>
 
       <SubmitButton />
     </form>

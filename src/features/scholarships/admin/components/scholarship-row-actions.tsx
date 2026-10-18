@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -64,6 +65,13 @@ export function ScholarshipRowActions({
   return (
     <div className="flex flex-col items-end gap-1.5">
       <div className="flex flex-wrap items-center justify-end gap-1.5">
+        <Link
+          href={`/admin/scholarships/${id}`}
+          className="rounded-sm border border-ink-300 px-2.5 py-1.5 text-xs font-semibold text-ink-700 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+        >
+          Edit
+        </Link>
+
         {status !== 'published' ? (
           <RowButton
             onClick={() => move('published')}

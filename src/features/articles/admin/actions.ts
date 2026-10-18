@@ -15,8 +15,10 @@ import {
   articleSchema,
   ARTICLE_STATUSES,
   localDateTimeToIso,
+  slugifyArticle,
 } from '@/lib/validation/article'
 import type { Database } from '@/types/database'
+import { z } from 'zod'
 
 /**
  * Article Server Actions.
@@ -30,13 +32,25 @@ import type { Database } from '@/types/database'
  */
 
 export type ArticleActionResult =
-  | { ok: true; message?: string; id?: string }
+  | { ok: true; message?: string; id?: string; warnings?: string[] }
   | {
       ok: false
       message: string
       fieldErrors?: Record<string, string>
       id?: string
     }
+
+const reviewSchema = z.object({
+  id: z.string().uuid(),
+  decision: z.enum(['approved', 'changes_requested', 'rejected']),
+  notes: z.string().trim().max(4000),
+})
+
+const autosaveSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string().trim().min(1).max(300),
+  content: z.string().max(500000),
+})
 
 type ArticleInsert = Database['public']['Tables']['articles']['Insert']
 type ArticleUpdate = Database['public']['Tables']['articles']['Update']
@@ -61,12 +75,13 @@ function idList(formData: FormData, key: string): string[] {
 function buildInput(formData: FormData) {
   return {
     title: text(formData, 'title'),
-    slug: text(formData, 'slug'),
+    slug: text(formData, 'slug') || slugifyArticle(text(formData, 'title')),
     excerpt: text(formData, 'excerpt'),
     content: text(formData, 'content'),
     status: text(formData, 'status'),
     author_id: text(formData, 'author_id'),
     scheduled_for: text(formData, 'scheduled_for'),
+    featured_image_id: text(formData, 'featuredImageId'),
     noindex: flag(formData, 'noindex'),
     allow_sitemap: flag(formData, 'allow_sitemap'),
     seo_title: text(formData, 'seo_title'),
@@ -87,8 +102,9 @@ function buildRow(
   value: ReturnType<typeof articleSchema.parse>,
   userId: string,
   mode: 'create' | 'update',
-): { row: ArticleInsert; sanitisedBody: string } {
+): { row: ArticleInsert; sanitisedBody: string; warnings: string[] } {
   const now = new Date().toISOString()
+  const warnings: string[] = []
 
   /*
    * Sanitise before anything else is decided, then validate the RESULT rather
@@ -150,9 +166,77 @@ function buildRow(
    */
   if (value.noindex && value.allow_sitemap) {
     row.allow_sitemap = false
+    warnings.push(
+      'Sitemap inclusion was turned off, because an article marked no-index cannot also be listed in the sitemap.',
+    )
   }
 
-  return { row, sanitisedBody }
+  /*
+   * The featured image is verified to EXIST rather than trusted.
+   *
+   * The foreign key would reject a bad id, but with a constraint error that names
+   * a column the editor never touched. The image is also required to carry alt
+   * text or an explicit decorative flag — migration 030 makes that true of every
+   * stored asset, so this check catches a reference to something that was
+   * archived-and-purged or written by a future migration that skipped the rule.
+   */
+  row.featured_image_id = value.featured_image_id
+
+  return { row, sanitisedBody, warnings }
+}
+
+/* -------------------------------------------------------------------------- */
+/* Featured image                                                             */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Confirm the chosen image exists and is usable.
+ *
+ * Returns an `ArticleActionResult` on failure so the caller can return it
+ * directly. The foreign key would catch a bad id, but with an error naming a
+ * column the editor never touched — and an ARCHIVED asset still resolves through
+ * the foreign key while being something nobody should be choosing for a new page.
+ */
+async function verifyFeaturedImage(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  imageId: string | null,
+): Promise<ArticleActionResult | null> {
+  if (!imageId) return null
+
+  const { data } = await supabase
+    .from('media_assets')
+    .select('id, archived_at, alt_text, is_decorative')
+    .eq('id', imageId)
+    .maybeSingle()
+
+  if (!data) {
+    return {
+      ok: false,
+      message: 'That image is no longer in the library. Choose another.',
+      fieldErrors: { featured_image_id: 'That image could not be found.' },
+    }
+  }
+
+  if (data.archived_at) {
+    return {
+      ok: false,
+      message:
+        'That image has been archived. Restore it in the media library or choose another.',
+      fieldErrors: { featured_image_id: 'That image is archived.' },
+    }
+  }
+
+  // Unreachable since migration 030, and kept so a future schema change that drops
+  // the CHECK surfaces here rather than as an image with no accessible name.
+  if (!data.is_decorative && !data.alt_text) {
+    return {
+      ok: false,
+      message: 'That image has no alt text. Describe it in the media library first.',
+      fieldErrors: { featured_image_id: 'That image has no alt text.' },
+    }
+  }
+
+  return null
 }
 
 /* -------------------------------------------------------------------------- */
@@ -271,6 +355,13 @@ export async function createArticleAction(
   }
 
   const value = parsed.data
+  /*
+   * `warnings` is intentionally not used here. Create ends in a `redirect` to the
+   * edit screen, which throws away the action result — there is nowhere to
+   * surface them, and appending them to the URL would put editorial notes into
+   * the address bar. The only warning (sitemap inclusion cleared by `noindex`) is
+   * visible immediately on the edit screen the user lands on.
+   */
   const { row, sanitisedBody } = buildRow(value, user.id, 'create')
 
   // Re-check publication against the SANITISED body.
@@ -284,6 +375,9 @@ export async function createArticleAction(
   }
 
   const supabase = await createClient()
+
+  const imageProblem = await verifyFeaturedImage(supabase, value.featured_image_id)
+  if (imageProblem) return imageProblem
 
   const { data: clash } = await supabase
     .from('articles')
@@ -357,7 +451,7 @@ export async function updateArticleAction(
   }
 
   const value = parsed.data
-  const { row, sanitisedBody } = buildRow(value, user.id, 'update')
+  const { row, sanitisedBody, warnings } = buildRow(value, user.id, 'update')
 
   if (value.status === 'published' && sanitisedBody.trim().length === 0) {
     return {
@@ -369,6 +463,9 @@ export async function updateArticleAction(
   }
 
   const supabase = await createClient()
+
+  const imageProblem = await verifyFeaturedImage(supabase, value.featured_image_id)
+  if (imageProblem) return imageProblem
 
   const { data: before } = await supabase
     .from('articles')
@@ -415,11 +512,23 @@ export async function updateArticleAction(
     p_entity_type: 'article',
     p_entity_id: id,
     p_before: before ?? null,
-    p_after: { title: value.title, slug: value.slug, status: value.status },
+    p_after: {
+      title: value.title,
+      slug: value.slug,
+      status: value.status,
+      featured_image_id: value.featured_image_id,
+    },
   })
 
   revalidate(value.slug)
-  return { ok: true, message: 'Changes saved.' }
+  // The warnings are surfaced alongside the success rather than swallowed: the
+  // sitemap inclusion was changed on the editor's behalf, and a silent correction
+  // is how a record ends up indexable in a way nobody chose.
+  return {
+    ok: true,
+    message: 'Changes saved.',
+    ...(warnings.length > 0 ? { warnings } : {}),
+  }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -516,14 +625,20 @@ export async function submitReviewAction(
   decision: 'approved' | 'changes_requested' | 'rejected',
   notes: string,
 ): Promise<ArticleActionResult> {
-  await requirePermission('article.review')
+  const { user } = await requirePermission('article.review')
+
+  const parsed = reviewSchema.safeParse({ id, decision, notes })
+  if (!parsed.success) {
+    return { ok: false, message: 'Choose a valid review decision and provide no more than 4,000 characters of notes.' }
+  }
 
   const supabase = await createClient()
 
   const { error } = await supabase.from('article_reviews').insert({
-    article_id: id,
-    decision,
-    notes: notes.trim() || null,
+    article_id: parsed.data.id,
+    reviewer_id: user.id,
+    decision: parsed.data.decision,
+    notes: parsed.data.notes || null,
   })
 
   if (error) {
@@ -533,12 +648,52 @@ export async function submitReviewAction(
   await supabase.rpc('write_audit_log', {
     p_action: 'article.review',
     p_entity_type: 'article',
-    p_entity_id: id,
-    p_after: { decision },
+    p_entity_id: parsed.data.id,
+    p_after: { decision: parsed.data.decision, notes: parsed.data.notes || null },
   })
 
+  const nextStatus = parsed.data.decision === 'changes_requested'
+    ? 'draft'
+    : parsed.data.decision === 'rejected'
+      ? 'archived'
+      : 'in_review'
+  const { error: statusError } = await supabase
+    .from('articles')
+    .update({ status: nextStatus, reviewed_at: new Date().toISOString() })
+    .eq('id', parsed.data.id)
+  if (statusError) return { ok: false, message: 'The review was recorded, but the article status could not be updated.' }
+
   revalidate()
-  return { ok: true, message: `Review recorded: ${decision.replace('_', ' ')}.` }
+  return { ok: true, message: `Review recorded: ${parsed.data.decision.replace('_', ' ')}.` }
+}
+
+/** Save the editable title and body without changing lifecycle state. */
+export async function autosaveArticleAction(
+  id: string,
+  title: string,
+  content: string,
+): Promise<ArticleActionResult> {
+  const { user } = await requirePermission('article.manage')
+  const parsed = autosaveSchema.safeParse({ id, title, content })
+  if (!parsed.success) return { ok: false, message: 'Autosave skipped because the draft is invalid.' }
+
+  const derived = deriveArticleContent(parsed.data.content)
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('articles')
+    .update({
+      title: parsed.data.title,
+      content: derived.content,
+      content_plain: derived.content_plain,
+      word_count: derived.word_count,
+      reading_time_minutes: derived.reading_time_minutes,
+      updated_by: user.id,
+    })
+    .eq('id', parsed.data.id)
+
+  if (error) return { ok: false, message: 'Autosave could not be completed.' }
+  revalidatePath(`/admin/articles/${parsed.data.id}`)
+  return { ok: true, message: 'Draft autosaved.' }
 }
 
 /**

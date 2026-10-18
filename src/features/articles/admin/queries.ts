@@ -160,6 +160,24 @@ export type ArticleRelations = {
   scholarship_ids: string[]
 }
 
+export type ArticleReview = {
+  id: string
+  decision: string
+  notes: string | null
+  reviewer_id: string | null
+  created_at: string
+}
+
+export async function listArticleReviews(id: string): Promise<ArticleReview[]> {
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('article_reviews')
+    .select('id, decision, notes, reviewer_id, created_at')
+    .eq('article_id', id)
+    .order('created_at', { ascending: false })
+  return (data ?? []) as ArticleReview[]
+}
+
 export const getAdminArticle = cache(
   async (id: string): Promise<DbResult<{ record: AdminArticleDetail; relations: ArticleRelations } | null>> => {
     const supabase = await createClient()

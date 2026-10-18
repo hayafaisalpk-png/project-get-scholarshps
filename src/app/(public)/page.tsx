@@ -1,9 +1,10 @@
-import { Award, BookOpen, GraduationCap, MapPin, Search } from 'lucide-react'
+import Image from 'next/image'
+import { Award, GraduationCap, MapPin, Search, TrendingUp } from 'lucide-react'
 import Link from 'next/link'
 
 import { Container, Section, SectionHeading } from '@/components/layout/container'
 import { ButtonLink } from '@/components/ui/button'
-import { ScholarshipCard } from '@/features/scholarships/components/scholarship-card'
+import { ScholarshipRow } from '@/features/scholarships/components/scholarship-row'
 import {
   getClosingSoonScholarships,
   getFeaturedScholarships,
@@ -24,13 +25,19 @@ import {
  * Assembled from `homepage_sections`, so editors control which blocks appear,
  * their order, headings and item limits without a redeploy.
  *
+ * Composition follows the measured reference (docs/REFERENCE_ANALYSIS.md):
+ *   1. Tinted hero, gradient headline, one dominant search affordance.
+ *   2. A four-up statistics band.
+ *   3. Scholarship **row** cards, stacked — the reference's listing anatomy.
+ *   4. A single browse block expressed as a field of pill chips, rather than
+ *      four separate card grids.
+ *   5. Recently added, FAQ, and a trust/editorial panel.
+ *
  * Two rules hold throughout:
  *
  *   1. Every number is a real aggregate from the database.
  *   2. A block with no content is omitted rather than rendered as an empty
- *      shell, because an empty "Featured Scholarships" heading teaches a visitor
- *      nothing. The genuine "nothing here yet" case is handled once, in the
- *      hero, with an explanation.
+ *      shell. The genuine "nothing here yet" case is handled once, in the hero.
  */
 
 export const dynamic = 'force-dynamic'
@@ -39,108 +46,151 @@ export default async function HomePage() {
   const sections = await getHomepageSections()
   const byKey = new Map(sections.map((s) => [s.key, s]))
 
-  const [
-    stats,
-    featured,
-    closingSoon,
-    recent,
-    levels,
-    fields,
-    locations,
-    categories,
-  ] = await Promise.all([
-    getSiteStats(),
-    getFeaturedScholarships(byKey.get('featured')?.config.limit ?? 6),
-    getClosingSoonScholarships(byKey.get('deadlines')?.config.limit ?? 6),
-    getRecentScholarships(byKey.get('recent')?.config.limit ?? 8),
-    getEducationLevels(),
-    getAcademicFields(),
-    getLocations(),
-    getScholarshipCategories(),
-  ])
+  const [stats, featured, closingSoon, recent, levels, fields, locations, categories] =
+    await Promise.all([
+      getSiteStats(),
+      getFeaturedScholarships(byKey.get('featured')?.config.limit ?? 6),
+      getClosingSoonScholarships(byKey.get('deadlines')?.config.limit ?? 6),
+      getRecentScholarships(byKey.get('recent')?.config.limit ?? 8),
+      getEducationLevels(),
+      getAcademicFields(),
+      getLocations(),
+      getScholarshipCategories(),
+    ])
 
   const hero = byKey.get('hero')
   const isEmpty = stats.totalScholarships === 0
 
+  // Taxonomy landing pages intentionally return 404 when they have no
+  // published scholarships. Do not render links to those thin pages while the
+  // catalogue is empty; otherwise the homepage creates dead-end navigation.
+  const browseGroups = isEmpty
+    ? []
+    : [
+    {
+      key: 'by-level',
+      heading: byKey.get('by-level')?.heading ?? 'By education level',
+      items: levels.map((l) => ({
+        name: l.name,
+        href: `/scholarships/education-level/${l.slug}`,
+      })),
+    },
+    {
+      key: 'by-field',
+      heading: byKey.get('by-field')?.heading ?? 'By field of study',
+      items: fields.map((f) => ({
+        name: f.name,
+        href: `/scholarships/field/${f.slug}`,
+      })),
+    },
+    {
+      key: 'by-category',
+      heading: byKey.get('by-category')?.heading ?? 'By type',
+      items: categories.map((c) => ({
+        name: c.name,
+        href: `/scholarships/category/${c.slug}`,
+      })),
+    },
+    {
+      key: 'by-location',
+      heading: byKey.get('by-location')?.heading ?? 'By location',
+      items: locations.slice(0, 12).map((l) => ({
+        name: l.name,
+        href: `/scholarships/location/${l.slug}`,
+      })),
+    },
+      ].filter((group) => group.items.length > 0)
+
   return (
     <>
       {/* ---------------------------------------------------------------- Hero */}
-      <Section className="bg-gradient-to-b from-brand-50 to-background pt-14 sm:pt-20">
-        <Container>
-          <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-5xl">
-              {hero?.heading ?? 'Find scholarships that actually fit you'}
-            </h1>
+      <section className="relative overflow-hidden p-0">
+        <div className="relative w-full">
+          <Image
+            src="/hero-image.jpg"
+            alt=""
+            width={1584}
+            height={672}
+            priority
+            className="h-auto w-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-black/35 to-black/60" />
+          <div className="absolute inset-0 flex items-center justify-center px-4 py-12 sm:py-20">
+            <div className="mx-auto w-full max-w-3xl text-center">
+              <h1 className="text-[2.25rem] font-extrabold leading-[1.15] text-white drop-shadow-sm sm:text-5xl lg:text-[3.9375rem]">
+                {hero?.heading ?? 'Find scholarships that actually fit you'}
+              </h1>
 
-            {hero?.subheading ? (
-              <p className="mx-auto mt-4 max-w-2xl text-lg text-ink-600">
-                {hero.subheading}
-              </p>
-            ) : null}
-
-            <form action="/scholarships" method="get" className="mt-8">
-              <div className="flex flex-col gap-3 sm:flex-row">
-                <div className="relative flex-1">
-                  <label htmlFor="hero-search" className="sr-only-focusable">
-                    Search scholarships by keyword or sponsor
-                  </label>
-                  <Search
-                    className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-400"
-                    aria-hidden="true"
-                  />
-                  <input
-                    id="hero-search"
-                    type="search"
-                    name="q"
-                    placeholder="Search by keyword, sponsor or subject"
-                    className="h-13 w-full rounded-sm border border-ink-300 bg-white pl-12 pr-4 text-base text-ink-900 placeholder:text-ink-400 focus:border-brand-500"
-                  />
-                </div>
-                <ButtonLink href="/scholarships" size="lg" className="shrink-0">
-                  Browse all scholarships
-                </ButtonLink>
-              </div>
-            </form>
-
-            {isEmpty ? (
-              <div className="mx-auto mt-8 max-w-xl rounded-sm border border-ink-200 bg-white p-5 text-left">
-                <h2 className="text-base font-semibold text-ink-900">
-                  Our scholarship database is being prepared
-                </h2>
-                <p className="mt-2 text-sm text-ink-600">
-                  We publish a scholarship only after an editor has confirmed the
-                  award amount, deadline and official application link with the
-                  provider. We would rather show you nothing than show you
-                  something wrong. Listings appear here as they are verified.
+              {hero?.subheading ? (
+                <p className="mx-auto mt-5 max-w-2xl text-[1.0125rem] leading-relaxed text-white/90">
+                  {hero.subheading}
                 </p>
-              </div>
-            ) : null}
+              ) : null}
+
+              <form action="/scholarships" method="get" className="mt-9">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <div className="relative flex-1">
+                    <label htmlFor="hero-search" className="sr-only-focusable">
+                        Search scholarships by keyword or sponsor
+                      </label>
+                      <Search
+                        className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-400"
+                        aria-hidden="true"
+                      />
+                      <input
+                        id="hero-search"
+                        type="search"
+                        name="q"
+                        placeholder="Search by keyword, sponsor or subject"
+                        className="h-12 w-full rounded-md border border-ink-200 bg-white p-4 pl-12 text-base text-ink-900 placeholder:text-ink-400 focus:border-brand-500"
+                      />
+                    </div>
+                    <ButtonLink href="/scholarships" size="lg" className="shrink-0 p-4">
+                      Search scholarships
+                    </ButtonLink>
+                  </div>
+              </form>
+
+              {isEmpty ? (
+                <div className="mx-auto mt-8 max-w-xl rounded-xl bg-white p-6 text-left ring-1 ring-ink-200">
+                  <h2 className="text-base font-semibold text-ink-900">
+                    Our scholarship database is being prepared
+                  </h2>
+                  <p className="mt-2 text-sm leading-relaxed text-ink-600">
+                    We publish a scholarship only after an editor has confirmed the
+                    award amount, deadline and official application link with the
+                    provider. We would rather show you nothing than show you
+                    something wrong. Listings appear here as they are verified.
+                  </p>
+                </div>
+              ) : null}
+            </div>
           </div>
-        </Container>
-      </Section>
+        </div>
+      </section>
 
       {/* --------------------------------------------------------------- Stats */}
       {stats.totalScholarships > 0 ? (
-        <Section className="py-8">
+        <Section className="py-10 sm:py-12">
           <Container>
-            <dl className="grid grid-cols-2 gap-6 rounded-sm border border-ink-200 bg-white p-6 sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-6 sm:grid-cols-4 sm:gap-4">
               <Stat
-                icon={<Award className="h-5 w-5" aria-hidden="true" />}
+                icon={<Award className="h-10 w-10" aria-hidden="true" />}
                 value={stats.totalScholarships.toLocaleString('en-US')}
                 label="Scholarships listed"
               />
               <Stat
-                icon={<Search className="h-5 w-5" aria-hidden="true" />}
+                icon={<TrendingUp className="h-10 w-10" aria-hidden="true" />}
                 value={stats.openScholarships.toLocaleString('en-US')}
                 label="Applications still open"
               />
               <Stat
-                icon={<GraduationCap className="h-5 w-5" aria-hidden="true" />}
+                icon={<GraduationCap className="h-10 w-10" aria-hidden="true" />}
                 value={stats.educationLevels.toLocaleString('en-US')}
                 label="Education levels"
               />
               <Stat
-                icon={<MapPin className="h-5 w-5" aria-hidden="true" />}
+                icon={<MapPin className="h-10 w-10" aria-hidden="true" />}
                 value={stats.locations.toLocaleString('en-US')}
                 label="Locations covered"
               />
@@ -154,7 +204,7 @@ export default async function HomePage() {
         <Section>
           <Container>
             <SectionHeading
-              title={byKey.get('featured')?.heading ?? 'Featured Scholarships'}
+              title={byKey.get('featured')?.heading ?? 'Featured scholarships'}
               description={byKey.get('featured')?.subheading}
               action={
                 <Link
@@ -162,12 +212,13 @@ export default async function HomePage() {
                   className="text-sm font-semibold text-brand-700 hover:underline underline-offset-4"
                 >
                   View all
+                  <span aria-hidden="true"> &rarr;</span>
                 </Link>
               }
             />
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
               {featured.map((s) => (
-                <ScholarshipCard key={s.id} scholarship={s} />
+                <ScholarshipRow key={s.id} scholarship={s} />
               ))}
             </div>
           </Container>
@@ -176,108 +227,65 @@ export default async function HomePage() {
 
       {/* -------------------------------------------------------- Closing soon */}
       {closingSoon.length > 0 ? (
-        <Section className="bg-surface">
+        <Section className="bg-ink-50">
           <Container>
             <SectionHeading
               title={byKey.get('deadlines')?.heading ?? 'Closing soon'}
               description={byKey.get('deadlines')?.subheading}
             />
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
               {closingSoon.map((s) => (
-                <ScholarshipCard key={s.id} scholarship={s} />
+                <ScholarshipRow key={s.id} scholarship={s} />
               ))}
             </div>
           </Container>
         </Section>
       ) : null}
 
-      {/* -------------------------------------------------- By education level */}
-      {levels.length > 0 ? (
+      {/* ------------------------------------------------------------- Browse */}
+      {browseGroups.length > 0 ? (
         <Section>
           <Container>
-            <SectionHeading
-              title={byKey.get('by-level')?.heading ?? 'Scholarships by education level'}
-              description={byKey.get('by-level')?.subheading}
-            />
-            <TaxonomyGrid
-              items={levels.slice(0, 8).map((l) => ({
-                name: l.name,
-                href: `/scholarships/education-level/${l.slug}`,
-                description: l.description,
-              }))}
-            />
-          </Container>
-        </Section>
-      ) : null}
+            <div className="pl-2.5">
+              <SectionHeading title="Explore scholarships" />
+            </div>
 
-      {/* ------------------------------------------------------- By study field */}
-      {fields.length > 0 ? (
-        <Section className="bg-surface">
-          <Container>
-            <SectionHeading
-              title={byKey.get('by-field')?.heading ?? 'Scholarships by field of study'}
-              description={byKey.get('by-field')?.subheading}
-            />
-            <TaxonomyGrid
-              items={fields.slice(0, 8).map((f) => ({
-                name: f.name,
-                href: `/scholarships/field/${f.slug}`,
-                description: f.description,
-              }))}
-            />
-          </Container>
-        </Section>
-      ) : null}
-
-      {/* ----------------------------------------------------- By scholarship type */}
-      {categories.length > 0 ? (
-        <Section>
-          <Container>
-            <SectionHeading
-              title={byKey.get('by-category')?.heading ?? 'Types of scholarships'}
-              description={byKey.get('by-category')?.subheading}
-            />
-            <TaxonomyGrid
-              items={categories.map((c) => ({
-                name: c.name,
-                href: `/scholarships/category/${c.slug}`,
-                description: c.description,
-              }))}
-            />
-          </Container>
-        </Section>
-      ) : null}
-
-      {/* ----------------------------------------------------------- By location */}
-      {locations.length > 0 ? (
-        <Section className="bg-surface">
-          <Container>
-            <SectionHeading
-              title={byKey.get('by-location')?.heading ?? 'Scholarships by location'}
-              description={byKey.get('by-location')?.subheading}
-            />
-            <TaxonomyGrid
-              items={locations.slice(0, 8).map((l) => ({
-                name: l.name,
-                href: `/scholarships/location/${l.slug}`,
-                description: null,
-              }))}
-            />
+            <div className="grid gap-x-8 gap-y-0 sm:grid-cols-2 lg:grid-cols-4">
+              {browseGroups.map((group) => (
+                <div key={group.key} className="flex flex-col bg-white px-2 py-2">
+                  <h3 className={`mb-2.5 min-h-10 border-b border-brand-500 text-sm font-bold leading-5 tracking-wide text-ink-900 uppercase ${group.key === 'by-level' || group.key === 'by-field' || group.key === 'by-category' || group.key === 'by-location' ? 'pl-2.5' : ''}`}>
+                    {group.heading}
+                  </h3>
+                  <ul className="mt-1 space-y-0">
+                    {group.items.map((item) => (
+                      <li key={item.href}>
+                        <Link
+                          href={item.href}
+                          className="block rounded-sm px-2 py-1 text-sm font-medium text-ink-700 transition-colors duration-200 hover:bg-brand-50 hover:text-brand-700 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+                        >
+                          {item.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </Container>
         </Section>
       ) : null}
 
       {/* --------------------------------------------------------- Recently added */}
       {recent.length > 0 ? (
-        <Section>
+        <Section className="bg-ink-50">
           <Container>
             <SectionHeading
               title={byKey.get('recent')?.heading ?? 'Recently added'}
               description={byKey.get('recent')?.subheading}
             />
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
               {recent.map((s) => (
-                <ScholarshipCard key={s.id} scholarship={s} />
+                <ScholarshipRow key={s.id} scholarship={s} />
               ))}
             </div>
           </Container>
@@ -287,39 +295,7 @@ export default async function HomePage() {
       {/* ------------------------------------------------------------------- FAQ */}
       <FaqSection />
 
-      {/* -------------------------------------------------------------- Editorial */}
-      <Section className="bg-surface">
-        <Container>
-          <div className="mx-auto max-w-3xl rounded-sm border border-ink-200 bg-white p-8">
-            <div className="flex items-start gap-4">
-              <span
-                aria-hidden="true"
-                className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-sm bg-brand-50 text-brand-700"
-              >
-                <BookOpen className="h-5 w-5" />
-              </span>
-              <div>
-                <h2 className="text-xl font-bold text-ink-900">
-                  How we verify scholarships
-                </h2>
-                <p className="mt-2 text-ink-600">
-                  Every listing records the official source we checked, the date
-                  it was last reviewed, and its verification status. We never
-                  publish a scholarship without a confirmed application link, and
-                  we never copy a provider&apos;s description in place of our own
-                  summary.
-                </p>
-                <Link
-                  href="/editorial-standards"
-                  className="mt-4 inline-block text-sm font-semibold text-brand-700 hover:underline underline-offset-4"
-                >
-                  Read our editorial standards
-                </Link>
-              </div>
-            </div>
-          </div>
-        </Container>
-      </Section>
+
     </>
   )
 }
@@ -337,39 +313,13 @@ function Stat({
     <div className="text-center">
       <span
         aria-hidden="true"
-        className="mx-auto mb-2 inline-flex h-10 w-10 items-center justify-center rounded-sm bg-brand-50 text-brand-700"
+        className="mx-auto mb-3 inline-flex h-16 w-16 items-center justify-center rounded-full bg-brand-50 text-brand-600"
       >
         {icon}
       </span>
-      <dd className="text-2xl font-bold text-ink-900">{value}</dd>
+      <dd className="text-3xl font-extrabold tracking-tight text-ink-900">{value}</dd>
       <dt className="mt-1 text-sm text-ink-600">{label}</dt>
     </div>
-  )
-}
-
-function TaxonomyGrid({
-  items,
-}: {
-  items: { name: string; href: string; description: string | null }[]
-}) {
-  return (
-    <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {items.map((item) => (
-        <li key={item.href}>
-          <Link
-            href={item.href}
-            className="flex h-full flex-col rounded-sm border border-ink-200 bg-white p-5 transition-colors hover:border-brand-300 hover:bg-brand-50/40"
-          >
-            <span className="font-semibold text-ink-900">{item.name}</span>
-            {item.description ? (
-              <span className="mt-1 line-clamp-2 text-sm text-ink-600">
-                {item.description}
-              </span>
-            ) : null}
-          </Link>
-        </li>
-      ))}
-    </ul>
   )
 }
 
@@ -408,7 +358,7 @@ function FaqSection() {
             description="Common questions from students."
           />
 
-          <div className="divide-y divide-ink-200 rounded-sm border border-ink-200 bg-white">
+          <div className="divide-y divide-ink-200 rounded-xl bg-white ring-1 ring-ink-200">
             {faqs.map((faq) => (
               <details key={faq.q} className="group px-5 py-4">
                 <summary className="cursor-pointer list-none font-semibold text-ink-900 marker:hidden">
@@ -422,7 +372,7 @@ function FaqSection() {
                     </span>
                   </span>
                 </summary>
-                <p className="mt-3 text-sm text-ink-600">{faq.a}</p>
+                <p className="mt-3 text-sm leading-relaxed text-ink-600">{faq.a}</p>
               </details>
             ))}
           </div>

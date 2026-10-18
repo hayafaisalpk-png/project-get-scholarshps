@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useId, useState } from 'react'
+import { useActionState, useEffect, useId, useState, useTransition } from 'react'
 import { useFormStatus } from 'react-dom'
 
 import { Alert } from '@/components/ui/alert'
@@ -12,12 +12,15 @@ import type {
   ArticleFormOptions,
   ArticleRelations,
 } from '@/features/articles/admin/queries'
+import { MediaPicker } from '@/features/media/components/media-picker'
+import type { SelectableAsset } from '@/features/media/selection'
 import { isoToLocalDateTime, slugifyArticle } from '@/lib/validation/article'
 
 import {
   type ArticleActionResult,
   createArticleAction,
   updateArticleAction,
+  autosaveArticleAction,
 } from '../actions'
 
 /**
@@ -56,6 +59,10 @@ export type FormProps = {
   record?: AdminArticleDetail | undefined
   options: ArticleFormOptions
   relations: ArticleRelations
+  /** First page of the media library, for the featured-image picker. */
+  images: { items: SelectableAsset[]; total: number }
+  /** The currently chosen image, resolved server-side for an edit. */
+  selectedImage: SelectableAsset | null
 }
 
 function ArticleFormFields({
@@ -65,6 +72,8 @@ function ArticleFormFields({
   record,
   options,
   relations,
+  images,
+  selectedImage,
 }: {
   state: ArticleActionResult | null
   formAction: (formData: FormData) => void
@@ -72,10 +81,28 @@ function ArticleFormFields({
   record?: AdminArticleDetail | undefined
   options: ArticleFormOptions
   relations: ArticleRelations
+  images: { items: SelectableAsset[]; total: number }
+  selectedImage: SelectableAsset | null
 }) {
   const [slug, setSlug] = useState(record?.slug ?? '')
   const [slugTouched, setSlugTouched] = useState(isEdit)
   const [words, setWords] = useState(record?.word_count ?? 0)
+  const [title, setTitle] = useState(record?.title ?? '')
+  const [body, setBody] = useState(record?.content ?? '')
+  const [autosaveState, setAutosaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [, startAutosave] = useTransition()
+
+  useEffect(() => {
+    if (!isEdit || !record || (title === record.title && body === record.content)) return
+    const timer = window.setTimeout(() => {
+      setAutosaveState('saving')
+      startAutosave(async () => {
+        const result = await autosaveArticleAction(record.id, title, body)
+        setAutosaveState(result.ok ? 'saved' : 'error')
+      })
+    }, 2000)
+    return () => window.clearTimeout(timer)
+  }, [body, isEdit, record, startAutosave, title])
 
   const fieldErrors = state && !state.ok ? state.fieldErrors : undefined
 
@@ -86,6 +113,16 @@ function ArticleFormFields({
       {state && !state.ok ? <Alert tone="error">{state.message}</Alert> : null}
       {state?.ok && state.message ? (
         <Alert tone="success">{state.message}</Alert>
+      ) : null}
+
+      {/*
+        A correction the server made on the editor's behalf. Shown separately from
+        the success message because it describes something the editor did not ask
+        for, and a silent correction is how a record ends up indexable in a way
+        nobody chose.
+      */}
+      {state?.ok && state.warnings && state.warnings.length > 0 ? (
+        <Alert tone="warning">{state.warnings.join(' ')}</Alert>
       ) : null}
 
       <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
@@ -106,6 +143,7 @@ function ArticleFormFields({
               className={inputClasses}
               defaultValue={record?.title ?? ''}
               onChange={(e) => {
+                setTitle(e.target.value)
                 if (!slugTouched) setSlug(slugifyArticle(e.target.value))
               }}
               aria-invalid={Boolean(fieldErrors?.title)}
@@ -183,6 +221,7 @@ function ArticleFormFields({
             label="Article content"
             initialContent={record?.content ?? ''}
             onWordCountChange={setWords}
+            onHtmlChange={setBody}
           />
         </FormField>
 
@@ -194,6 +233,29 @@ function ArticleFormFields({
             </span>
           ) : null}
         </p>
+        {isEdit ? <p className="mt-2 text-xs text-ink-500" role="status">{autosaveState === 'saving' ? 'Autosaving draft…' : autosaveState === 'saved' ? 'Draft autosaved.' : autosaveState === 'error' ? 'Autosave failed; use Save changes.' : ''}</p> : null}
+      </section>
+
+      <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
+        <h2 className="text-lg font-semibold text-ink-900">Image</h2>
+        <p className="mt-1 mb-5 text-sm text-ink-600">
+          Optional. The picker shows what a screen reader will be told, so the alt
+          text can be checked before the article goes out.
+        </p>
+
+        <MediaPicker
+          name="featuredImageId"
+          label="Featured image"
+          selected={selectedImage}
+          initialAssets={images.items}
+          initialTotal={images.total}
+        />
+
+        {fieldErrors?.featured_image_id ? (
+          <p role="alert" className="mt-2 text-xs text-red-700">
+            {fieldErrors.featured_image_id}
+          </p>
+        ) : null}
       </section>
 
       <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">

@@ -5,16 +5,19 @@ import { notFound } from 'next/navigation'
 import { Container, Section } from '@/components/layout/container'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
+import { JsonLd } from '@/components/structured-data'
 import { ScholarshipCard } from '@/features/scholarships/components/scholarship-card'
 import {
   PAGE_SIZE,
   type RawSearchParams,
   type ScholarshipSearch,
+  hasActiveFilters,
   parseScholarshipSearch,
   scholarshipSearchPath,
 } from '@/features/scholarships/search-params'
 import { searchScholarships } from '@/features/scholarships/queries'
 import { absoluteUrl } from '@/lib/env'
+import { breadcrumbLd, collectionPageLd, graph, itemListLd } from '@/lib/structured-data'
 import { getTermBySlug } from '@/lib/taxonomy'
 
 /**
@@ -162,9 +165,51 @@ export async function renderTaxonomyPage({
 
   const copy = PAGE_COPY[kind.filterKey]
 
+  /*
+   * Structured data for the landing page.
+   *
+   * Two subtleties, both about claiming something this page is not:
+   *
+   *   - `ItemList` is emitted for the results on THIS page only. A taxonomy
+   *     landing paginates, and describing page 1 as the complete list of
+   *     scholarships in a category would be a false enumeration.
+   *   - The landing may also carry its own filters (`?level=`, `?q=`). A filtered
+   *     permutation is `noindex`, so the page-level claim is withheld there and
+   *     the same way it is on /scholarships.
+   */
+  const landingPath = `/scholarships/${kind.segment}/${slug}`
+  const hasExtraFilters = hasActiveFilters(
+    parseScholarshipSearch({ ...raw, [kind.filterKey]: undefined }),
+  )
+
+  const structuredData = hasExtraFilters
+    ? null
+    : graph(
+        collectionPageLd({
+          name: copy.heading(term.name),
+          description: term.description ?? `${total} ${kind.noun} listed.`,
+          path: landingPath,
+        }),
+        breadcrumbLd([
+          { name: 'Home', path: '/' },
+          { name: 'Scholarships', path: '/scholarships' },
+          { name: term.name, path: landingPath },
+        ]),
+        itemListLd({
+          name: copy.heading(term.name),
+          path: landingPath,
+          items: items.map((item) => ({
+            name: item.title,
+            path: `/scholarships/${item.slug}`,
+          })),
+        }),
+      )
+
   return (
     <Section>
       <Container>
+        <JsonLd data={structuredData} />
+
         <nav aria-label="Breadcrumb" className="mb-6">
           <ol className="flex flex-wrap items-center gap-2 text-sm text-ink-600">
             <li>

@@ -1,9 +1,18 @@
 'use client'
 
+import Image from 'next/image'
 import { Menu, X } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState, type ReactNode } from 'react'
+
+import {
+  BRAND_MARK,
+  BRAND_MARK_HEADER_HEIGHT_PX,
+  BRAND_MARK_MAX_WIDTH_PX,
+  BRAND_NAME_SIZE_TOKEN,
+  BRAND_WORDMARK,
+} from '@/lib/brand'
 
 /**
  * Administration shell.
@@ -150,17 +159,37 @@ export function AdminShell({
   )
 }
 
-/** Brand mark used in the sidebar and header. */
+/**
+ * Brand mark used in the sidebar and header.
+ *
+ * The name is set at the same size as the public footer's, from the same
+ * `--text-brand-name-sm` token, so the two cannot drift apart. The mark is a `GS`
+ * badge rather than the site's illustration: it keeps the admin sidebar compact
+ * and avoids restyling the dashboard.
+ */
 export function AdminBrand() {
   return (
     <Link
       href="/admin"
       className="flex items-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
     >
-      <span className="flex size-8 items-center justify-center rounded-sm bg-brand-700 text-sm font-bold text-white">
-        GS
+      <Image
+        src={BRAND_MARK.src}
+        alt=""
+        width={BRAND_MARK.width}
+        height={BRAND_MARK.height}
+        className="flex-none object-contain"
+        style={{
+          height: BRAND_MARK_HEADER_HEIGHT_PX,
+          width: 'auto',
+          maxWidth: BRAND_MARK_MAX_WIDTH_PX,
+        }}
+      />
+      <span className={`truncate font-normal ${BRAND_NAME_SIZE_TOKEN.admin} text-navy`}>
+        {BRAND_WORDMARK.lead}
+        <span className="font-extrabold">{BRAND_WORDMARK.bold}</span>
+        <span className="text-sm font-normal">{BRAND_WORDMARK.suffix}</span>
       </span>
-      <span className="text-base font-bold text-ink-900">GetScholarship</span>
     </Link>
   )
 }

@@ -6,6 +6,8 @@ import { ButtonLink } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
 import { ScholarshipRowActions } from '@/features/scholarships/admin/components/scholarship-row-actions'
+import { ScholarshipBulkForm } from '@/features/scholarships/admin/components/bulk-actions'
+import { VerificationControl } from '@/features/scholarships/admin/components/verification-control'
 import {
   listAdminScholarships,
   scholarshipStatusCounts,
@@ -56,6 +58,7 @@ export default async function AdminScholarshipsPage({
 
   const counts = await scholarshipStatusCounts()
   const canDelete = permissions.includes('scholarship.delete')
+  const canVerify = permissions.includes('scholarship.verify')
 
   const q = params.q?.trim() ?? ''
   const activeStatus = params.status ?? ''
@@ -175,6 +178,7 @@ export default async function AdminScholarshipsPage({
             table has too many columns to read on a phone, and truncating the
             title would be worse than scrolling.
           */}
+          <ScholarshipBulkForm>
           <div className="overflow-x-auto rounded-sm border border-ink-200 bg-white">
             <table className="w-full min-w-3xl text-left text-sm">
               <caption className="sr-only">
@@ -182,6 +186,7 @@ export default async function AdminScholarshipsPage({
               </caption>
               <thead className="border-b border-ink-200 bg-ink-50 text-xs tracking-wide text-ink-600 uppercase">
                 <tr>
+                  <th scope="col" className="px-4 py-3 font-semibold">Select</th>
                   <th scope="col" className="px-4 py-3 font-semibold">
                     Scholarship
                   </th>
@@ -205,6 +210,9 @@ export default async function AdminScholarshipsPage({
               <tbody className="divide-y divide-ink-100">
                 {result.data.items.map((row) => (
                   <tr key={row.id} className="align-top">
+                    <td className="px-4 py-3">
+                      <input type="checkbox" name="ids" value={row.id} aria-label={`Select ${row.title}`} className="size-4 rounded border-ink-300 text-brand-700" />
+                    </td>
                     <td className="px-4 py-3">
                       <Link
                         href={`/admin/scholarships/${row.id}`}
@@ -254,12 +262,14 @@ export default async function AdminScholarshipsPage({
                         featured={row.featured}
                         canDelete={canDelete}
                       />
+                      {canVerify ? <VerificationControl id={row.id} status={row.verification_status} /> : null}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          </ScholarshipBulkForm>
 
           {result.data.totalPages > 1 ? (
             <Pagination

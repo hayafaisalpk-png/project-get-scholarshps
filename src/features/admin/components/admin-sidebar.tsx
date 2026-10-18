@@ -1,5 +1,3 @@
-import Link from 'next/link'
-
 import type { Permission } from '@/lib/auth/permissions'
 import { adminNavigation } from '@/lib/admin/navigation'
 
@@ -27,9 +25,6 @@ export function AdminSidebar({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="border-b border-ink-200 p-4">
         <AdminBrand />
-        <p className="mt-1 pl-10 text-xs font-medium tracking-wide text-ink-500 uppercase">
-          Administration
-        </p>
       </div>
 
       <nav aria-label="Administration" className="flex-1 overflow-y-auto p-3">
@@ -50,12 +45,6 @@ export function AdminSidebar({
         ) : null}
         <div className="mt-3 flex items-center gap-3">
           <SignOutButton />
-          <Link
-            href="/"
-            className="text-xs font-medium text-ink-600 hover:text-brand-700 hover:underline"
-          >
-            View site
-          </Link>
         </div>
       </div>
     </div>

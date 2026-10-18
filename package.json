@@ -20,7 +20,10 @@
     "test:e2e:ui": "playwright test --ui",
     "test:rls": "node --env-file=.env.local supabase/tests/rls-policy-tests.mjs",
     "admin:create": "node --env-file=.env.local supabase/scripts/create-first-admin.mjs",
+    "db:fixtures": "node --env-file=.env.local supabase/scripts/sample-data.mjs load",
+    "db:fixtures:remove": "node --env-file=.env.local supabase/scripts/sample-data.mjs remove",
     "types:db": "supabase gen types typescript --project-id nnufigsnijqzcojnpyuw > src/types/database.ts",
+    "brand:assets": "node scripts/generate-brand-assets.mjs",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
@@ -57,6 +60,7 @@
     "eslint-config-next": "16.4.0",
     "jsdom": "30.1.3",
     "pg": "8.16.3",
+    "sharp": "0.35.5",
     "tailwindcss": "4.3.3",
     "typescript": "5.9.3",
     "vite": "8.3.4",

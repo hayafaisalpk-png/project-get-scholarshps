@@ -6,6 +6,7 @@ import { Container, Section } from '@/components/layout/container'
 import { Alert } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { ButtonExternal, ButtonLink } from '@/components/ui/button'
+import { JsonLd } from '@/components/structured-data'
 import { ScholarshipCardCompact } from '@/features/scholarships/components/scholarship-card'
 import {
   getRelatedScholarships,
@@ -19,6 +20,7 @@ import {
   formatTimestamp,
   getDeadlineState,
 } from '@/lib/format'
+import { breadcrumbLd, graph, webPageLd } from '@/lib/structured-data'
 import { absoluteUrl } from '@/lib/env'
 
 /**
@@ -61,6 +63,18 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     title,
     description: description.slice(0, 300),
     alternates: { canonical: `/scholarships/${scholarship.slug}` },
+    /*
+     * An editor can tick `noindex` on a PUBLISHED scholarship — a duplicate, a
+     * record kept only for its historical facts, a partner listing we must not
+     * promote. The sitemap already skips those rows, but a sitemap is only one
+     * discovery path: any crawler following an inbound link reads the robots
+     * meta on the page itself. Without this directive the record was excluded
+     * from the sitemap and advertised as indexable at the same time, which is
+     * the contradiction `src/lib/seo.ts` warns about.
+     */
+    robots: scholarship.noindex
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
     openGraph: {
       type: 'article',
       title,
@@ -121,9 +135,34 @@ export default async function ScholarshipDetailPage({ params }: Params) {
     })),
   ]
 
+  const detailPath = `/scholarships/${scholarship.slug}`
+
+  /*
+   * Page-level structured data. Both builders take `noindex` and decline to emit
+   * anything when it is set, so a withdrawn record advertises no rich result
+   * while remaining reachable by URL.
+   */
+  const structuredData = graph(
+    webPageLd({
+      name: scholarship.seo_title || scholarship.title,
+      description: scholarship.seo_description || scholarship.summary,
+      path: detailPath,
+      datePublished: scholarship.published_at,
+      dateModified: scholarship.updated_at,
+      noindex: scholarship.noindex,
+    }),
+    breadcrumbLd([
+      { name: 'Home', path: '/' },
+      { name: 'Scholarships', path: '/scholarships' },
+      { name: scholarship.title, path: detailPath },
+    ]),
+  )
+
   return (
     <Section>
       <Container>
+        <JsonLd data={structuredData} />
+
         {/* Breadcrumbs give both orientation and a clear hierarchy to crawlers. */}
         <nav aria-label="Breadcrumb" className="mb-6">
           <ol className="flex flex-wrap items-center gap-2 text-sm text-ink-600">
@@ -169,29 +208,13 @@ export default async function ScholarshipDetailPage({ params }: Params) {
               )}
             </div>
 
-            <h1 className="mt-4 text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
+            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
               {scholarship.title}
             </h1>
 
             <p className="mt-2 text-lg text-ink-600">
               Offered by {scholarship.sponsor_name}
             </p>
-
-            <p className="mt-6 text-3xl font-bold text-brand-800">
-              {formatAwardAmount(
-                scholarship.award_amount_min_cents,
-                scholarship.award_amount_max_cents,
-                scholarship.award_amount_text,
-                scholarship.award_currency,
-              )}
-            </p>
-            {scholarship.number_of_awards ? (
-              <p className="mt-1 text-sm text-ink-600">
-                {scholarship.number_of_awards.toLocaleString('en-US')}{' '}
-                {scholarship.number_of_awards === 1 ? 'award' : 'awards'} per year
-                {scholarship.award_per_year ? '' : ' in total'}
-              </p>
-            ) : null}
 
             {isClosed ? (
               <Alert tone="info" className="mt-6" title="Applications have closed">
@@ -210,7 +233,14 @@ export default async function ScholarshipDetailPage({ params }: Params) {
               </Alert>
             ) : null}
 
-            <div className="mt-8 flex flex-wrap gap-3">
+            {/*
+              The apply call to action lives in the sticky sidebar on desktop,
+              as it does in the reference. It is repeated here only for the
+              mobile layout, where the sidebar falls below the article body —
+              `lg:hidden` / `hidden lg:block` mean it is never rendered twice
+              in the same viewport.
+            */}
+            <div className="mt-8 flex flex-wrap gap-3 lg:hidden">
               {scholarship.application_url ? (
                 <ButtonExternal
                   href={scholarship.application_url}
@@ -228,9 +258,6 @@ export default async function ScholarshipDetailPage({ params }: Params) {
                   No official application link has been recorded yet.
                 </p>
               )}
-              <ButtonLink href="/scholarships" variant="outline" size="lg">
-                Browse more scholarships
-              </ButtonLink>
             </div>
 
             {scholarship.summary ? (
@@ -372,21 +399,65 @@ export default async function ScholarshipDetailPage({ params }: Params) {
 
           {/* --------------------------------------------------------- Sidebar */}
           <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
-            <div className="rounded-sm border border-ink-200 bg-white p-5">
-              <h2 className="text-sm font-semibold text-ink-900">Key details</h2>
-              <dl className="mt-3 space-y-3 text-sm">
-                <Detail
+            {/*
+              Reference detail sidebar: the award amount is the hero, a status
+              pill sits beside it, and the remaining facts are an eyebrow/value
+              grid. Hairline rules rather than shadows separate the rows.
+            */}
+            <div className="rounded-sm bg-white p-6 shadow-xs ring-1 ring-ink-200">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-3xl font-extrabold tracking-tight text-ink-900">
+                  {formatAwardAmount(
+                    scholarship.award_amount_min_cents,
+                    scholarship.award_amount_max_cents,
+                    scholarship.award_amount_text,
+                    scholarship.award_currency,
+                  )}
+                </p>
+                <StatusPill isClosed={isClosed} />
+              </div>
+
+              {scholarship.number_of_awards ? (
+                <p className="mt-2 text-sm text-ink-600">
+                  {scholarship.number_of_awards.toLocaleString('en-US')}{' '}
+                  {scholarship.number_of_awards === 1 ? 'award' : 'awards'}
+                  {scholarship.award_per_year ? ' per year' : ' in total'}
+                </p>
+              ) : null}
+
+              {/* Desktop-only call to action; the mobile layout renders it
+                  above the article body instead. */}
+              <div className="mt-6 hidden flex-col gap-3 lg:flex">
+                {scholarship.application_url ? (
+                  <ButtonExternal
+                    href={scholarship.application_url}
+                    variant={isClosed ? 'outline' : 'primary'}
+                  >
+                    {isClosed ? 'View the official page' : 'Apply on the official site'}
+                    <span className="sr-only-focusable">
+                      {' '}
+                      for {scholarship.title} (opens in a new tab)
+                    </span>
+                  </ButtonExternal>
+                ) : null}
+                <ButtonLink href="/scholarships" variant="outline">
+                  Browse more scholarships
+                </ButtonLink>
+              </div>
+
+              <dl className="mt-6 grid grid-cols-2 gap-x-4 gap-y-5 border-t border-ink-200 pt-6">
+                <Fact
                   label="Deadline"
                   value={
                     scholarship.is_rolling
-                      ? 'Rolling — applies all year'
-                      : formatDate(scholarship.deadline) || 'Not specified'
+                      ? 'Rolling'
+                      : formatDate(scholarship.deadline) || 'Not recorded'
                   }
                 />
                 {scholarship.opens_at ? (
-                  <Detail label="Opens" value={formatDate(scholarship.opens_at)} />
+                  <Fact label="Opens" value={formatDate(scholarship.opens_at)} />
                 ) : null}
-                <Detail
+                <Fact
                   label="Application fee"
                   value={
                     scholarship.application_fee_cents === 0
@@ -394,12 +465,12 @@ export default async function ScholarshipDetailPage({ params }: Params) {
                       : formatCurrency(scholarship.application_fee_cents)
                   }
                 />
-                <Detail
+                <Fact
                   label="Renewable"
                   value={scholarship.is_renewable ? 'Yes' : 'No'}
                 />
                 {scholarship.award_currency !== 'USD' ? (
-                  <Detail label="Currency" value={scholarship.award_currency} />
+                  <Fact label="Currency" value={scholarship.award_currency} />
                 ) : null}
               </dl>
             </div>
@@ -423,11 +494,32 @@ export default async function ScholarshipDetailPage({ params }: Params) {
   )
 }
 
-function Detail({ label, value }: { label: string; value: string }) {
+/** Eyebrow label over a bold value — the reference's sidebar fact pattern. */
+function Fact({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex justify-between gap-3">
-      <dt className="text-ink-600">{label}</dt>
-      <dd className="text-right font-medium text-ink-900">{value}</dd>
+    <div className="min-w-0">
+      <dt className="eyebrow">{label}</dt>
+      <dd className="mt-1 text-sm font-semibold text-ink-900">{value}</dd>
     </div>
+  )
+}
+
+/**
+ * Open/closed status pill.
+ *
+ * Colour alone is not an accessible signal, so the state is always spelled out
+ * in text as well as tinted.
+ */
+function StatusPill({ isClosed }: { isClosed: boolean }) {
+  return (
+    <span
+      className={
+        isClosed
+          ? 'inline-flex items-center rounded-sm bg-ink-100 px-2.5 py-1 text-xs font-semibold text-ink-700 ring-1 ring-inset ring-ink-200'
+          : 'inline-flex items-center rounded-sm bg-accent-50 px-2.5 py-1 text-xs font-semibold text-accent-800 ring-1 ring-inset ring-accent-200'
+      }
+    >
+      {isClosed ? 'Closed' : 'Open'}
+    </span>
   )
 }

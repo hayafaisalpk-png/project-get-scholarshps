@@ -3,10 +3,13 @@ import { notFound } from 'next/navigation'
 
 import { Alert } from '@/components/ui/alert'
 import { EditArticleForm } from '@/features/articles/admin/components/article-form'
+import { ReviewPanel } from '@/features/articles/admin/components/review-panel'
 import {
   getAdminArticle,
   getArticleFormOptions,
+  listArticleReviews,
 } from '@/features/articles/admin/queries'
+import { getSelectableAsset, listSelectableAssets } from '@/features/media/queries'
 import { requirePermission } from '@/lib/auth/guards'
 import { formatDate } from '@/lib/format'
 
@@ -26,9 +29,10 @@ export default async function EditArticlePage({
 
   const { id } = await params
 
-  const [detail, options] = await Promise.all([
+  const [detail, options, reviews] = await Promise.all([
     getAdminArticle(id),
     getArticleFormOptions(),
+    listArticleReviews(id),
   ])
 
   if (!detail.ok) {
@@ -43,6 +47,20 @@ export default async function EditArticlePage({
   }
 
   const { record, relations } = detail.data
+
+  /*
+   * The picker needs two things: a page of the library, and the image this record
+   * already points at. The chosen asset is resolved separately because the
+   * library page is only the FIRST page — an article whose image was chosen from
+   * page three would otherwise render with nothing selected while its id was
+   * still stored, and the next save would clear it.
+   */
+  const [images, selectedImage] = await Promise.all([
+    listSelectableAssets({ page: 1 }),
+    record.featured_image_id
+      ? getSelectableAsset(record.featured_image_id)
+      : Promise.resolve(null),
+  ])
 
   return (
     <div className="space-y-6">
@@ -69,6 +87,14 @@ export default async function EditArticlePage({
         >
           All articles
         </Link>
+        <Link
+          href={`/admin/articles/${record.id}/preview`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-sm font-medium text-brand-700 hover:underline"
+        >
+          Preview
+        </Link>
       </div>
 
       {record.published_at ? (
@@ -93,7 +119,24 @@ export default async function EditArticlePage({
             ? options.data
             : { authors: [], categories: [], tags: [], scholarships: [] }
         }
+        images={images.ok ? { items: images.data.items, total: images.data.total } : { items: [], total: 0 }}
+        selectedImage={selectedImage}
       />
+      {record.status === 'in_review' ? <ReviewPanel id={record.id} /> : null}
+      {reviews.length > 0 ? (
+        <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
+          <h2 className="text-lg font-semibold text-ink-900">Review history</h2>
+          <ul className="mt-4 space-y-3">
+            {reviews.map((review) => (
+              <li key={review.id} className="border-l-2 border-brand-300 pl-3 text-sm">
+                <p className="font-semibold capitalize text-ink-900">{review.decision.replace('_', ' ')}</p>
+                <p className="text-xs text-ink-500">{formatDate(review.created_at)}</p>
+                {review.notes ? <p className="mt-1 whitespace-pre-wrap text-ink-700">{review.notes}</p> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </div>
   )
 }

@@ -40,14 +40,7 @@ export default async function LoginPage({
   return (
     <div className="rounded-sm border border-ink-200 bg-white p-8 shadow-sm">
       <div className="mb-7">
-        <p className="text-sm font-semibold tracking-wide text-brand-700 uppercase">
-          GetScholarship
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-ink-900">Sign in</h1>
-        <p className="mt-2 text-sm text-ink-600">
-          Access to the administration area is by invitation only. If you need
-          an account, please contact an administrator.
-        </p>
+        <h1 className="text-2xl font-bold text-ink-900">Sign in</h1>
       </div>
 
       <LoginForm returnTo={returnTo || undefined} />

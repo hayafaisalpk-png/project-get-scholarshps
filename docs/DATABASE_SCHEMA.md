@@ -2,7 +2,7 @@
 
 Status: **IMPLEMENTED and applied** to the project
 `nnufigsnijqzcojnpyuw` (PostgreSQL 17.11, Storage v1.80.2, GoTrue v2.197.0).
-19 migrations, 38 tables, RLS verified by 66 live assertions
+27 migrations, 39 tables, RLS verified by 91 live assertions
 (`npm run test:rls`).
 
 > Re-provisioned 2026-10-16. The previous project `whpozrnyressiznzdhpc` was
@@ -63,6 +63,7 @@ auth.users (Supabase managed)
  media_assets        site_settings      navigation_items
  homepage_sections   newsletter_subscribers   contact_submissions
  consent_records     redirects          ad_placements
+ content_pages       (static + legal pages, public read of active rows)
 ```
 
 ---
@@ -314,9 +315,117 @@ Never store secrets here. Supported groups: `general`, `seo`, `social`,
 `unsubscribed`, `bounced`), `consent_given_at`, `source`, `ip_hash`,
 `unsubscribed_at`, `created_at`. **Private — never publicly readable.**
 
-### `contact_submissions`
-`id`, `name`, `email`, `subject`, `message`, `status` enum
-(`new`, `in_progress`, `resolved`, `spam`), `handled_by`, `created_at`.
+### `newsletter_subscribers`
+`id`, `email citext unique`, `status` enum (`pending`, `subscribed`,
+`unsubscribed`, `bounced`), `consent_given_at`, `ip_hash` (salted hash only — a
+raw IP is never stored), `source`, `unsubscribed_at`, `created_at`, `updated_at`.
+**Private — revoked from every client role.** Read and written through the
+service-role client only, so `requirePermission('newsletter.manage')` is the sole
+application boundary and there is no RLS second layer.
+
+Rows land in `pending` and stay there: no mail provider is configured, so no
+confirmation can be sent and nothing has been confirmed.
+**Private.** No privilege at all for `anon`; `SELECT` and `UPDATE` for
+`authenticated` granted in migration 023 and gated by `contact.manage` (policy
+added in 022). No `DELETE` — correspondence is not erased by one CMS action.
+Written only by `submitContactAction` through the service-role client, so
+validation is the sole bound.
+
+### `content_pages` *(migration 021)*
+Database-driven static and legal pages — About, Help, Privacy, Terms, Editorial
+Standards. `AGENTS.md` §2.8 forbids hardcoding CMS content in components, and
+these five documents change far more often than code does.
+
+`id`, `slug citext unique`, `title`, `excerpt`, `body` (**sanitized HTML**),
+`status` enum (`active`, `inactive`), `sort_order`,
+`seo_title` / `seo_description` / `canonical_url` / `noindex`, `updated_by`,
+`created_at`, `updated_at`.
+
+Public read of `status = 'active'` rows only; writing needs `settings.manage`
+(or `seo.manage` for updates). `SELECT`, `INSERT` and `UPDATE` are granted to
+`authenticated` but `DELETE` is not. An inactive page 404s for visitors without a
+dangling link, which is how a legal page is withdrawn safely. Seeded with draft
+copy in migration 021 — **requires legal review before launch**.
+
+### `content_reports` privilege note
+Migrations 010/013 shipped the INSERT policy but, after the blanket revoke, no
+`anon` INSERT privilege — so the public report form failed silently for every
+visitor. Fixed by migration 024. This class of bug (a policy with no underlying
+grant) is unreachable by reading policies alone; `npm run test:rls` now asserts
+the positive path explicitly.
+
+### `contact_submissions` privilege note *(migration 028)*
+The same defect class, fourth occurrence. Migration 022 created both the SELECT
+and the UPDATE policy for `contact_submissions`, and documented that granting
+UPDATE is what stops the inbox growing unbounded. But migration 013's blanket
+revoke was only ever undone for SELECT (migration 023), so no UPDATE privilege
+ever existed. PostgreSQL checks the privilege before the policy: triage failed
+with `42501` for an administrator holding `contact.manage`.
+
+Migration 028 grants `UPDATE` to `authenticated` (never `anon`) and asserts both
+`SELECT` and `UPDATE` with `pg_catalog.has_table_privilege`. `DELETE` remains
+withheld from every application role.
+
+**Why it survived 91/91 green assertions:** every `contact_submissions` assertion
+was a SELECT or a "cannot", and the "author CANNOT triage" denial passed for the
+wrong reason — refused by the missing grant rather than by the policy. A denial
+test that cannot distinguish "blocked by the boundary" from "the feature does not
+work at all" proves nothing. `npm run test:rls` now pairs each triage denial
+with a positive case for a permitted identity.
+
+### `content_reports` triage CHECK
+```sql
+check ((status in ('resolved','dismissed')) = (resolved_at is not null))
+```
+A closed status and a resolution timestamp must be written **together**. An UPDATE
+that sets `status` alone fails with `23514`. `buildReportStatusPatch` in
+`src/lib/validation/inbox.ts` constructs the pair, and a unit test restates this
+CHECK as an assertion so the two cannot drift apart.
+
+### `media_assets` SELECT policy *(migration 027)*
+Migration 010 wrote the public read as
+
+```sql
+archived_at is null and (is_public or has_permission('media.manage'))
+```
+
+The `AND` makes the permission branch unreachable once `archived_at` is set, so an
+archived row was invisible to **everyone** — including a media manager. Because an
+UPDATE's `RETURNING` clause is filtered by the SELECT policy, `UPDATE … SET
+archived_at = now()` failed with `new row violates row-level security policy`, i.e.
+the archive action could not work at all. Corrected to:
+
+```sql
+(archived_at is null and is_public)
+or public.has_permission('media.manage')
+```
+
+Every other table in this schema already joined these two branches with `OR`.
+Covered by five assertions in `npm run test:rls`, including one that reads an
+archived row back as a manager and one that confirms anon still cannot.
+
+### `sitemap_taxonomy_terms()` *(migration 025)*
+Returns `(kind, slug, listings)` for taxonomy landing pages that have at least one
+**published** scholarship, so `sitemap.xml` never lists a page that
+`taxonomyMetadata` marks `noindex` for being thin.
+
+SECURITY INVOKER (the default), `stable`, `search_path` pinned. RLS therefore
+applies to the underlying tables: `scholarships` exposes only published records to
+anon/authenticated, so the counts are counts of published scholarships and the
+function cannot be used to infer how many drafts exist. An owner-executed function
+would have leaked exactly that — the mistake migration 017 was written to avoid
+for the provenance view.
+
+Aggregating here rather than per term in the application keeps sitemap generation
+at a constant query count; `locations` alone would otherwise mean hundreds of
+round trips. Granted to `anon`, `authenticated` and `service_role`.
+
+### `newsletter.enabled` is public *(migration 026)*
+Seeded `is_public = false`, which meant the anonymous page could never read it and
+the signup block could never render. The value is not sensitive — the presence or
+absence of the form already reveals it. The `ads.*` and `analytics.*` settings stay
+private on purpose: those decide whether a script loads in the browser, and a
+public flag would expose the publisher ID.
 
 ### `consent_records`
 `id`, `visitor_id` (pseudonymous cookie/UUID), `analytics boolean`,
@@ -362,6 +471,37 @@ $$;
 `SECURITY DEFINER` is required so policies do not recurse; `search_path` is
 pinned to defeat search-path hijacking.
 
+### `redirects` SELECT privilege *(migration 029)*
+The fifth instance of the same defect class. Migration 013 granted
+
+```sql
+grant insert, update, delete on public.redirects to authenticated;
+```
+
+and omitted `SELECT`, so the four `redirects` policies were live except the read
+path: an administrator holding `seo.manage` could write a rule and could not read
+one back, and `/admin/redirects` rendered its error state. Migration 029 grants
+SELECT to `authenticated` (never `anon`) and asserts it.
+
+Request-time enforcement reads this table with the **service-role** client from
+`src/features/redirects/store.ts`, because the proxy has no session cookie to
+authorise with. That is deliberate: widening the table to `anon` would publish the
+entire redirect map and make it a place to store spam links.
+
+### `media_assets` alt-text constraint *(migration 030)*
+```sql
+check (is_decorative or alt_text is not null)
+```
+An asset is either described or explicitly decorative; the third state is
+unrepresentable. Before this, an empty `alt_text` meant both "decorative" and
+"nobody wrote it", so no constraint could require either. Existing rows are
+backfilled `is_decorative = true` — the reading that asserts nothing untrue
+about undescribed content. Covered by live assertions in `npm run test:rls`.
+
+**No image is rendered on the public site yet**, so this constraint governs the
+media library rather than what a visitor experiences. The featured-image picker
+(Phase 4) is what makes it user-facing.
+
 ### Policy matrix (summary)
 
 | Table | anon | authenticated | Notes |
@@ -370,10 +510,12 @@ pinned to defeat search-path hijacking.
 | `articles` | SELECT public & due | SELECT unpublished w/ `article.manage`/`article.review`/own draft | Authors limited to own `draft`/`in_review` |
 | `categories`, `tags`, `education_levels`, `academic_fields`, `locations` | SELECT `status='active'` | SELECT; write with permission | |
 | `media_assets` | SELECT (public only) | SELECT; INSERT with `media.upload` | |
+| `content_reports` | INSERT only | SELECT with `report.manage`; INSERT; UPDATE with `report.manage` | anon INSERT granted in migration 024 |
 | `profiles` | none | SELECT own; UPDATE own | SELECT restored in migration 014 |
 | `user_roles` | none | SELECT own | No write policy at all; managed server-side |
 | `newsletter_subscribers` | none | **none** | Zero client privileges |
-| `contact_submissions` | none | **none** | Zero client privileges |
+| `contact_submissions` | none | SELECT + UPDATE with `contact.manage` | No INSERT/DELETE for any client role; INSERT goes through the service-role action. UPDATE granted in migration 028 |
+| `redirects` | none | SELECT with `seo.manage`/`settings.manage`; write with `seo.manage` | SELECT granted in migration 029. Request-time enforcement reads it with the service-role client, not a client role |
 | `audit_logs` | none | SELECT with `audit.view` | No INSERT/UPDATE/DELETE policy for any app role |
 | `site_settings` | SELECT where `is_public` | SELECT + write with `settings.manage` | |
 | `redirects` | none | SELECT/manage with permission | |

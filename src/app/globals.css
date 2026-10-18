@@ -10,70 +10,173 @@
 
 @theme {
   /* -- Typography -------------------------------------------------------- */
-  /* `--font-inter` and `--font-jakarta` are injected by next/font on <html>.
-     The system stack below them guarantees a sane fallback if webfont
-     loading fails or is blocked. */
+  /* The brand wordmark, at 1.3x the scale it had before (header 18px, footer and
+     admin 16px). Declared in `rem`, not `px`, so it keeps scaling with the reader's
+     browser font-size preference — a pixel value here would quietly opt the site's
+     name out of text zoom, which is an accessibility regression, not a design one.
+
+     `-md` is the header (23.4px), `-sm` the footer and the admin sidebar (20.8px).
+     Named for the role rather than the number so a future change is one edit in one
+     place; the values live in `src/lib/brand.ts` as well, and a unit test asserts
+     the two agree. */
+  /* Brand name sizes: 1.3 brand enlargement x 1.25 global increase x 0.85
+     (15% reduction applied to the "GetScholarship" wordmark only). */
+  --text-brand-name-sm: 1.243125rem;
+  --text-brand-name-md: 1.398515625rem;
+
+  /* `--font-inter` is injected by next/font on <html>. The system stack below it
+     guarantees a sane fallback if webfont loading fails or is blocked.
+
+     The reference uses ONE family (Inter) and distinguishes headings by weight
+     rather than by typeface, so `--font-display` deliberately resolves to the
+     same Inter face. The token is kept because `font-display` is applied to
+     every h1-h6 and by the admin shell; collapsing it outright would be a wider
+     change than the visual result justifies. */
   --font-sans:
     var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
     Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-display:
-    var(--font-jakarta), var(--font-inter), ui-sans-serif, system-ui,
-    -apple-system, 'Segoe UI', Roboto, sans-serif;
+    var(--font-inter), ui-sans-serif, system-ui, -apple-system, 'Segoe UI',
+    Roboto, sans-serif;
   --font-mono:
     ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono',
     monospace;
 
-  /* -- Brand: trust blue -------------------------------------------------- */
-  --color-brand-50: #eff4ff;
-  --color-brand-100: #dbe6ff;
-  --color-brand-200: #bfd3ff;
-  --color-brand-300: #93b4ff;
-  --color-brand-400: #6089fd;
-  --color-brand-500: #3b63f6;
-  --color-brand-600: #2444eb;
-  --color-brand-700: #1c33d7;
-  --color-brand-800: #1c2caf;
-  --color-brand-900: #1c2b8a;
-  --color-brand-950: #141b57;
+  /* -- Typography scale ---------------------------------------------------- */
+  /* Global font size increased by 25% (1.25x) for readability/accessibility.
+     Only the text scale is overridden here; the root font-size stays 16px so
+     spacing, radii and icon sizes (rem-based) are not scaled. */
+  --text-xs: 0.84375rem;
+  --text-xs--line-height: 1.125rem;
+  --text-sm: 0.984375rem;
+  --text-sm--line-height: 1.40625rem;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.6875rem;
+  --text-lg: 1.265625rem;
+  --text-lg--line-height: 1.96875rem;
+  --text-xl: 1.40625rem;
+  --text-xl--line-height: 1.96875rem;
+  --text-2xl: 1.6875rem;
+  --text-2xl--line-height: 2.25rem;
+  --text-3xl: 2.109375rem;
+  --text-3xl--line-height: 2.53125rem;
+  --text-4xl: 2.53125rem;
+  --text-4xl--line-height: 2.8125rem;
+  --text-5xl: 3.375rem;
+  --text-5xl--line-height: 1;
+  --text-6xl: 4.21875rem;
+  --text-6xl--line-height: 1;
+  --text-7xl: 5.0625rem;
+  --text-7xl--line-height: 1;
+  --text-8xl: 6.75rem;
+  --text-8xl--line-height: 1;
+  --text-9xl: 9.0rem;
+  --text-9xl--line-height: 1;
 
-  /* -- Accent: funding green --------------------------------------------- */
-  --color-accent-50: #edfcf5;
-  --color-accent-100: #d2f7e5;
-  --color-accent-200: #a9edcd;
-  --color-accent-300: #71dcac;
-  --color-accent-400: #38c486;
-  --color-accent-500: #15a968;
-  --color-accent-600: #088855;
-  --color-accent-700: #076c46;
-  --color-accent-800: #08563a;
-  --color-accent-900: #074732;
-  --color-accent-950: #03281c;
+  /* -- Brand: AI purple / violet ------------------------------------------ */
+  /* Core Brand & Accent Palette: Secondary Accent "AI Purple / Violet"
+     `#7C3AED` (violet-600) is the primary brand colour; the 500 step IS that
+     value, and the rest of the ramp is interpolated around it so `bg-brand-500`,
+     `text-brand-700` and friends keep working across public and admin. */
+  --color-brand-50: #f6f3fc;
+  --color-brand-100: #dfd1f6;
+  --color-brand-200: #c5a8f7;
+  --color-brand-300: #ad83f4;
+  --color-brand-400: #945ff0;
+  --color-brand-500: #7c3aed;
+  --color-brand-600: #6015e2;
+  --color-brand-700: #4d11b5;
+  --color-brand-800: #3a0c88;
+  --color-brand-900: #280c58;
+  --color-brand-950: #15072c;
 
-  /* -- Highlight: deadline amber ------------------------------------------ */
-  --color-highlight-50: #fffaeb;
-  --color-highlight-100: #fef0c7;
-  --color-highlight-200: #fedf89;
-  --color-highlight-300: #fec84b;
-  --color-highlight-400: #fdb022;
-  --color-highlight-500: #f79009;
-  --color-highlight-600: #dc6803;
-  --color-highlight-700: #b54708;
-  --color-highlight-800: #93370d;
-  --color-highlight-900: #7a2e0e;
-  --color-highlight-950: #461701;
+  /* -- Accent: AI success / applied (emerald) ------------------------------ */
+  /* Core Brand & Accent Palette: "AI Success / Applied" `#10B981`
+     (emerald-500). Semantic role: verified source, published record, accepted. */
+  --color-accent-50: #f3fcf9;
+  --color-accent-100: #c1f3e2;
+  --color-accent-200: #85f4cf;
+  --color-accent-300: #4ff0ba;
+  --color-accent-400: #19eba5;
+  --color-accent-500: #10b981;
+  --color-accent-600: #0e9d6e;
+  --color-accent-700: #0b825a;
+  --color-accent-800: #096647;
+  --color-accent-900: #094833;
+  --color-accent-950: #072c20;
+
+  /* -- Highlight: AI warning / notice (amber) ------------------------------ */
+  /* Core Brand & Accent Palette: "AI Warning / Notice" `#F59E0B`
+     (amber-500). Semantic role: deadlines, security alert, high tokens. */
+  --color-highlight-50: #fcf9f2;
+  --color-highlight-100: #f7e5c8;
+  --color-highlight-200: #fbd595;
+  --color-highlight-300: #f9c267;
+  --color-highlight-400: #f7b039;
+  --color-highlight-500: #f59e0b;
+  --color-highlight-600: #cf8508;
+  --color-highlight-700: #a76c07;
+  --color-highlight-800: #805205;
+  --color-highlight-900: #553807;
+  --color-highlight-950: #2d1f06;
+
+  /* -- AI accent: electric cyan ------------------------------------------- */
+  /* Core Brand & Accent Palette: "Primary AI Accent" `#00F0FF` (cyan-400).
+     Active AI badges, cursor glow, highlight outlines. */
+  --color-cyan-50: #f2fcfd;
+  --color-cyan-100: #bbf4f7;
+  --color-cyan-200: #78f7ff;
+  --color-cyan-300: #3cf4ff;
+  --color-cyan-400: #00f0ff;
+  --color-cyan-500: #00d0dd;
+  --color-cyan-600: #00b0bb;
+  --color-cyan-700: #009099;
+  --color-cyan-800: #007077;
+  --color-cyan-900: #034d52;
+  --color-cyan-950: #042d2f;
+
+  /* -- AI suggestion: dim cyan / sky --------------------------------------- */
+  /* Core Brand & Accent Palette: "Inline AI Suggestion" `#38BDF8` (sky-400).
+     Ghost text / inline autocomplete suggestions. */
+  --color-sky-50: #f2f9fc;
+  --color-sky-100: #c8e9f7;
+  --color-sky-200: #94dcfb;
+  --color-sky-300: #66ccfa;
+  --color-sky-400: #38bdf8;
+  --color-sky-500: #0faff7;
+  --color-sky-600: #0795d4;
+  --color-sky-700: #0679ab;
+  --color-sky-800: #055c83;
+  --color-sky-900: #073e57;
+  --color-sky-950: #05212e;
+
+  /* -- Brand mark: navy (matches the supplied logo artwork) ----------------- */
+  /* The supplied mark is navy (`#183b8c`, sampled from the artwork). The
+     wordmark text uses this so the name reads as one colour with the mark. */
+  --color-navy: #183b8c;
 
   /* -- Neutrals / ink ----------------------------------------------------- */
+  /* Cast toward the reference's violet-black rather than pure grey: strong
+     text is `#100826`, muted is `#76788C`, hairlines are `#F0F1F5`/`#E5E7EB`.
+
+     CONTRAST — measured against white:
+       ink-500 #76788C = 4.03:1  -> large/decorative text ONLY, never body
+       ink-600 #616379 = 5.89:1  -> `--color-muted-foreground`, safe for body
+     Do not promote ink-500 to a text colour without re-measuring. */
   --color-ink-50: #f7f8fa;
-  --color-ink-100: #eef0f4;
-  --color-ink-200: #dfe3ea;
-  --color-ink-300: #c5cbd8;
-  --color-ink-400: #97a0b5;
-  --color-ink-500: #6f7a92;
-  --color-ink-600: #556074;
-  --color-ink-700: #424b5c;
-  --color-ink-800: #2d3442;
-  --color-ink-900: #1c222e;
-  --color-ink-950: #0e1219;
+  --color-ink-100: #f0f1f5;
+  --color-ink-200: #e5e7eb;
+  --color-ink-300: #d3d6de;
+  --color-ink-400: #acafbf;
+  --color-ink-500: #76788c;
+  --color-ink-600: #616379;
+  --color-ink-700: #474559;
+  --color-ink-800: #2c2a3f;
+  --color-ink-900: #100826;
+  --color-ink-950: #080414;
+
+  /* Dark surface used by the header micro-bar and footer-style panels. */
+  --color-ink-deep: #100826;
 
   /* -- Semantic surfaces -------------------------------------------------- */
   --color-background: #ffffff;
@@ -90,30 +193,32 @@
   /*
    * -- Radii --------------------------------------------------------------
    *
-   * `sm` is the DEFAULT radius for the whole system: buttons, inputs, cards,
-   * panels and dialogs all use it. `md` and above are reserved for genuinely
-   * oversized surfaces, and `full` for shapes that are meant to read as
-   * circles (avatars, status pills).
+   * The reference is sharp, not soft: cards sit at 4px, buttons at 8px, large
+   * feature panels and dialogs at 20px, and only chips/badges go fully round.
+   * That is why `sm` (4px) is the default and `md` (8px) is the button radius.
    *
-   * Keep new components on `rounded-sm`. Do not introduce a bespoke radius
-   * inline — add a token here if a new step is genuinely needed.
+   * Keep new components on `rounded-sm` (surfaces) or `rounded-md` (controls).
+   * Do not introduce a bespoke radius inline — add a token here if a new step is
+   * genuinely needed.
    */
   --radius-xs: 0.25rem;
-  --radius-sm: 0.375rem;
+  --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
-  --radius-xl: 1rem;
-  --radius-2xl: 1.5rem;
+  --radius-xl: 1.25rem;
+  --radius-2xl: 1.75rem;
 
   /* -- Elevation ---------------------------------------------------------- */
-  --shadow-xs: 0 1px 2px 0 rgb(14 18 25 / 0.05);
+  /* The reference carries structure with hairlines, not shadows: `md` is its
+     card shadow, reproduced exactly. Anything heavier is reserved for overlays. */
+  --shadow-xs: 0 1px 2px 0 rgb(16 8 38 / 0.05);
   --shadow-sm:
-    0 1px 3px 0 rgb(14 18 25 / 0.08), 0 1px 2px -1px rgb(14 18 25 / 0.06);
+    0 1px 3px 0 rgb(16 8 38 / 0.08), 0 1px 2px -1px rgb(16 8 38 / 0.06);
   --shadow-md:
-    0 4px 12px -2px rgb(14 18 25 / 0.08), 0 2px 6px -2px rgb(14 18 25 / 0.05);
+    0 4px 6px -1px rgb(16 8 38 / 0.1), 0 2px 4px -2px rgb(16 8 38 / 0.1);
   --shadow-lg:
-    0 12px 28px -6px rgb(14 18 25 / 0.12), 0 4px 10px -4px rgb(14 18 25 / 0.06);
-  --shadow-focus: 0 0 0 3px rgb(59 99 246 / 0.35);
+    0 12px 28px -6px rgb(16 8 38 / 0.12), 0 4px 10px -4px rgb(16 8 38 / 0.06);
+  --shadow-focus: 0 0 0 3px rgb(124 58 237 / 0.35);
 
   /* -- Motion ------------------------------------------------------------- */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -163,6 +268,7 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: var(--text-base);
     font-feature-settings: 'cv11', 'ss01';
     font-variation-settings: 'opsz' 32;
     text-rendering: optimizeLegibility;
@@ -177,8 +283,10 @@
   h5,
   h6 {
     font-family: var(--font-display);
-    font-weight: 700;
-    letter-spacing: -0.015em;
+    /* 800, not 700: the reference carries its headings at ExtraBold and
+       reserves 700 almost entirely (one element site-wide). */
+    font-weight: 800;
+    letter-spacing: -0.02em;
     text-wrap: balance;
   }
 
@@ -188,7 +296,7 @@
 
   /* Visible, consistent focus indicator for every interactive element. */
   :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
-    outline: 2px solid var(--color-brand-600);
+    outline: 2px solid var(--color-brand-500);
     outline-offset: 2px;
     border-radius: var(--radius-xs);
   }
@@ -234,9 +342,9 @@
     z-index: 100;
     transform: translateY(-200%);
     border-radius: var(--radius-md);
-    background-color: var(--color-brand-700);
+    background-color: var(--color-brand-600);
     padding: 0.625rem 1rem;
-    font-size: 0.875rem;
+    font-size: 0.984375rem;
     font-weight: 600;
     color: #fff;
     transition: transform 150ms var(--ease-out-expo);
@@ -252,11 +360,18 @@
    ========================================================================== */
 
 @layer components {
-  /* Consistent page gutter used by every public and admin section. */
+  /*
+   * Consistent page gutter used by every public section.
+   *
+   * 1100px is the reference content column (measured, twice site-wide). It is
+   * deliberately narrower than the old 1280px: the scholarship row cards put a
+   * 232px action column beside 868px of content, which only reads correctly at
+   * this measure.
+   */
   .container-page {
     width: 100%;
     margin-inline: auto;
-    max-width: 80rem;
+    max-width: 68.75rem;
     padding-inline: 1rem;
   }
 
@@ -272,10 +387,68 @@
     }
   }
 
+  /* Escape hatch for full-bleed feature panels that need more room than the
+     content column. Still token-driven, still responsive. */
+  .container-wide {
+    width: 100%;
+    margin-inline: auto;
+    max-width: 80rem;
+    padding-inline: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-wide {
+      padding-inline: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-wide {
+      padding-inline: 2rem;
+    }
+  }
+
+  /*
+   * Eyebrow: the reference's 11px uppercase letterspaced micro-label, used
+   * above sidebar values and section kickers.
+   */
+  .eyebrow {
+    font-size: 0.773438rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-ink-500);
+  }
+
+  /*
+   * Hero headline gradient: brand indigo into sky. Decorative only — the H1
+   * still has to meet contrast on its own, and it does not against the pale
+   * sky end, so this is applied to large display text only.
+   */
+  .text-gradient-hero {
+    background-image: linear-gradient(
+      100deg,
+      var(--color-brand-600) 0%,
+      var(--color-brand-500) 45%,
+      var(--color-sky-400) 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* A card surface in the reference idiom: hairline border, minimal shadow. */
+  .surface-card {
+    border-radius: var(--radius-sm);
+    background-color: var(--color-surface-raised);
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-xs);
+  }
+
   /* Long-form editorial body copy. */
   .prose-editorial {
     color: var(--color-ink-700);
-    font-size: 1.0625rem;
+    font-size: 1.195312rem;
     line-height: 1.75;
   }
 
@@ -285,13 +458,13 @@
 
   .prose-editorial h2 {
     margin-top: 2em;
-    font-size: 1.5rem;
+    font-size: 1.6875rem;
     color: var(--color-ink-900);
   }
 
   .prose-editorial h3 {
     margin-top: 1.75em;
-    font-size: 1.25rem;
+    font-size: 1.40625rem;
     color: var(--color-ink-900);
   }
 
@@ -329,7 +502,7 @@
   .prose-editorial table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.9375rem;
+    font-size: 1.054688rem;
   }
 
   .prose-editorial th,
@@ -349,12 +522,12 @@
     background-color: var(--color-ink-100);
     padding: 0.125em 0.375em;
     font-family: var(--font-mono);
-    font-size: 0.875em;
+    font-size: 0.7875em;
   }
 
   .prose-editorial figure figcaption {
     margin-top: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 0.984375rem;
     color: var(--color-muted-foreground);
   }
 }

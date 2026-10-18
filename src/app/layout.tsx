@@ -1,19 +1,20 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
+import { Inter } from 'next/font/google'
 
 import { getSiteUrl } from '@/lib/env'
+import { ConsentManager } from '@/features/consent/consent-manager'
 
 import './globals.css'
 
+/*
+ * Inter is the only family. The reference distinguishes headings by weight
+ * (800) rather than by typeface, so the previous second display face
+ * (Plus Jakarta Sans) has been removed rather than left loading unused.
+ * See docs/REFERENCE_ANALYSIS.md.
+ */
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
-  display: 'swap',
-})
-
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ['latin'],
-  variable: '--font-jakarta',
   display: 'swap',
 })
 
@@ -22,7 +23,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#ffffff' },
-    { media: '(prefers-color-scheme: dark)', color: '#141b57' },
+    { media: '(prefers-color-scheme: dark)', color: '#100826' },
   ],
 }
 
@@ -64,12 +65,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jakarta.variable}`}
+      className={`${inter.variable}`}
       // Next.js 16 no longer overrides this automatically.
       data-scroll-behavior="smooth"
     >
       <body className="min-h-dvh bg-background text-foreground antialiased">
-        {children}
+        <ConsentManager>{children}</ConsentManager>
       </body>
     </html>
   )

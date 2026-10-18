@@ -115,6 +115,23 @@ export const articleSchema = z
     /** `datetime-local` string, converted to ISO before storage. */
     scheduled_for: optionalDateTime,
 
+    /**
+     * Featured image, chosen in the media picker.
+     *
+     * `null` is a valid answer — most articles have no image — and the value is
+     * validated as a UUID here so a malformed id cannot reach the foreign key or
+     * become a PostgREST filter.
+     */
+    featured_image_id: z
+      .string()
+      .trim()
+      .nullable()
+      .optional()
+      .transform((v) => (v ? v : null))
+      .refine((v) => v === null || z.string().uuid().safeParse(v).success, {
+        message: 'Choose an image from the library.',
+      }),
+
     noindex: z.boolean().optional().default(false),
     allow_sitemap: z.boolean().optional().default(true),
 
