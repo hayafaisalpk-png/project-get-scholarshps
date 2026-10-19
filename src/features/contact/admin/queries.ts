@@ -31,12 +31,14 @@ export type ContactSubmissionRow = {
   id: string
   name: string
   email: string
+  whatsapp_no: string | null
   subject: string
   message: string
   status: string
   created_at: string
   /** Set when a message is resolved; null again if it is reopened. */
   handled_at: string | null
+  read_at: string | null
 }
 
 export type ContentReportRow = {
@@ -66,6 +68,19 @@ export type InboxList<T> = {
 export type InboxParams = {
   status?: string | undefined
   page?: number | undefined
+  sort?: ContactSortKey | undefined
+  direction?: ContactSortDirection | undefined
+}
+
+export const CONTACT_SORT_KEYS = ['from', 'subject', 'email', 'date'] as const
+export type ContactSortKey = (typeof CONTACT_SORT_KEYS)[number]
+export type ContactSortDirection = 'asc' | 'desc'
+
+const CONTACT_SORT_COLUMNS: Record<ContactSortKey, string> = {
+  from: 'name',
+  subject: 'subject',
+  email: 'email',
+  date: 'created_at',
 }
 
 /* -------------------------------------------------------------------------- */
@@ -79,13 +94,15 @@ export const listContactSubmissions = cache(
     const page = Math.max(1, params.page ?? 1)
     const from = (page - 1) * pageSize
     const status = CONTACT_STATUSES.find((s) => s === params.status)
+    const sort = params.sort ?? 'date'
+    const direction = params.direction ?? 'desc'
 
     let query = supabase
       .from('contact_submissions')
-      .select('id, name, email, subject, message, status, created_at, handled_at', {
+      .select('id, name, email, whatsapp_no, subject, message, status, created_at, handled_at, read_at', {
         count: 'exact',
       })
-      .order('created_at', { ascending: false })
+      .order(CONTACT_SORT_COLUMNS[sort], { ascending: direction === 'asc' })
       .range(from, from + pageSize - 1)
 
     if (status) query = query.eq('status', status)
@@ -118,16 +135,27 @@ export const contactStatusCounts = cache(async (): Promise<Record<string, number
 
   const { data, error } = await supabase
     .from('contact_submissions')
-    .select('status')
+    .select('status, read_at')
 
   if (error) return counts
 
   for (const row of data ?? []) {
     const key = row.status as string
+    if (key === 'new' && row.read_at) continue
     if (key in counts) counts[key] = (counts[key] ?? 0) + 1
   }
 
   return counts
+})
+
+export const contactUnreadCount = cache(async (): Promise<number> => {
+  const supabase = await createClient()
+  const { count, error } = await supabase
+    .from('contact_submissions')
+    .select('id', { count: 'exact', head: true })
+    .is('read_at', null)
+
+  return error ? 0 : count ?? 0
 })
 
 /* -------------------------------------------------------------------------- */

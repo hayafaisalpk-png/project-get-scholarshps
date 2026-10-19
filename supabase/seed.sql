@@ -310,7 +310,7 @@ values
   ('Articles', '/articles', 'header', 5),
   ('About Us', '/about', 'header', 90),
   ('Contact Us', '/contact', 'header', 91),
-  ('Help', '/help', 'header', 92)
+  ('How To Search', '/help', 'header', 92)
 on conflict do nothing;
 
 insert into public.navigation_items (label, href, location, sort_order)

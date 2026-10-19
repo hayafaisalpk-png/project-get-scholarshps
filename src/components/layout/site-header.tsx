@@ -116,16 +116,7 @@ export async function SiteHeader() {
                */
               <AccountMenu />
             ) : (
-              /*
-               * `outline`, not a `className` override of `primary`. The
-               * brand fill is reserved for the one action the bar is asking
-               * for, and "Sign in" is an account affordance rather than a
-               * call to action. `outline` already carries the theme's
-               * border/bg/hover ramp from `@/components/ui/button`, so it
-               * tracks the palette automatically instead of pinning grey
-               * hex steps at the call site.
-               */
-              <ButtonLink href="/auth/login" variant="outline" size="sm">
+               <ButtonLink href="/auth/login" variant="primary" size="sm">
                 Sign in
               </ButtonLink>
             )}

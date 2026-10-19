@@ -62,7 +62,12 @@ export function AdminNav({ items }: { items: AdminNavItem[] }) {
                 )}
                 aria-hidden="true"
               />
-              {item.label}
+              <span>{item.label}</span>
+              {item.unreadCount !== undefined ? (
+                <span className="text-xs text-ink-500" aria-label={`${item.unreadCount} unread`}>
+                  ({item.unreadCount})
+                </span>
+              ) : null}
             </Link>
           </li>
         )

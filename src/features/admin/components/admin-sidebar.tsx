@@ -1,5 +1,9 @@
 import type { Permission } from '@/lib/auth/permissions'
 import { adminNavigation } from '@/lib/admin/navigation'
+import {
+  contactUnreadCount,
+  reportStatusCounts,
+} from '@/features/contact/admin/queries'
 
 import { AdminBrand } from './admin-shell'
 import { AdminNav } from './admin-nav'
@@ -12,7 +16,7 @@ import { SignOutButton } from './sign-out-button'
  * that is never the enforcement boundary — every destination authorises its
  * own access server-side, with RLS underneath.
  */
-export function AdminSidebar({
+export async function AdminSidebar({
   permissions,
   userEmail,
   displayName,
@@ -21,6 +25,21 @@ export function AdminSidebar({
   userEmail: string | null
   displayName: string | null
 }) {
+  const items = adminNavigation(permissions)
+  const [contactUnread, reportCounts] = await Promise.all([
+    permissions.includes('contact.manage') ? contactUnreadCount() : null,
+    permissions.includes('report.manage') ? reportStatusCounts() : null,
+  ])
+
+  const itemsWithCounts = items.map((item) => ({
+    ...item,
+    ...(item.href === '/admin/contact' && contactUnread !== null
+      ? { unreadCount: contactUnread }
+      : item.href === '/admin/reports' && reportCounts
+        ? { unreadCount: reportCounts.open ?? 0 }
+        : {}),
+  }))
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="border-b border-ink-200 p-4">
@@ -33,7 +52,7 @@ export function AdminSidebar({
           renders exactly this list, so both sides always agree on how many
           items exist.
         */}
-        <AdminNav items={adminNavigation(permissions)} />
+        <AdminNav items={itemsWithCounts} />
       </nav>
 
       <div className="border-t border-ink-200 p-4">

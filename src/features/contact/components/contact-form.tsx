@@ -58,6 +58,7 @@ export function ContactForm({
   const [draft, setDraft] = useState({
     name: '',
     email: '',
+    whatsapp_no: '',
     subject: defaultSubject ?? '',
     message: '',
   })
@@ -75,11 +76,12 @@ export function ContactForm({
     setLastState(state)
 
     if (state?.ok) {
-      setDraft({ name: '', email: '', subject: '', message: '' })
+      setDraft({ name: '', email: '', whatsapp_no: '', subject: '', message: '' })
     } else if (state?.values) {
       setDraft((current) => ({
         name: state.values?.name ?? current.name,
         email: state.values?.email ?? current.email,
+        whatsapp_no: state.values?.whatsapp_no ?? current.whatsapp_no,
         subject: state.values?.subject ?? current.subject,
         message: state.values?.message ?? current.message,
       }))
@@ -228,6 +230,33 @@ export function ContactForm({
               value={draft.email}
               onChange={(event) =>
                 setDraft((d) => ({ ...d, email: event.target.value }))
+              }
+            />
+          </FormField>
+
+          <FormField
+            id="whatsapp_no"
+            label="WhatsApp No."
+            error={state?.ok === false ? state.fieldErrors?.whatsapp_no : undefined}
+          >
+            <input
+              id="whatsapp_no"
+              name="whatsapp_no"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              maxLength={30}
+              className={inputClasses}
+              aria-invalid={
+                state?.ok === false && Boolean(state.fieldErrors?.whatsapp_no)
+              }
+              aria-describedby={describedBy(
+                'whatsapp_no',
+                state?.ok === false ? state.fieldErrors?.whatsapp_no : undefined,
+              )}
+              value={draft.whatsapp_no}
+              onChange={(event) =>
+                setDraft((d) => ({ ...d, whatsapp_no: event.target.value }))
               }
             />
           </FormField>

@@ -274,10 +274,10 @@ These are **not** implemented yet and must not be reported as working:
   stored in `content_pages` (migration 021) and is honest about what does and does
   not exist, but it has never been reviewed by a lawyer, and there is no CMS
   editing screen for it yet.
-- **Both admin inboxes (`/admin/contact`, `/admin/reports`) support status
-  changes** (increment 6). Neither has a DELETE, by design — correspondence with
-  a member of the public and a visitor's correction report both stay on the
-  record. Do not add a delete control.
+- **The admin contact inbox supports audited deletion** (approved policy change,
+  migration 036). Deletion is permission-gated, confirmation-protected and
+  recorded in the audit log. The reports inbox remains status-only; do not add
+  deletion there.
 - **The public forms have no rate limiting.** A honeypot and a fill-time check
   reject naive scripted submitters. `UPSTASH_REDIS_REST_URL` exists in the
   environment schema; adding a Redis client needs approval (§2.10).

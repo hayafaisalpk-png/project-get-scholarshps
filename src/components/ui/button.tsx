@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils/cn'
 
 export type ButtonVariant =
   | 'primary'
+  | 'brand'
   | 'secondary'
   | 'outline'
   | 'ghost'
@@ -25,6 +26,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   // darkens on hover; it does not start on a darker step.
   primary:
     'bg-navy text-white hover:bg-navy/90 active:bg-navy/80 shadow-xs',
+  brand:
+    'bg-brand-600 text-white hover:bg-brand-700 active:bg-brand-800 shadow-xs',
   secondary:
     'bg-accent-600 text-white hover:bg-accent-700 active:bg-accent-800 shadow-xs',
   outline:
@@ -42,7 +45,7 @@ const SIZES: Record<ButtonSize, string> = {
 const BASE =
   // `rounded-md` (8px) for controls: the reference uses 8px on buttons and
   // 4px on surfaces. See the radii note in globals.css.
-  'inline-flex items-center justify-center rounded-md font-semibold transition-colors duration-200 ' +
+  'inline-flex items-center justify-center rounded-md font-normal transition-colors duration-200 ' +
   'disabled:pointer-events-none disabled:opacity-55 select-none whitespace-nowrap'
 
 export function buttonClasses({

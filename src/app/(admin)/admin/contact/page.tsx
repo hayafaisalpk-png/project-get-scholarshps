@@ -2,16 +2,17 @@ import Link from 'next/link'
 
 import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
-import { ContactStatusActions } from '@/features/contact/admin/components/contact-status-actions'
+import { ContactMessageRow } from '@/features/contact/admin/components/contact-message-row'
 import {
   CONTACT_STATUSES,
+  CONTACT_SORT_KEYS,
   contactStatusCounts,
   listContactSubmissions,
+  type ContactSortDirection,
+  type ContactSortKey,
 } from '@/features/contact/admin/queries'
 import { requirePermission } from '@/lib/auth/guards'
-import { formatTimestamp } from '@/lib/format'
 import { cn } from '@/lib/utils/cn'
-import { CONTACT_SUBJECT_LABELS, type ContactSubject } from '@/lib/validation/contact'
 
 export const metadata = { title: 'Messages' }
 
@@ -22,10 +23,9 @@ export const metadata = { title: 'Messages' }
  * stored by the Server Action and read here; without this screen a visitor could
  * be told their message was received while nobody could read it.
  *
- * TRIAGE, NOT ARCHIVING. The table grants SELECT and UPDATE but never DELETE
- * (migration 022), and the UI follows the schema: an editor can mark a message
- * in progress, resolved or spam, and every one of those is reversible, but
- * nothing here can remove correspondence with a member of the public.
+ * TRIAGE WITH CONTROLLED DELETION. The table grants SELECT, UPDATE and DELETE
+ * to `contact.manage` (migrations 022 and 036). Status changes are reversible;
+ * deletion is permanent, requires confirmation and writes an audit entry.
  *
  * `requirePermission('contact.manage')` runs before any query, the action
  * re-checks it before writing, and RLS enforces the same boundary
@@ -34,24 +34,33 @@ export const metadata = { title: 'Messages' }
 export default async function AdminContactPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; page?: string }>
+  searchParams: Promise<{
+    status?: string
+    page?: string
+    sort?: string
+    direction?: string
+  }>
 }) {
   await requirePermission('contact.manage')
 
   const params = await searchParams
   const page = Number.parseInt(params.page ?? '1', 10)
   const status = CONTACT_STATUSES.find((s) => s === params.status)
+  const sort = CONTACT_SORT_KEYS.find((s) => s === params.sort) ?? 'date'
+  const direction: ContactSortDirection = params.direction === 'asc' ? 'asc' : 'desc'
 
   const [result, counts] = await Promise.all([
     listContactSubmissions({
       status,
       page: Number.isFinite(page) ? page : 1,
+      sort,
+      direction,
     }),
     contactStatusCounts(),
   ])
 
-  const allHref = buildHref({})
-  const statusHref = (value: string) => buildHref({ status: value })
+  const allHref = buildHref({ sort, direction })
+  const statusHref = (value: string) => buildHref({ status: value, sort, direction })
 
   return (
     <div className="space-y-6">
@@ -59,7 +68,7 @@ export default async function AdminContactPage({
         <h1 className="text-2xl font-bold text-ink-900">Messages</h1>
         <p className="mt-1 text-sm text-ink-600">
           Submissions from the contact form. Messages can be marked as in
-          progress, resolved or spam. Nothing is deleted from this screen.
+          process, resolved or permanently delete a message.
         </p>
       </header>
 
@@ -92,65 +101,44 @@ export default async function AdminContactPage({
         />
       ) : (
         <>
-          <ul className="space-y-4">
-            {result.data.items.map((row) => (
-              <li key={row.id}>
-                <article className="rounded-sm border border-ink-200 bg-white p-5">
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <h2 className="text-base font-semibold text-ink-900">
-                      {CONTACT_SUBJECT_LABELS[row.subject as ContactSubject] ??
-                        row.subject}
-                    </h2>
-                    <time dateTime={row.created_at} className="text-xs text-ink-500">
-                      {formatTimestamp(row.created_at)}
-                    </time>
-                  </div>
-
-                  <p className="mt-1 text-sm text-ink-600">
-                    {row.name}{' '}
-                    <span className="text-ink-500">
-                      &lt;<a
-                        href={`mailto:${row.email}`}
-                        className="text-brand-700 hover:underline"
-                      >
-                        {row.email}
-                      </a>&gt;
-                    </span>
-                  </p>
-
-                  {/*
-                    Rendered as text, never as markup. The message is
-                    attacker-supplied free text stored in a private table, so
-                    `whitespace-pre-wrap` is both the correct formatting and the
-                    reason no sanitiser is needed here: React escapes the value.
-                  */}
-                  <p className="mt-3 whitespace-pre-wrap text-sm text-ink-800">
-                    {row.message}
-                  </p>
-
-                  <p className="mt-3 text-xs text-ink-500">
-                    Status: {label(row.status)}
-                    {row.handled_at ? (
-                      <>
-                        {' · handled '}
-                        <time dateTime={row.handled_at}>
-                          {formatTimestamp(row.handled_at)}
-                        </time>
-                      </>
-                    ) : null}
-                  </p>
-
-                  <ContactStatusActions id={row.id} status={row.status} />
-                </article>
-              </li>
-            ))}
-          </ul>
+          <div className="overflow-x-auto rounded-sm border border-ink-200 bg-white">
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <caption className="sr-only">Contact messages</caption>
+              <thead className="border-b border-ink-200 bg-ink-50 text-xs font-semibold tracking-wide text-ink-600 uppercase">
+                <tr>
+                  <th scope="col" className="px-4 py-3">
+                    <SortLink label="From" sort="from" activeSort={sort} direction={direction} />
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    <SortLink label="Subject" sort="subject" activeSort={sort} direction={direction} />
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    <SortLink label="Email" sort="email" activeSort={sort} direction={direction} />
+                  </th>
+                  <th scope="col" className="px-4 py-3">
+                    <SortLink label="Date" sort="date" activeSort={sort} direction={direction} />
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-ink-100">
+                {result.data.items.map((row) => (
+                  <ContactMessageRow key={row.id} row={row} />
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <Pagination
             page={result.data.page}
             totalPages={result.data.totalPages}
             buildHref={(target) =>
-              buildHref({ status: status as string | undefined, page: target })
+              buildHref({
+                status: status as string | undefined,
+                page: target,
+                sort,
+                direction,
+              })
             }
           />
         </>
@@ -162,15 +150,55 @@ export default async function AdminContactPage({
 function buildHref({
   status,
   page,
+  sort,
+  direction,
 }: {
   status?: string | undefined
   page?: number | undefined
+  sort?: ContactSortKey | undefined
+  direction?: ContactSortDirection | undefined
 }): string {
   const search = new URLSearchParams()
   if (status) search.set('status', status)
   if (page && page > 1) search.set('page', String(page))
+  if (sort && sort !== 'date') search.set('sort', sort)
+  if (direction && (sort ?? 'date') === 'date' && direction !== 'desc') {
+    search.set('direction', direction)
+  } else if (direction && sort && sort !== 'date') {
+    search.set('direction', direction)
+  }
   const query = search.toString()
   return query ? `/admin/contact?${query}` : '/admin/contact'
+}
+
+function SortLink({
+  label: text,
+  sort,
+  activeSort,
+  direction,
+}: {
+  label: string
+  sort: ContactSortKey
+  activeSort: ContactSortKey
+  direction: ContactSortDirection
+}) {
+  const active = sort === activeSort
+  const nextDirection = active && direction === 'asc' ? 'desc' : 'asc'
+  const href = buildHref({ sort, direction: nextDirection })
+
+  return (
+    <Link
+      href={href}
+      aria-label={`Sort by ${text}${active ? `, currently ${direction}ending` : ''}`}
+      aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : undefined}
+      className="inline-flex items-center gap-1 hover:text-ink-900"
+    >
+      {text}
+      <span aria-hidden="true" className="text-ink-400">
+        {active ? (direction === 'asc' ? '↑' : '↓') : '↕'}
+      </span>
+    </Link>
+  )
 }
 
 function Tab({

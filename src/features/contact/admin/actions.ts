@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/server'
 import {
   buildContactStatusPatch,
   buildReportStatusPatch,
+  contactDeleteSchema,
+  contactReadSchema,
   contactTriageSchema,
   type ContactStatus,
   reportTriageSchema,
@@ -34,9 +36,8 @@ import {
  *      file cannot become a privilege escalation.
  *   4. `write_audit_log` last, recording the before and after states.
  *
- * NO DELETE, for either table. Correspondence with a member of the public and a
- * public correction report both stay on the record; "we dealt with this" is
- * expressed as a status, never as a removal. Neither table grants DELETE anyway.
+ * Contact deletion is a separate, explicitly confirmed action. Reports remain
+ * status-only and are never deleted from this inbox.
  */
 
 export type InboxActionResult =
@@ -158,6 +159,104 @@ export async function setContactStatusAction(
 
   revalidatePath('/admin/contact')
   return { ok: true, message: `Moved to ${parsed.data.status.replace('_', ' ')}.` }
+}
+
+/** Permanently delete a contact message after the client-side confirmation. */
+export async function deleteContactSubmissionAction(
+  id: string,
+): Promise<InboxActionResult> {
+  const { user } = await requirePermission('contact.manage')
+  const parsed = contactDeleteSchema.safeParse({ id })
+
+  if (!parsed.success) {
+    return {
+      ok: false,
+      message: parsed.error.issues[0]?.message ?? 'That message could not be deleted.',
+      fieldErrors: fieldErrorsFrom(parsed.error),
+    }
+  }
+
+  const supabase = await createClient()
+  const { data: before } = await supabase
+    .from('contact_submissions')
+    .select('id, name, email, subject, status')
+    .eq('id', parsed.data.id)
+    .maybeSingle()
+
+  if (!before) return { ok: false, message: 'That message could not be found.' }
+
+  const { data: deleted, error } = await supabase
+    .from('contact_submissions')
+    .delete()
+    .eq('id', parsed.data.id)
+    .select('id')
+    .maybeSingle()
+
+  if (error) {
+    return {
+      ok: false,
+      message: friendlyWriteError(error.code, error.message, 'contact message deletion'),
+    }
+  }
+
+  if (!deleted) return { ok: false, message: 'That message could not be found.' }
+
+  await supabase.rpc('write_audit_log', {
+    p_action: 'contact.delete',
+    p_entity_type: 'contact_submission',
+    p_entity_id: parsed.data.id,
+    p_before: before,
+    p_after: { deleted: true, actor_id: user.id },
+  })
+
+  revalidatePath('/admin/contact')
+  return { ok: true, message: 'Message deleted.' }
+}
+
+/** Mark a contact message as read when an authorized editor opens it. */
+export async function markContactReadAction(
+  id: string,
+): Promise<InboxActionResult> {
+  const { user } = await requirePermission('contact.manage')
+  const parsed = contactReadSchema.safeParse({ id })
+
+  if (!parsed.success) {
+    return { ok: false, message: 'That message could not be marked as read.' }
+  }
+
+  const supabase = await createClient()
+  const { data: before } = await supabase
+    .from('contact_submissions')
+    .select('read_at')
+    .eq('id', parsed.data.id)
+    .maybeSingle()
+
+  if (!before) return { ok: false, message: 'That message could not be found.' }
+  if (before.read_at) return { ok: true, message: 'Marked as read.' }
+
+  const readAt = new Date().toISOString()
+  const { error } = await supabase
+    .from('contact_submissions')
+    .update({ read_at: readAt })
+    .eq('id', parsed.data.id)
+
+  if (error) {
+    return {
+      ok: false,
+      message: friendlyWriteError(error.code, error.message, 'marking contact message as read'),
+    }
+  }
+
+  await supabase.rpc('write_audit_log', {
+    p_action: 'contact.mark_read',
+    p_entity_type: 'contact_submission',
+    p_entity_id: parsed.data.id,
+    p_before: { read_at: null },
+    p_after: { read_at: readAt, actor_id: user.id },
+  })
+
+  revalidatePath('/admin/contact')
+  return { ok: true, message: 'Marked as read.' }
 }
 
 /* -------------------------------------------------------------------------- */

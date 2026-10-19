@@ -77,6 +77,8 @@ export type AdminNavItem = {
   href: string
   label: string
   icon: AdminIconKey
+  /** Number of unhandled records, when the destination has an inbox. */
+  unreadCount?: number
   /** Any one of these permissions grants access. */
   permissions: readonly Permission[]
   /** Exact match only, or a prefix match for nested sections. */

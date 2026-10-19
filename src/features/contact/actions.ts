@@ -137,6 +137,7 @@ export async function submitContactAction(
   const parsed = contactSchema.safeParse({
     name: formData.get('name'),
     email: formData.get('email'),
+    whatsapp_no: formData.get('whatsapp_no'),
     subject: formData.get('subject'),
     message: formData.get('message'),
     [HONEYPOT_FIELD]: formData.get(HONEYPOT_FIELD),
@@ -147,7 +148,7 @@ export async function submitContactAction(
       ok: false,
       message: 'Check the highlighted fields.',
       fieldErrors: fieldErrorsFrom(parsed.error),
-      values: echo(formData, ['name', 'email', 'subject', 'message']),
+      values: echo(formData, ['name', 'email', 'whatsapp_no', 'subject', 'message']),
     }
   }
 
@@ -170,6 +171,7 @@ export async function submitContactAction(
   const { error } = await admin.from('contact_submissions').insert({
     name: parsed.data.name,
     email: parsed.data.email,
+    whatsapp_no: parsed.data.whatsapp_no || null,
     subject: parsed.data.subject,
     // Stored as-is: this is plain text, and the inbox renders it as text rather
     // than as markup, so there is no injection surface to sanitise away.

@@ -73,22 +73,20 @@
   --text-9xl: 9.0rem;
   --text-9xl--line-height: 1;
 
-  /* -- Brand: AI purple / violet ------------------------------------------ */
-  /* Core Brand & Accent Palette: Secondary Accent "AI Purple / Violet"
-     `#7C3AED` (violet-600) is the primary brand colour; the 500 step IS that
-     value, and the rest of the ramp is interpolated around it so `bg-brand-500`,
-     `text-brand-700` and friends keep working across public and admin. */
-  --color-brand-50: #f6f3fc;
-  --color-brand-100: #dfd1f6;
-  --color-brand-200: #c5a8f7;
-  --color-brand-300: #ad83f4;
-  --color-brand-400: #945ff0;
-  --color-brand-500: #7c3aed;
-  --color-brand-600: #6015e2;
-  --color-brand-700: #4d11b5;
-  --color-brand-800: #3a0c88;
-  --color-brand-900: #280c58;
-  --color-brand-950: #15072c;
+  /* -- Brand: logo navy ----------------------------------------------------- */
+  /* The brand ramp is anchored to the supplied logo mark's navy (`#183B8C`)
+     so global controls, links and focus states share the site's identity. */
+  --color-brand-50: #eef3ff;
+  --color-brand-100: #dbe6ff;
+  --color-brand-200: #b9ccf5;
+  --color-brand-300: #8eaff0;
+  --color-brand-400: #527bd0;
+  --color-brand-500: #183b8c;
+  --color-brand-600: #123070;
+  --color-brand-700: #0e2557;
+  --color-brand-800: #0a1b40;
+  --color-brand-900: #07132f;
+  --color-brand-950: #040b1d;
 
   /* -- Accent: AI success / applied (emerald) ------------------------------ */
   /* Core Brand & Accent Palette: "AI Success / Applied" `#10B981`

@@ -10,6 +10,65 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Changed — Header sign-in affordance
+
+- Updated the header sign-in button to use the semantic brand color ramp on
+  desktop and mobile.
+- Reset the global brand ramp from violet to the supplied logo's navy palette.
+- Matched the top-navigation sign-in button to the scholarship “View details”
+  button color scheme.
+- Changed shared button labels from semibold to normal weight.
+- Renamed the header “Help” navigation item to “How To Search” while keeping
+  the existing `/help` destination.
+- Renamed the About page heading from “About GetScholarship” to “About Us”.
+- Added live unread counts to the admin sidebar for Messages and Reported issues.
+- Converted the admin Messages inbox to a data table with subject, email copy
+  controls, date and triage actions. Message deletion was initially unavailable
+  by design so public correspondence stayed on record.
+- Added a separate From column and removed message-body previews from the table.
+- Removed the inline status text beneath each subject; status remains available
+  through the action controls.
+- Aligned contact message action buttons horizontally within the table Action
+  column.
+- Set equal 5px top and bottom padding on contact message data rows.
+- Adjusted contact message data rows to 10px top and 5px bottom padding.
+- Set contact message data rows to 15px top and 5px bottom padding.
+- Added a subtle hover highlight to contact message data rows.
+- Added server-backed sorting controls to the From, Subject, Email and Date
+  columns in the Messages table.
+- Changed the approved inbox policy to allow authorized administrators to delete
+  contact messages with confirmation and an audit-log entry.
+- Removed the Spam action button from contact message rows; Delete is now the
+  available destructive action.
+- Centered the Action column heading and its buttons within the column.
+- Set the From and Subject column text to normal font weight.
+- Made message rows open an accessible modal with the complete message when
+  clicked, while keeping row controls independently operable.
+- Added a blurred backdrop to the full-message modal overlay.
+- Increased the full-message modal dimensions by roughly 50% for easier reading.
+- Reduced the modal dimensions by 25% for a more compact reading window.
+- Restructured the message modal with a subject header, close icon, date, sender
+  details and separated full-message body. WhatsApp is not displayed because it
+  is not collected by the contact schema.
+- Added an email copy icon beside the email address in the message modal.
+- Added an optional WhatsApp No. field after the email field on the contact form,
+  with server validation, storage and display in the admin message modal.
+- Removed the WhatsApp field helper text from the public contact form.
+- Renamed the modal detail label from “WhatsApp No.” to “WhatsApp”.
+- Replaced modal sender-detail colons with vertical separators between labels and values.
+- Set message subjects to uppercase with normal font weight in the table and modal.
+- Moved the modal date into the sender details after WhatsApp and formatted it as
+  `DD/MM/YYYY`.
+- Restored subjects to their original casing with semibold styling in the table
+  and modal.
+- Added a persisted read state: opening a message marks it as read, removes it
+  from the unread sidebar count and displays “Marked as Read” in the modal.
+- Read message subjects now use normal weight in the data table; unread subjects
+  remain semibold.
+- Refreshed the admin layout after reading a message so the sidebar unread count
+  updates immediately.
+- Updated the Messages page New count to exclude messages already marked as read.
+
 ### Added — Phase 7 QA foundation
 
 - Added unit coverage for consent input validation and taxonomy slug generation.

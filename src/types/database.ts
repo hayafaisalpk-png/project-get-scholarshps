@@ -696,11 +696,13 @@ export type Database = {
         Row: {
           created_at: string
           email: string
+          whatsapp_no: string | null
           handled_at: string | null
           handled_by: string | null
           id: string
           message: string
           name: string
+          read_at: string | null
           status: Database["public"]["Enums"]["contact_status"]
           subject: string
           updated_at: string
@@ -708,11 +710,13 @@ export type Database = {
         Insert: {
           created_at?: string
           email: string
+          whatsapp_no?: string | null
           handled_at?: string | null
           handled_by?: string | null
           id?: string
           message: string
           name: string
+          read_at?: string | null
           status?: Database["public"]["Enums"]["contact_status"]
           subject: string
           updated_at?: string
@@ -720,11 +724,13 @@ export type Database = {
         Update: {
           created_at?: string
           email?: string
+          whatsapp_no?: string | null
           handled_at?: string | null
           handled_by?: string | null
           id?: string
           message?: string
           name?: string
+          read_at?: string | null
           status?: Database["public"]["Enums"]["contact_status"]
           subject?: string
           updated_at?: string

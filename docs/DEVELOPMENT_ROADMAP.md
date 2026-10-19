@@ -5,7 +5,8 @@ only when its acceptance criteria have actually been verified by running them.
 
 Legend: `[ ]` not started · `[~]` in progress · `[x]` complete · `[!]` blocked
 
-Last updated: 2026-10-17 (public site redesigned against the bold.org reference —
+Last updated: 2026-10-19 (header sign-in control now uses the semantic brand color;
+public site redesigned against the bold.org reference —
 design tokens, header, footer, homepage, listing and detail page; see
 `docs/REFERENCE_ANALYSIS.md` and `docs/CHANGELOG.md`. Six `[SAMPLE]` fixtures are
 loaded for visual review and must be removed before launch.)
@@ -769,11 +770,11 @@ checks** pass against a production build, covering the rendered geometry, the tw
 font weights, the name being selectable text, the empty `alt`, and the removed
 lockup bitmap now 404ing. `Organization.logo` is emitted and verified to resolve.
 
-**Remaining, deliberately.** The mark is navy and `--color-brand-500` is `#5d57fb`;
-the artwork was rendered exactly as supplied and reconciling the palettes is a human
-decision. The mark path is a constant, not a CMS setting. The generated assets are
-committed artefacts rather than build outputs, so `.next/cache/images` must be
-cleared by hand after regenerating them.
+The global brand ramp now uses the supplied mark's navy (`#183b8c`) as
+`--color-brand-500`, so the interface palette matches the artwork. The mark path is
+a constant, not a CMS setting. The generated assets are committed artefacts rather
+than build outputs, so `.next/cache/images` must be cleared by hand after
+regenerating them.
 
 ---
 

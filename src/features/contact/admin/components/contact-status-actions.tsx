@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
 
 import {
+  deleteContactSubmissionAction,
   setContactStatusAction,
   type InboxActionResult,
 } from '@/features/contact/admin/actions'
@@ -23,9 +24,8 @@ import { InboxActionButton } from './inbox-action-button'
  * only decides what is worth offering; the server decides what is allowed.
  *
  * Status changes are reversible, so they are single-click rather than
- * two-step-confirmed. "Spam" is the exception: it is the target an editor is
- * most likely to reach for by mistake, so it takes a confirm step. The confirm
- * is two real buttons, so the destructive choice is never the default and the
+ * two-step-confirmed. Deletion is the only destructive control and takes a
+ * confirmation step, so the destructive choice is never the default and the
  * interaction stays keyboard-operable.
  *
  * The outcome is announced through an `aria-live` region, because a button that
@@ -43,7 +43,7 @@ export function ContactStatusActions({
   const [pending, startTransition] = useTransition()
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [confirmingSpam, setConfirmingSpam] = useState(false)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   /*
    * A status the database does not know about must not become the `currentStatus`
@@ -58,7 +58,7 @@ export function ContactStatusActions({
   function apply(next: ContactStatus) {
     setMessage(null)
     setError(null)
-    setConfirmingSpam(false)
+    setConfirmingDelete(false)
     startTransition(async () => {
       const result: InboxActionResult = await setContactStatusAction(
         id,
@@ -74,9 +74,24 @@ export function ContactStatusActions({
     })
   }
 
+  function remove() {
+    setMessage(null)
+    setError(null)
+    setConfirmingDelete(false)
+    startTransition(async () => {
+      const result: InboxActionResult = await deleteContactSubmissionAction(id)
+      if (result.ok) {
+        setMessage(result.message)
+        router.refresh()
+      } else {
+        setError(result.message)
+      }
+    })
+  }
+
   return (
-    <div className="mt-4 border-t border-ink-100 pt-3">
-      <div className="flex flex-wrap items-center gap-1.5">
+    <div className="space-y-2">
+      <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
         {targets.includes('in_progress') ? (
           <InboxActionButton
             label={CONTACT_STATUS_LABELS.in_progress}
@@ -94,34 +109,32 @@ export function ContactStatusActions({
           />
         ) : null}
 
-        {targets.includes('spam') ? (
-          confirmingSpam ? (
-            <span className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => apply('spam')}
-                disabled={pending}
-                className="rounded-sm bg-red-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none disabled:opacity-60"
-              >
-                {pending ? 'Saving…' : 'Confirm spam'}
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirmingSpam(false)}
-                className="rounded-sm border border-ink-300 px-2.5 py-1.5 text-xs font-semibold text-ink-700 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
-              >
-                Cancel
-              </button>
-            </span>
-          ) : (
-            <InboxActionButton
-              label="Spam"
-              onClick={() => setConfirmingSpam(true)}
+        {confirmingDelete ? (
+          <span className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={remove}
               disabled={pending}
-              tone="danger"
-            />
-          )
-        ) : null}
+              className="rounded-sm bg-red-700 px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-red-800 focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:outline-none disabled:opacity-60"
+            >
+              {pending ? 'Deleting…' : 'Confirm delete'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmingDelete(false)}
+              className="rounded-sm border border-ink-300 px-2.5 py-1.5 text-xs font-semibold text-ink-700 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+            >
+              Cancel
+            </button>
+          </span>
+        ) : (
+          <InboxActionButton
+            label="Delete"
+            onClick={() => setConfirmingDelete(true)}
+            disabled={pending}
+            tone="danger"
+          />
+        )}
       </div>
 
       {/* Polite announcement of success; errors use `role="alert"` below. */}

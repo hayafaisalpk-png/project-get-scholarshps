@@ -79,6 +79,15 @@ export const contactSchema = z.object({
     .min(1, 'Enter your name.')
     .max(120, 'That name is too long.'),
   email: emailSchema,
+  whatsapp_no: z
+    .string()
+    .trim()
+    .max(30, 'That WhatsApp number is too long.')
+    .refine(
+      (value) => value === '' || /^(?=(?:\D*\d){7,20}\D*$)[+()\d\s-]+$/.test(value),
+      'Enter a valid WhatsApp number or leave this field empty.',
+    )
+    .default(''),
   subject: z
     .string()
     .trim()

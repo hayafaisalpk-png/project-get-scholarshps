@@ -57,7 +57,7 @@ export type ContactStatus = (typeof CONTACT_STATUSES)[number]
 
 export const CONTACT_STATUS_LABELS: Record<ContactStatus, string> = {
   new: 'New',
-  in_progress: 'In progress',
+  in_progress: 'In Process',
   resolved: 'Resolved',
   spam: 'Spam',
 }
@@ -93,6 +93,9 @@ export const contactTriageSchema = z.object({
 })
 
 export type ContactTriageInput = z.infer<typeof contactTriageSchema>
+
+export const contactDeleteSchema = z.object({ id: uuidSchema })
+export const contactReadSchema = z.object({ id: uuidSchema })
 
 export type ContactStatusPatch = {
   status: ContactStatus

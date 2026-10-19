@@ -363,8 +363,10 @@ ever existed. PostgreSQL checks the privilege before the policy: triage failed
 with `42501` for an administrator holding `contact.manage`.
 
 Migration 028 grants `UPDATE` to `authenticated` (never `anon`) and asserts both
-`SELECT` and `UPDATE` with `pg_catalog.has_table_privilege`. `DELETE` remains
-withheld from every application role.
+`SELECT` and `UPDATE` with `pg_catalog.has_table_privilege`. Migration 036 also
+grants `DELETE` to `authenticated` behind the same `contact.manage` policy; the
+admin action requires confirmation and writes an audit entry. Migration 038 adds
+nullable `read_at`, which is set when an authorized editor opens a message.
 
 **Why it survived 91/91 green assertions:** every `contact_submissions` assertion
 was a SELECT or a "cannot", and the "author CANNOT triage" denial passed for the
@@ -514,7 +516,7 @@ media library rather than what a visitor experiences. The featured-image picker
 | `profiles` | none | SELECT own; UPDATE own | SELECT restored in migration 014 |
 | `user_roles` | none | SELECT own | No write policy at all; managed server-side |
 | `newsletter_subscribers` | none | **none** | Zero client privileges |
-| `contact_submissions` | none | SELECT + UPDATE with `contact.manage` | No INSERT/DELETE for any client role; INSERT goes through the service-role action. UPDATE granted in migration 028 |
+| `contact_submissions` | none | SELECT + UPDATE + DELETE with `contact.manage` | No INSERT for client roles; INSERT goes through the service-role action. UPDATE granted in migration 028; DELETE granted in migration 036 |
 | `redirects` | none | SELECT with `seo.manage`/`settings.manage`; write with `seo.manage` | SELECT granted in migration 029. Request-time enforcement reads it with the service-role client, not a client role |
 | `audit_logs` | none | SELECT with `audit.view` | No INSERT/UPDATE/DELETE policy for any app role |
 | `site_settings` | SELECT where `is_public` | SELECT + write with `settings.manage` | |
