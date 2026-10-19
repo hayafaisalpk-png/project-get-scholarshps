@@ -4,6 +4,8 @@ import Link from 'next/link'
 
 import { Container, Section, SectionHeading } from '@/components/layout/container'
 import { ButtonLink } from '@/components/ui/button'
+import { ArticleCard } from '@/features/articles/components/article-card'
+import { listPublishedArticles } from '@/features/articles/queries'
 import { ScholarshipRow } from '@/features/scholarships/components/scholarship-row'
 import {
   getClosingSoonScholarships,
@@ -31,7 +33,7 @@ import {
  *   3. Scholarship **row** cards, stacked — the reference's listing anatomy.
  *   4. A single browse block expressed as a field of pill chips, rather than
  *      four separate card grids.
- *   5. Recently added, FAQ, and a trust/editorial panel.
+ *   5. Recently added, FAQ, and featured articles.
  *
  * Two rules hold throughout:
  *
@@ -46,7 +48,7 @@ export default async function HomePage() {
   const sections = await getHomepageSections()
   const byKey = new Map(sections.map((s) => [s.key, s]))
 
-  const [stats, featured, closingSoon, recent, levels, fields, locations, categories] =
+  const [stats, featured, closingSoon, recent, levels, fields, locations, categories, articleResult] =
     await Promise.all([
       getSiteStats(),
       getFeaturedScholarships(byKey.get('featured')?.config.limit ?? 6),
@@ -56,10 +58,14 @@ export default async function HomePage() {
       getAcademicFields(),
       getLocations(),
       getScholarshipCategories(),
+      listPublishedArticles({ page: 1 }),
     ])
 
   const hero = byKey.get('hero')
   const isEmpty = stats.totalScholarships === 0
+  const articles = articleResult.ok
+    ? articleResult.data.items.slice(0, 3)
+    : []
 
   // Taxonomy landing pages intentionally return 404 when they have no
   // published scholarships. Do not render links to those thin pages while the
@@ -299,6 +305,31 @@ export default async function HomePage() {
       {/* ------------------------------------------------------------------- FAQ */}
       <FaqSection />
 
+      {/* ------------------------------------------------------ Featured articles */}
+      {articles.length > 0 ? (
+        <Section className="bg-ink-50">
+          <Container>
+            <SectionHeading
+              title="Featured articles"
+              description="Practical guidance for finding and applying for scholarships."
+              action={
+                <Link
+                  href="/articles"
+                  className="text-sm font-semibold text-brand-700 hover:underline underline-offset-4"
+                >
+                  View all
+                  <span aria-hidden="true"> &rarr;</span>
+                </Link>
+              }
+            />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {articles.map((article) => (
+                <ArticleCard key={article.id} article={article} />
+              ))}
+            </div>
+          </Container>
+        </Section>
+      ) : null}
 
     </>
   )

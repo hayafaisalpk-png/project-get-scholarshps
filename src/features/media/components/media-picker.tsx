@@ -11,9 +11,9 @@
  * the concern the rule is about.
  */
 /* eslint-disable @next/next/no-img-element */
-import { useId, useState, useTransition } from 'react'
+import { useEffect, useId, useRef, useState, useTransition } from 'react'
 
-import { searchSelectableAssets } from '@/features/media/actions'
+import { searchSelectableAssets, uploadMediaAction } from '@/features/media/actions'
 import type { SelectableAsset } from '@/features/media/selection'
 import { altAttributeFor } from '@/features/media/selection'
 
@@ -39,6 +39,7 @@ export function MediaPicker({
   selected,
   initialAssets,
   initialTotal,
+  allowLibrarySelection = true,
 }: {
   /** Form field name, e.g. `featuredImageId` or `image_id`. */
   name: string
@@ -46,6 +47,7 @@ export function MediaPicker({
   selected: SelectableAsset | null
   initialAssets: SelectableAsset[]
   initialTotal: number
+  allowLibrarySelection?: boolean
 }) {
   const [current, setCurrent] = useState<SelectableAsset | null>(selected)
   const [open, setOpen] = useState(false)
@@ -54,6 +56,49 @@ export function MediaPicker({
   const [total, setTotal] = useState(initialTotal)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [uploadAlt, setUploadAlt] = useState('')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadPreview, setUploadPreview] = useState<string | null>(null)
+  const uploadFileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (uploadPreview) URL.revokeObjectURL(uploadPreview)
+    }
+  }, [uploadPreview])
+
+  function beginUpload(file: File, altText: string) {
+    if (uploading || !altText.trim()) return
+    setUploading(true)
+    const formData = new FormData()
+    formData.set('file', file)
+    formData.set('folder', 'articles')
+    formData.set('altText', altText)
+    formData.set('caption', '')
+    formData.set('attribution', '')
+    formData.set('isDecorative', 'off')
+    formData.set('isPublic', 'on')
+
+    startTransition(async () => {
+      const result = await uploadMediaAction(null, formData)
+      setUploading(false)
+      if (!result.ok) {
+        setUploadMessage(result.message)
+        return
+      }
+      if (!result.asset) {
+        setUploadMessage('The image could not be selected.')
+        return
+      }
+
+      setCurrent(result.asset)
+      setSelectedFile(null)
+      setUploadMessage('Image uploaded. Click Save changes to attach it.')
+      if (uploadFileRef.current) uploadFileRef.current.value = ''
+    })
+  }
   const panelId = useId()
 
   /*
@@ -78,8 +123,16 @@ export function MediaPicker({
   }
 
   return (
-    <fieldset className="rounded-sm border border-ink-200 bg-white p-4">
-      <legend className="px-1 text-sm font-medium text-ink-800">{label}</legend>
+    <fieldset
+      className={
+        allowLibrarySelection
+          ? 'rounded-sm border border-ink-200 bg-white p-4'
+          : 'p-0'
+      }
+    >
+      {allowLibrarySelection ? (
+        <legend className="px-1 text-sm font-medium text-ink-800">{label}</legend>
+      ) : null}
 
       {/* The id is submitted as a real form field; the picker is only a nicer way
           to choose it. */}
@@ -120,15 +173,17 @@ export function MediaPicker({
           </div>
 
           <div className="flex flex-col gap-1.5">
-            <button
-              type="button"
-              onClick={() => setOpen((v) => !v)}
-              aria-expanded={open}
-              aria-controls={panelId}
-              className="rounded-sm border border-ink-300 px-2.5 py-1.5 text-xs font-semibold text-ink-700 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
-            >
-              {open ? 'Close library' : 'Change image'}
-            </button>
+            {allowLibrarySelection ? (
+              <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                aria-controls={panelId}
+                className="rounded-sm border border-ink-300 px-2.5 py-1.5 text-xs font-semibold text-ink-700 hover:bg-ink-100 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+              >
+                {open ? 'Close library' : 'Change image'}
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => {
@@ -141,7 +196,7 @@ export function MediaPicker({
             </button>
           </div>
         </div>
-      ) : (
+      ) : allowLibrarySelection ? (
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
@@ -151,9 +206,9 @@ export function MediaPicker({
         >
           Choose an image
         </button>
-      )}
+      ) : null}
 
-      {open ? (
+      {open && allowLibrarySelection ? (
         <div id={panelId} className="mt-4 border-t border-ink-100 pt-3">
           <label htmlFor={`${name}-search`} className="block text-xs font-medium text-ink-700">
             Search the library
@@ -225,6 +280,81 @@ export function MediaPicker({
           ) : null}
         </div>
       ) : null}
+
+      <div
+        className={
+          allowLibrarySelection
+            ? 'mt-4 border-t border-ink-100 pt-3'
+            : 'mt-0'
+        }
+      >
+          <div
+            className={`${allowLibrarySelection ? 'w-full' : 'w-1/2'} space-y-3 rounded-sm border border-ink-300 bg-white p-3`}
+          >
+            <div className="overflow-hidden rounded-sm border border-ink-300 bg-white">
+              <div className="flex h-48 items-center justify-center bg-ink-50 p-3">
+                {uploadPreview ? (
+                  <img
+                    src={uploadPreview}
+                    alt="Selected upload preview"
+                    className="h-full w-full object-contain"
+                  />
+                ) : (
+                  <span className="text-sm text-ink-500">Image preview</span>
+                )}
+              </div>
+              <label
+                htmlFor={`${name}-upload-file`}
+                className="flex cursor-pointer items-center justify-center border-t border-ink-300 px-4 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-50 focus-within:ring-2 focus-within:ring-brand-500"
+              >
+                Upload Image
+                <input
+                  ref={uploadFileRef}
+                  id={`${name}-upload-file`}
+                  name="featuredImageFile"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,image/avif,image/gif,image/svg+xml"
+                  className="sr-only"
+                  onChange={(event) => {
+                    const file = event.target.files?.[0]
+                    if (file) {
+                      setUploadMessage(null)
+                      setSelectedFile(file)
+                      setUploadPreview(URL.createObjectURL(file))
+                      beginUpload(file, uploadAlt)
+                    }
+                  }}
+                />
+              </label>
+            </div>
+            <div>
+              <label
+                htmlFor={`${name}-upload-alt`}
+                className="block text-xs font-medium text-ink-800"
+              >
+                Alt text
+              </label>
+              <input
+                id={`${name}-upload-alt`}
+                name="featuredImageAlt"
+                type="text"
+                value={uploadAlt}
+                onChange={(event) => {
+                  const value = event.target.value
+                  setUploadAlt(value)
+                  if (selectedFile) beginUpload(selectedFile, value)
+                }}
+                placeholder="Describe the image"
+                className="mt-1 block w-full rounded-sm border border-ink-300 bg-white px-2.5 py-1.5 text-sm text-ink-900 focus:border-brand-600 focus:ring-2 focus:ring-brand-200 focus:outline-none"
+              />
+            </div>
+            {uploadMessage ? (
+              <p role="status" className="text-xs text-ink-700">
+                {uploadMessage}
+              </p>
+            ) : null}
+          </div>
+      </div>
     </fieldset>
   )
 }

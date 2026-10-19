@@ -110,7 +110,20 @@ function ArticleFormFields({
     <form action={formAction} className="space-y-6" noValidate>
       {record ? <input type="hidden" name="id" value={record.id} /> : null}
 
-      {state && !state.ok ? <Alert tone="error">{state.message}</Alert> : null}
+      {state && !state.ok ? (
+        <Alert tone="error">
+          <p>{state.message}</p>
+          {fieldErrors && Object.keys(fieldErrors).length > 0 ? (
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              {Object.entries(fieldErrors).map(([field, message]) => (
+                <li key={field}>
+                  {field === '_form' ? message : `${field}: ${message}`}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </Alert>
+      ) : null}
       {state?.ok && state.message ? (
         <Alert tone="success">{state.message}</Alert>
       ) : null}
@@ -210,7 +223,7 @@ function ArticleFormFields({
 
       <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
         <h2 className="text-lg font-semibold text-ink-900">Body</h2>
-        <p className="mt-1 mb-5 text-sm text-ink-600">
+        <p className="mt-1 mb-0 text-sm text-ink-600">
           Saved as sanitised HTML. Scripts, embedded frames and unsafe links are
           removed on the server regardless of what the editor produces.
         </p>
@@ -227,7 +240,7 @@ function ArticleFormFields({
 
         <p className="mt-3 text-xs text-ink-500">
           Stored word count: {record ? record.word_count : words}
-          {isEdit && record && words !== record.word_count ? (
+          {isEdit && record && body !== record.content ? (
             <span className="ml-2 text-amber-700">
               unsaved changes in the body
             </span>
@@ -236,20 +249,21 @@ function ArticleFormFields({
         {isEdit ? <p className="mt-2 text-xs text-ink-500" role="status">{autosaveState === 'saving' ? 'Autosaving draft…' : autosaveState === 'saved' ? 'Draft autosaved.' : autosaveState === 'error' ? 'Autosave failed; use Save changes.' : ''}</p> : null}
       </section>
 
-      <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
+      <section className="py-1">
         <h2 className="text-lg font-semibold text-ink-900">Image</h2>
         <p className="mt-1 mb-5 text-sm text-ink-600">
-          Optional. The picker shows what a screen reader will be told, so the alt
+          Optional. Upload a public image directly from your computer. The alt
           text can be checked before the article goes out.
         </p>
 
         <MediaPicker
           name="featuredImageId"
           label="Featured image"
-          selected={selectedImage}
-          initialAssets={images.items}
-          initialTotal={images.total}
-        />
+           selected={selectedImage}
+           initialAssets={images.items}
+           initialTotal={images.total}
+           allowLibrarySelection={false}
+         />
 
         {fieldErrors?.featured_image_id ? (
           <p role="alert" className="mt-2 text-xs text-red-700">

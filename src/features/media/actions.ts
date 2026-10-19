@@ -38,7 +38,12 @@ import { listSelectableAssets } from './queries'
  * discovering a collision.
  */
 export type MediaActionResult =
-  | { ok: true; message: string }
+  | {
+      ok: true
+      message: string
+      id?: string
+      asset?: SelectableAsset
+    }
   | { ok: false; message: string; fieldErrors?: Record<string, string> }
 
 type Bucket = 'public-media' | 'private-media'
@@ -133,12 +138,13 @@ export async function uploadMediaAction(
     bucket,
     folder: parsed.data.folder,
   })
+  const objectPath = storagePath.split('/').slice(1).join('/')
 
   const supabase = await createClient()
 
   const { error: uploadError } = await supabase.storage
     .from(bucket)
-    .upload(storagePath, file, {
+    .upload(objectPath, file, {
       cacheControl: '31536000',
       contentType: check.mimeType,
       upsert: false,
@@ -156,7 +162,7 @@ export async function uploadMediaAction(
 
   const { data: publicData } = supabase.storage
     .from(bucket)
-    .getPublicUrl(storagePath)
+    .getPublicUrl(objectPath)
 
   const publicUrl =
     bucket === 'public-media' ? (publicData?.publicUrl ?? null) : null
@@ -191,7 +197,7 @@ export async function uploadMediaAction(
     // The bytes are in the bucket but nothing points at them. Remove them now
     // rather than leaving an orphan.
     console.error('[media] row insert failed:', insertError.message)
-    await supabase.storage.from(bucket).remove([storagePath])
+    await supabase.storage.from(bucket).remove([objectPath])
     return {
       ok: false,
       message: 'The file was uploaded but could not be recorded. Nothing was saved.',
@@ -202,6 +208,14 @@ export async function uploadMediaAction(
 
   return {
     ok: true,
+    id,
+    asset: {
+      id,
+      fileName: file.name.slice(0, 300),
+      altText: parsed.data.altText === '' ? null : parsed.data.altText,
+      isDecorative: parsed.data.isDecorative,
+      displayUrl: publicUrl,
+    },
     message: check.scriptable
       ? `Uploaded to the PRIVATE bucket. "${file.name}" is an SVG, which can contain script — review it before making it public.`
       : `Uploaded to the ${bucket === 'public-media' ? 'public' : 'private'} bucket.`,
@@ -317,6 +331,72 @@ export async function updateMediaAction(
 
   const supabase = await createClient()
 
+  const { data: asset, error: assetError } = await supabase
+    .from('media_assets')
+    .select('storage_path, public_url, is_public, mime_type')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (assetError || !asset) {
+    return { ok: false, message: 'That asset could not be found.' }
+  }
+
+  let storagePath = asset.storage_path
+  let publicUrl = asset.public_url
+  const currentBucket = storagePath.split('/')[0] as Bucket | undefined
+  const currentPath = storagePath.split('/').slice(1).join('/')
+  const nextBucket = bucketFor(parsed.data.isPublic)
+
+  if (
+    (currentBucket !== 'public-media' && currentBucket !== 'private-media') ||
+    !currentPath
+  ) {
+    return { ok: false, message: 'That asset has an invalid storage path.' }
+  }
+
+  if (currentBucket !== nextBucket) {
+    const { data: file, error: downloadError } = await supabase.storage
+      .from(currentBucket)
+      .download(currentPath)
+
+    if (downloadError || !file) {
+      return { ok: false, message: 'The image could not be moved.' }
+    }
+
+    const { error: uploadError } = await supabase.storage
+      .from(nextBucket)
+      .upload(currentPath, file, {
+        cacheControl: '31536000',
+        contentType: asset.mime_type,
+        upsert: false,
+      })
+
+    if (uploadError) {
+      console.error('[media] visibility upload failed:', uploadError.message)
+      return { ok: false, message: 'The image could not be moved.' }
+    }
+
+    const { error: removeError } = await supabase.storage
+      .from(currentBucket)
+      .remove([currentPath])
+
+    if (removeError) {
+      await supabase.storage.from(nextBucket).remove([currentPath])
+      console.error('[media] visibility cleanup failed:', removeError.message)
+      return { ok: false, message: 'The image could not be moved.' }
+    }
+
+    storagePath = `${nextBucket}/${currentPath}`
+    publicUrl =
+      nextBucket === 'public-media'
+        ? supabase.storage.from(nextBucket).getPublicUrl(currentPath).data.publicUrl
+        : null
+  } else if (nextBucket === 'public-media') {
+    publicUrl = supabase.storage
+      .from(nextBucket)
+      .getPublicUrl(currentPath).data.publicUrl
+  }
+
   const { error } = await supabase
     .from('media_assets')
     .update({
@@ -327,6 +407,8 @@ export async function updateMediaAction(
         parsed.data.attribution === '' ? null : parsed.data.attribution,
       folder: parsed.data.folder,
       is_public: parsed.data.isPublic,
+      storage_path: storagePath,
+      public_url: publicUrl,
     })
     .eq('id', id)
 

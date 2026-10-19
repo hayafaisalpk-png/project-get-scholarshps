@@ -10,6 +10,23 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Added — Article card featured images
+
+- Public article cards now render a selected public featured image with its
+  stored accessible alt text.
+- Fixed media visibility promotion so enabling Public moves the object into the
+  public bucket and records its public URL.
+- Renamed the public article listing heading and metadata label to “Articles.”
+- Added the selected featured image to the public article detail header.
+- Changed media detail editing to an accessible modal and added a confirmed
+  Delete action that archives the asset safely.
+- Added direct public featured-image upload to the article editor.
+- Made the article editor’s featured-image control upload-only from the local
+  computer; the general media library picker remains available elsewhere.
+- Fixed public storage URL generation and compatibility for previously uploaded
+  featured images.
+- Added a database-backed Featured articles section below the homepage FAQ.
+
 ### Changed — Homepage hero search controls
 
 - Set the hero search field and “Search scholarships” button to use 16px

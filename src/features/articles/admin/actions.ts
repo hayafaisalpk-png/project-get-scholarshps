@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { requirePermission } from '@/lib/auth/guards'
 import { deriveArticleContent } from '@/lib/sanitize'
 import { createClient } from '@/lib/supabase/server'
+import { uploadMediaAction } from '@/features/media/actions'
 import {
   type ArticleRelations,
 } from '@/features/articles/admin/queries'
@@ -92,6 +93,39 @@ function buildInput(formData: FormData) {
     scholarship_ids: idList(formData, 'scholarship_ids'),
     change_note: text(formData, 'change_note'),
   }
+}
+
+async function uploadFeaturedImage(
+  formData: FormData,
+): Promise<{ id: string } | ArticleActionResult | null> {
+  const file = formData.get('featuredImageFile')
+  if (!(file instanceof File) || file.size === 0) return null
+
+  const uploadData = new FormData()
+  uploadData.set('file', file)
+  uploadData.set('folder', 'articles')
+  uploadData.set('altText', text(formData, 'featuredImageAlt'))
+  uploadData.set('caption', '')
+  uploadData.set('attribution', '')
+  uploadData.set('isDecorative', 'off')
+  uploadData.set('isPublic', 'on')
+
+  const result = await uploadMediaAction(null, uploadData)
+  if (!result.ok) {
+    return {
+      ok: false,
+      message: result.message,
+      fieldErrors: result.fieldErrors
+        ? {
+            featured_image_id: Object.values(result.fieldErrors).join(' '),
+          }
+        : undefined,
+    }
+  }
+  if (!result.asset) {
+    return { ok: false, message: 'The featured image could not be uploaded.' }
+  }
+  return { id: result.asset.id }
 }
 
 /* -------------------------------------------------------------------------- */
@@ -354,7 +388,11 @@ export async function createArticleAction(
     }
   }
 
-  const value = parsed.data
+  const uploadedImage = await uploadFeaturedImage(formData)
+  if (uploadedImage && 'ok' in uploadedImage) return uploadedImage
+  const value = uploadedImage
+    ? { ...parsed.data, featured_image_id: uploadedImage.id }
+    : parsed.data
   /*
    * `warnings` is intentionally not used here. Create ends in a `redirect` to the
    * edit screen, which throws away the action result — there is nowhere to
@@ -450,7 +488,11 @@ export async function updateArticleAction(
     }
   }
 
-  const value = parsed.data
+  const uploadedImage = await uploadFeaturedImage(formData)
+  if (uploadedImage && 'ok' in uploadedImage) return uploadedImage
+  const value = uploadedImage
+    ? { ...parsed.data, featured_image_id: uploadedImage.id }
+    : parsed.data
   const { row, sanitisedBody, warnings } = buildRow(value, user.id, 'update')
 
   if (value.status === 'published' && sanitisedBody.trim().length === 0) {

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
 import { Container, Prose, Section } from '@/components/layout/container'
@@ -149,6 +150,19 @@ export default async function ArticlePage({ params }: Params) {
 
             {article.excerpt ? (
               <p className="mt-4 text-lg text-ink-600">{article.excerpt}</p>
+            ) : null}
+
+            {article.featuredImage ? (
+              <div className="relative mt-6 aspect-[16/9] overflow-hidden rounded-sm bg-ink-100">
+                <Image
+                  src={article.featuredImage.url}
+                  alt={article.featuredImage.alt}
+                  fill
+                  priority
+                  sizes="(min-width: 768px) 768px, 100vw"
+                  className="object-cover"
+                />
+              </div>
             ) : null}
           </header>
 

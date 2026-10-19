@@ -62,7 +62,7 @@ export async function generateMetadata({
       : articlesPath({ category, q, page })
 
   return {
-    title: 'Articles and guides',
+    title: 'Articles',
     description:
       'Guides on scholarship applications, financial aid, essays and study choices.',
     alternates: { canonical },
@@ -114,7 +114,7 @@ export default async function ArticlesPage({
       <Section>
         <Container>
           <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
-            Articles and guides
+            Articles
           </h1>
           <Alert tone="error" className="mt-8">
             We could not load articles right now. Please try again in a moment.
@@ -140,13 +140,13 @@ export default async function ArticlesPage({
   const structuredData = isCanonicalIndex
     ? graph(
         webPageLd({
-          name: 'Articles and guides',
+          name: 'Articles',
           description:
             'Guides on scholarship applications, financial aid, essays and study choices.',
           path: '/articles',
         }),
         itemListLd({
-          name: 'Articles and guides',
+          name: 'Articles',
           path: '/articles',
           items: items.map((item) => ({
             name: item.title,
@@ -162,7 +162,7 @@ export default async function ArticlesPage({
         <JsonLd data={structuredData} />
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
-            Articles and guides
+            Articles
           </h1>
           <p className="mt-2 text-ink-600">
             {total > 0

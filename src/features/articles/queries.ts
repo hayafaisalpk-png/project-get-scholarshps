@@ -4,6 +4,7 @@ import { cache } from 'react'
 
 import { type DbResult, toDatabaseError } from '@/lib/db/errors'
 import { sanitizeArticleHtml } from '@/lib/sanitize'
+import { altAttributeFor } from '@/features/media/selection'
 import { createClient } from '@/lib/supabase/server'
 
 /**
@@ -35,6 +36,7 @@ export type ArticleCardData = {
   publishedAt: string
   readingTimeMinutes: number
   authorName: string | null
+  featuredImage: { url: string; alt: string } | null
 }
 
 export type ArticleListResult = {
@@ -57,7 +59,7 @@ function escapeSearch(term: string): string {
 }
 
 const CARD_COLUMNS =
-  'id, slug, title, excerpt, published_at, reading_time_minutes, author:authors(full_name)'
+  'id, slug, title, excerpt, published_at, reading_time_minutes, author:authors(full_name), featured_image_id'
 
 /**
  * Same columns, plus an INNER embed of the category link.
@@ -80,6 +82,16 @@ type CardRow = {
   published_at: string | null
   reading_time_minutes: number
   author: { full_name: string } | { full_name: string }[] | null
+  featured_image_id: string | null
+}
+
+type FeaturedImageRow = {
+  id: string
+  file_name: string
+  alt_text: string | null
+  is_decorative: boolean
+  public_url: string | null
+  storage_path: string
 }
 
 /**
@@ -95,7 +107,27 @@ function authorNameOf(author: CardRow['author']): string | null {
   return row?.full_name ?? null
 }
 
-function toCard(row: CardRow): ArticleCardData {
+function featuredImageOf(
+  image: FeaturedImageRow | undefined,
+  publicUrl?: string | null,
+): ArticleCardData['featuredImage'] {
+  if (!image || !publicUrl) return null
+
+  return {
+    url: publicUrl,
+    alt: altAttributeFor({
+      altText: image.alt_text,
+      isDecorative: image.is_decorative,
+      fileName: image.file_name,
+    }),
+  }
+}
+
+function toCard(
+  row: CardRow,
+  featuredImages: Map<string, FeaturedImageRow>,
+  publicUrl?: string | null,
+): ArticleCardData {
   return {
     id: row.id,
     slug: row.slug,
@@ -107,6 +139,10 @@ function toCard(row: CardRow): ArticleCardData {
     publishedAt: row.published_at ?? '',
     readingTimeMinutes: row.reading_time_minutes,
     authorName: authorNameOf(row.author),
+    featuredImage: featuredImageOf(
+      row.featured_image_id ? featuredImages.get(row.featured_image_id) : undefined,
+      publicUrl,
+    ),
   }
 }
 
@@ -155,10 +191,40 @@ export const listPublishedArticles = cache(
 
     const total = count ?? 0
 
+    const rows = (data ?? []) as unknown as CardRow[]
+    const imageIds = rows
+      .map((row) => row.featured_image_id)
+      .filter((id): id is string => Boolean(id))
+
+    const featuredImages = new Map<string, FeaturedImageRow>()
+    if (imageIds.length > 0) {
+      const media = await supabase
+        .from('media_assets')
+        .select('id, file_name, alt_text, is_decorative, public_url, storage_path')
+        .in('id', imageIds)
+
+      if (!media.error) {
+        for (const row of (media.data ?? []) as FeaturedImageRow[]) {
+          featuredImages.set(row.id, row)
+        }
+      }
+    }
+
     return {
       ok: true,
       data: {
-        items: ((data ?? []) as unknown as CardRow[]).map(toCard),
+        items: rows.map((row) => {
+          const image = row.featured_image_id
+            ? featuredImages.get(row.featured_image_id)
+            : undefined
+          const publicUrl = image?.public_url ?? (image?.storage_path.startsWith('public-media/')
+            ? supabase.storage
+                .from('public-media')
+                .getPublicUrl(image.storage_path.slice('public-media/'.length))
+                .data.publicUrl
+            : null)
+          return toCard(row, featuredImages, publicUrl)
+        }),
         total,
         page,
         pageSize,
@@ -190,6 +256,7 @@ export type PublicArticle = {
   noindex: boolean
   categories: { slug: string; name: string }[]
   tags: { slug: string; name: string }[]
+  featuredImage: { url: string; alt: string } | null
 }
 
 /**
@@ -205,7 +272,7 @@ export const getPublishedArticleBySlug = cache(
     const { data, error } = await supabase
       .from('articles')
       .select(
-        'id, slug, title, excerpt, content, published_at, reading_time_minutes, word_count, seo_title, seo_description, canonical_url, noindex, author:authors(full_name, title)',
+        'id, slug, title, excerpt, content, published_at, reading_time_minutes, word_count, seo_title, seo_description, canonical_url, noindex, featured_image_id, author:authors(full_name, title)',
       )
       .eq('slug', slug)
       .maybeSingle()
@@ -223,6 +290,33 @@ export const getPublishedArticleBySlug = cache(
         .select('tag:article_tags(slug, name)')
         .eq('article_id', data.id),
     ])
+
+    let featuredImage: PublicArticle['featuredImage'] = null
+    if (data.featured_image_id) {
+      const { data: image } = await supabase
+        .from('media_assets')
+        .select('file_name, alt_text, is_decorative, public_url, storage_path')
+        .eq('id', data.featured_image_id)
+        .maybeSingle()
+
+      const publicUrl = image?.public_url ?? (image?.storage_path.startsWith('public-media/')
+        ? supabase.storage
+            .from('public-media')
+            .getPublicUrl(image.storage_path.slice('public-media/'.length))
+            .data.publicUrl
+        : null)
+
+      if (image && publicUrl) {
+        featuredImage = {
+          url: publicUrl,
+          alt: altAttributeFor({
+            altText: image.alt_text,
+            isDecorative: image.is_decorative,
+            fileName: image.file_name,
+          }),
+        }
+      }
+    }
 
     const author = data.author as
       | { full_name: string; title: string | null }
@@ -250,6 +344,7 @@ export const getPublishedArticleBySlug = cache(
         noindex: data.noindex,
         categories: flattenTerms(categories.data, 'category'),
         tags: flattenTerms(tags.data, 'tag'),
+        featuredImage,
       },
     }
   },

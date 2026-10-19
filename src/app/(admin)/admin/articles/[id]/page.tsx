@@ -97,7 +97,7 @@ export default async function EditArticlePage({
         </Link>
       </div>
 
-      {record.published_at ? (
+      {record.status === 'published' ? (
         <Alert tone="warning" title="This article is live">
           Changing the slug changes its public address. A redirect must be
           created separately so existing links keep working.

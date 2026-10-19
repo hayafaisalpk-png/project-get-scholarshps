@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState, useTransition } from 'react'
+import { X } from 'lucide-react'
+import { useEffect, useRef, useState, useTransition } from 'react'
 
 import { Alert } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
@@ -17,14 +18,9 @@ import { MEDIA_FOLDERS } from '../validation'
 /**
  * Per-asset metadata editor.
  *
- * A disclosure rather than a modal: the grid behind it stays visible, so an
- * editor can compare an alt-text change against the image without losing their
- * place. The toggle is a real `<button>` carrying `aria-expanded` and
- * `aria-controls`, so the state is announced rather than inferred.
- *
- * Archive is a two-step inline confirmation for the same reason as
- * `ArticleRowActions` — `window.confirm` cannot be styled and handles focus
- * poorly, and the destructive choice must never be the default.
+ * Opens the metadata editor in a modal so the asset grid remains compact.
+ * Archive is presented as Delete in the UI, but remains a soft delete because
+ * published records may still reference the asset.
  */
 export function MediaEditor({
   id,
@@ -52,6 +48,19 @@ export function MediaEditor({
     null,
   )
   const [confirming, setConfirming] = useState(false)
+  const closeButtonRef = useRef<HTMLButtonElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    closeButtonRef.current?.focus()
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [open])
 
   function save(data: FormData) {
     setMessage(null)
@@ -86,37 +95,64 @@ export function MediaEditor({
     <div className="mt-3">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls={`media-editor-${id}`}
+        onClick={() => {
+          setMessage(null)
+          setConfirming(false)
+          setOpen(true)
+        }}
         className="text-sm font-medium text-brand-700 underline underline-offset-4 hover:text-brand-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-700"
       >
-        {open ? 'Close details' : 'Edit details'}
+        Edit details
         <span className="sr-only-focusable"> for {fileName}</span>
       </button>
 
       {open ? (
         <div
-          id={`media-editor-${id}`}
-          className="mt-3 space-y-4 rounded-sm border border-ink-200 bg-ink-50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={`media-editor-title-${id}`}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-950/35 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setOpen(false)
+          }}
         >
-          {message ? (
-            <Alert tone={message.ok ? 'success' : 'error'}>{message.text}</Alert>
-          ) : null}
+          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-sm bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between gap-4">
+              <h2 id={`media-editor-title-${id}`} className="text-lg font-semibold text-ink-900">
+                Edit media
+              </h2>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={() => setOpen(false)}
+                aria-label={`Close details for ${fileName}`}
+                className="rounded-sm p-1.5 text-ink-600 hover:bg-ink-100 hover:text-ink-900 focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none"
+              >
+                <X className="size-5" aria-hidden="true" />
+              </button>
+            </div>
 
-          {/*
+            <p className="mt-1 truncate text-sm text-ink-600">{fileName}</p>
+
+            {message ? (
+              <Alert tone={message.ok ? 'success' : 'error'} className="mt-4">
+                {message.text}
+              </Alert>
+            ) : null}
+
+            {/*
             A plain form with `onSubmit`, NOT `<form action={…}>`. This panel is
             driven from a transition and must not trigger a navigation or the
             Server Action form protocol; the values are read from FormData and
             passed to `updateMediaAction` as plain arguments.
           */}
-          <form
-            onSubmit={(event) => {
-              event.preventDefault()
-              save(new FormData(event.currentTarget))
-            }}
-            className="space-y-3"
-          >
+            <form
+              onSubmit={(event) => {
+                event.preventDefault()
+                save(new FormData(event.currentTarget))
+              }}
+              className="mt-5 space-y-3"
+            >
             {/* The decorative checkbox sits ABOVE the alt field on purpose: it is
                 the question that decides whether alt text is required, so an editor
                 should be able to answer it before being shown a field the answer
@@ -209,15 +245,15 @@ export function MediaEditor({
             <Button type="submit" size="sm" disabled={pending}>
               {pending ? 'Saving…' : 'Save'}
             </Button>
-          </form>
+            </form>
 
-          <div className="border-t border-ink-200 pt-3">
+            <div className="mt-5 border-t border-ink-200 pt-4">
             {confirming ? (
               <div className="space-y-2">
                 <p className="text-sm text-ink-700">
-                  Archive <span className="font-semibold">{fileName}</span>? It
-                  will be hidden from the library, but the file stays in the
-                  bucket.
+                  Delete <span className="font-semibold">{fileName}</span>? It
+                  will be archived and hidden from the active library, but the
+                  file will remain available to records that reference it.
                 </p>
                 <div className="flex gap-2">
                   <Button
@@ -227,7 +263,7 @@ export function MediaEditor({
                     onClick={archive}
                     disabled={pending}
                   >
-                    {pending ? 'Archiving…' : 'Yes, archive it'}
+                    {pending ? 'Deleting…' : 'Yes, delete it'}
                   </Button>
                   <Button
                     type="button"
@@ -248,9 +284,10 @@ export function MediaEditor({
                 onClick={() => setConfirming(true)}
                 disabled={pending}
               >
-                Archive
+                Delete
               </Button>
             )}
+            </div>
           </div>
         </div>
       ) : null}

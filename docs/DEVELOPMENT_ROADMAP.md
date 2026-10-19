@@ -5,7 +5,7 @@ only when its acceptance criteria have actually been verified by running them.
 
 Legend: `[ ]` not started · `[~]` in progress · `[x]` complete · `[!]` blocked
 
-Last updated: 2026-10-19 (hero search controls now use 16px padding; header sign-in control now uses the semantic brand color;
+Last updated: 2026-10-19 (media editing now opens in a modal with a safe Delete action; media visibility promotion now moves objects into the public bucket; article cards now render selected public featured images; hero search controls now use 16px padding; header sign-in control now uses the semantic brand color;
 public site redesigned against the bold.org reference —
 design tokens, header, footer, homepage, listing and detail page; see
 `docs/REFERENCE_ANALYSIS.md` and `docs/CHANGELOG.md`. Six `[SAMPLE]` fixtures are
