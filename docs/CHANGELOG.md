@@ -26,6 +26,8 @@ verified by running the relevant command.
 - Fixed public storage URL generation and compatibility for previously uploaded
   featured images.
 - Added a database-backed Featured articles section below the homepage FAQ.
+- Served the Google Search Console verification file from `public/` so it is
+  reachable at the site root on the deployed host.
 
 ### Changed — Homepage hero search controls
 
