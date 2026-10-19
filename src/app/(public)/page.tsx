@@ -142,10 +142,14 @@ export default async function HomePage() {
                         type="search"
                         name="q"
                         placeholder="Search by keyword, sponsor or subject"
-                        className="h-12 w-full rounded-md border border-ink-200 bg-white p-4 pl-12 text-base text-ink-900 placeholder:text-ink-400 focus:border-brand-500"
+                        className="h-16 w-full rounded-md border border-ink-200 bg-white p-4 pl-12 text-base text-ink-900 placeholder:text-ink-400 focus:border-brand-500"
                       />
                     </div>
-                    <ButtonLink href="/scholarships" size="lg" className="shrink-0 p-4">
+                    <ButtonLink
+                      href="/scholarships"
+                      size="lg"
+                      className="h-16"
+                    >
                       Search scholarships
                     </ButtonLink>
                   </div>

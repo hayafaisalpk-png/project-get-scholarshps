@@ -10,6 +10,11 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Changed — Homepage hero search controls
+
+- Set the hero search field and “Search scholarships” button to use 16px
+  padding, while preserving the field’s icon offset.
+
 ### Changed — Header sign-in affordance
 
 - Updated the header sign-in button to use the semantic brand color ramp on
