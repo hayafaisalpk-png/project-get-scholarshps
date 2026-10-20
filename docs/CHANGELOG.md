@@ -10,6 +10,59 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Fixed — Article social-media previews (og:image / og:site_name)
+
+Investigation against the live deployment (production HTML fetched as
+`facebookexternalhit`) found three defects that made article shares render
+without the article's featured image:
+
+1. `og:image`/`twitter:image` pointed only at the generated branded card route,
+   never at the article's own featured image.
+2. The article page's nested `openGraph` metadata **replaced** the root
+   layout's wholesale (Next.js shallow-merge rule, confirmed in
+   `node_modules` source), silently dropping `og:site_name` and `og:locale`
+   from every article page.
+3. [Deployment config, not code] `NEXT_PUBLIC_SITE_URL` is set to the bare apex
+   host, but production answers only on `www.` — every apex request (including
+   the og:image card route and the article page itself) 308-redirects. Preview
+   crawlers following an apex `og:image` hit a redirect or fail, so no
+   thumbnail is cached.
+
+Changes:
+
+- New `src/features/articles/metadata.ts`: pure composition of the article's
+  `og:*` and `twitter:*` tags. With a featured image, `og:image`
+  /`twitter:image` point at the image's own public storage URL (with
+  `og:image:alt`, and `og:image:width/height` when the database has recorded
+  dimensions); `twitter:card` is explicitly `summary_large_image`. Without a
+  featured image the keys are left out so the file-convention generated card
+  and the root `twitter.card` keep applying — the existing branded card is the
+  default fallback.
+- `og:site_name` (from the `general.site_name` setting) and `og:locale` are
+  restated on every article page.
+- `og:url` now mirrors `alternates.canonical` (per-article `canonical_url`
+  honoured) instead of a hardcoded slug path.
+- Page/OG description falls back to a word-safe, ellipsis-marked excerpt of the
+  published body (`htmlToPlainText`, ≤200 chars) when the editor wrote neither
+  a SEO description nor an excerpt; article 10-best previously shared with no
+  description at all. The JSON-LD description shares the same value.
+- The article detail query now selects `media_assets.width/height` so recorded
+  image dimensions reach the OG tags without any fabrication.
+- `.env.example` documents that `NEXT_PUBLIC_SITE_URL` must be the exact origin
+  the deployment serves.
+- 17 new unit tests (`tests/unit/article-metadata.test.ts`); **473 unit tests
+  pass**, `npm run verify` exits 0. Verified end-to-end against the production
+  build: with the linked database, all three published articles emit the
+  article's featured image as og:image, restored site_name/locale, no
+  duplicate tags, and a derived description on the article lacking editorial
+  copy. A crawler with no featured image yet cannot be exercised live (all
+  three articles have one); the fallback card path stays covered by the unit
+  suite and the generated route.
+
+Deployment follow-up (requires deploy access): set
+`NEXT_PUBLIC_SITE_URL=https://www.getscholarship.online` and `APP_ORIGIN` to
+match in the production environment — see the report in this session.
+
 ### Added — Article card featured images
 
 - Public article cards now render a selected public featured image with its

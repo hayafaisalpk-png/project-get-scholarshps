@@ -256,7 +256,13 @@ export type PublicArticle = {
   noindex: boolean
   categories: { slug: string; name: string }[]
   tags: { slug: string; name: string }[]
-  featuredImage: { url: string; alt: string } | null
+  /**
+   * The picker-recorded dimensions feed the og:image:width/height tags; both
+   * are `null` for uploads made before any image probe existed.
+   */
+  featuredImage:
+    | { url: string; alt: string; width: number | null; height: number | null }
+    | null
 }
 
 /**
@@ -295,7 +301,7 @@ export const getPublishedArticleBySlug = cache(
     if (data.featured_image_id) {
       const { data: image } = await supabase
         .from('media_assets')
-        .select('file_name, alt_text, is_decorative, public_url, storage_path')
+        .select('file_name, alt_text, is_decorative, public_url, storage_path, width, height')
         .eq('id', data.featured_image_id)
         .maybeSingle()
 
@@ -314,6 +320,8 @@ export const getPublishedArticleBySlug = cache(
             isDecorative: image.is_decorative,
             fileName: image.file_name,
           }),
+          width: image.width ?? null,
+          height: image.height ?? null,
         }
       }
     }

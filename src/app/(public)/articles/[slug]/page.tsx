@@ -6,8 +6,14 @@ import { notFound } from 'next/navigation'
 import { Container, Prose, Section } from '@/components/layout/container'
 import { ButtonLink } from '@/components/ui/button'
 import { JsonLd } from '@/components/structured-data'
+import {
+  articleDescription,
+  articleMetaTags,
+  articleTitle,
+} from '@/features/articles/metadata'
 import { getPublishedArticleBySlug } from '@/features/articles/queries'
 import { formatTimestamp, readingTime } from '@/lib/format'
+import { getString } from '@/lib/settings'
 import {
   articleLd,
   breadcrumbLd,
@@ -40,26 +46,23 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   if (!result.ok || !result.data) notFound()
 
   const article = result.data
+  const siteName = await getString('general.site_name', 'GetScholarship')
 
   return {
-    title: article.seoTitle ?? article.title,
-    description:
-      article.seoDescription ??
-      article.excerpt ??
-      undefined,
+    title: articleTitle(article),
+    description: articleDescription(article),
     alternates: {
       canonical: article.canonicalUrl ?? `/articles/${article.slug}`,
     },
     robots: article.noindex
       ? { index: false, follow: true }
       : { index: true, follow: true },
-    openGraph: {
-      type: 'article',
-      title: article.seoTitle ?? article.title,
-      description: article.seoDescription ?? article.excerpt ?? undefined,
-      url: `/articles/${article.slug}`,
-      publishedTime: article.publishedAt || undefined,
-    },
+    /*
+     * `articleMetaTags` composes `openGraph` and — when the article has a
+     * featured image — `twitter`. With no featured image neither key is
+     * present, so the `opengraph-image.tsx` generated card applies as before.
+     */
+    ...articleMetaTags(article, siteName),
   }
 }
 
@@ -73,7 +76,9 @@ export default async function ArticlePage({ params }: Params) {
   const published = formatTimestamp(article.publishedAt)
 
   const detailPath = `/articles/${article.slug}`
-  const description = article.seoDescription ?? article.excerpt
+  // Same precedence as `og:description` (see `articleMetaTags`), so the share
+  // card and the JSON-LD below can never quote two different descriptions.
+  const description = articleDescription(article)
 
   /*
    * Page-level structured data. `articleLd` and `webPageLd` both decline when the

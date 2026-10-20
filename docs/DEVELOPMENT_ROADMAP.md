@@ -819,12 +819,25 @@ property and AdSense publisher approval/ID are supplied.
 - [ ] Dependency audit review
 
 Phase 7 started on 2026-10-18 with consent-schema and shared-slug unit coverage.
-The repository now has 456 passing unit tests, 111/111 live RLS assertions, and
+The repository now has 473 passing unit tests, 111/111 live RLS assertions, and
 36/36 Playwright checks across desktop and mobile. Remaining blockers are the
 full mocked integration suite, external structured-data validation, and the
 dependency audit: `npm audit` reports five high-severity `braces` findings in
 the pinned ESLint/Next toolchain, and `npm audit fix --force` proposes a
 breaking downgrade to `eslint-config-next@14.2.35`, which requires approval.
+
+**Social-card repair (2026-10-20).** Article shares rendered without the
+article's featured image. Three defects were confirmed against the live
+deployment: `og:image` only ever referenced the generated branded card; the
+article page's nested `openGraph` metadata replaced the root layout's (dropping
+`og:site_name`/`og:locale`); and production answers only on `www.`, so every
+`og:image` emitted from the configured apex host 308-redirects before a crawler
+can cache the image. The first two are fixed in
+`src/features/articles/metadata.ts` + the article detail page, with 17 unit
+tests; the third is a deployment environment change still pending: set
+`NEXT_PUBLIC_SITE_URL=https://www.getscholarship.online` (and `APP_ORIGIN` to
+match) — documented in `.env.example` and the CHANGELOG. Until that variable is
+flipped, previews continue to crawl a redirecting host.
 
 ---
 
@@ -834,6 +847,12 @@ breaking downgrade to `eslint-config-next@14.2.35`, which requires approval.
 - [ ] Vercel project connected, preview + production environments
 - [ ] Production Supabase project
 - [ ] DNS: apex + `www` 301 to apex
+      *(Observed on the live deployment 2026-10-20: production currently
+      redirects the apex to `www.` for every request. Either remove that
+      redirect to match this plan, or — as chosen for the social-card fix —
+      keep `www.` as the canonical origin and set `NEXT_PUBLIC_SITE_URL`
+      / `APP_ORIGIN` accordingly. Both origins must not silently serve 200
+      without a redirect.)*
 - [ ] Production environment variables
 - [ ] Migration execution procedure (no reset, no data loss)
 - [ ] Backup and point-in-time recovery configuration
