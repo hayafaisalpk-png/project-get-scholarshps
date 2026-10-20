@@ -66,7 +66,12 @@ Phase 4 (administration and CMS).
 - robots.txt, `sitemap.xml` and the Open Graph cards are built and verified
   against the live database (Phase 3). The redirect manager, structured-data
   validation and the SEO admin controls in Phase 5 are not.
-- No AdSense or GA4 integration exists (Phase 6).
+- **AdSense does not exist** (Phase 6). The GA4 tag IS integrated (2026-10-20,
+  property `G-JZYJWRRNVJ`): consent-gated via the existing banner, production
+  only, mounted in the `(public)` layout so the admin CMS is never tracked.
+  Custom GA4 events beyond the default `page_view` are not implemented. Whether
+  the property has started receiving hits should be confirmed in the GA
+  realtime view by the operator.
 - Nothing has been deployed.
 
 ---
@@ -780,12 +785,16 @@ regenerating them.
 
 ## Phase 6 — Advertising and analytics · **IN PROGRESS**
 
-> Blocked on: AdSense publisher approval and a GA4 property.
+> Blocked on: AdSense publisher approval and a publisher ID. GA4 is supplied,
+> `G-JZYJWRRNVJ`.
 
 - [x] Consent banner: accept all / reject optional / manage preferences
 - [x] Persistent privacy settings control
-- [ ] Consent Mode signals; no non-essential script before consent
-- [ ] GA4 loader injected only after analytics consent
+- [x] No non-essential script before consent — the GA4 tag does not mount at
+  all until analytics consent is granted
+- [x] GA4 loader injected only after analytics consent (2026-10-20; property
+  ID `G-JZYJWRRNVJ`, enforced in `GaTag` + `GoogleAnalytics`, idempotent with
+  the existing consent banner and the `privacy.require_consent` setting)
 - [ ] Events: `page_view`, `view_scholarship`, `search_scholarships`,
       `filter_scholarships`, `click_apply`, `view_article`, `newsletter_signup`
 - [ ] No PII in any event parameter
@@ -797,8 +806,10 @@ regenerating them.
 - [ ] Content-Security-Policy finalised and deployed
 
 Phase 6 started on 2026-10-18 with consent storage and the browser privacy
-preferences manager. Analytics and advertising remain disabled until a real GA4
-property and AdSense publisher approval/ID are supplied.
+preferences manager. The GA4 tag went live on 2026-10-20 with property
+`G-JZYJWRRNVJ` (consent-gated; custom events are still to come). Advertising
+remains disabled until AdSense publisher approval and a publisher ID are
+supplied.
 
 ---
 

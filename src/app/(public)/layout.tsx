@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { SiteFooter } from '@/components/layout/site-footer'
 import { SiteHeader } from '@/components/layout/site-header'
 import { JsonLd } from '@/components/structured-data'
+import { GoogleAnalytics } from '@/features/analytics/google-analytics'
 import { getString, isMaintenanceMode } from '@/lib/settings'
 import { siteGraph } from '@/lib/structured-data'
 
@@ -81,6 +82,13 @@ export default async function PublicLayout({
 
   return (
     <>
+      {/*
+        Consent-gated GA4. Renders nothing without a measurement ID, outside
+        production, or before the visitor allowed analytics — see the feature
+        for the full gate.
+      */}
+      <GoogleAnalytics />
+
       <JsonLd data={siteLd} />
 
       <a href="#main-content" className="skip-link">

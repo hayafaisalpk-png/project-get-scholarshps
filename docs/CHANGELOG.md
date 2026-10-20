@@ -10,6 +10,65 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Added — Google Analytics 4 (consent-gated)
+
+The operator supplied a GA4 property: **`G-JZYJWRRNVJ`**. The tag is now
+installed as a new `src/features/analytics/` feature and mounted in the
+`(public)` layout only, so the admin CMS routes outside that group are never
+tracked.
+
+How it is gated (all server-decided, not CSS-hidden):
+
+- `NEXT_PUBLIC_GA_MEASUREMENT_ID` was already declared (empty) in the public env
+  schema and `.env.local`; it is now set to the property ID. Empty means the
+  integration is off entirely — nothing is requested from Google.
+- The tag renders nothing outside production builds, so local development and
+  tests never appear in the property (the documented intent of
+  `isProduction()` in `src/lib/env.ts`).
+- The ID must match the GA4 shape (`/^G-[A-Z0-9_-]+$/`) before it is
+  interpolated into the inline bootstrap snippet; a malformed value logs
+  server-side and the tag is not rendered.
+- The `privacy.require_consent` setting (default `true`) plus the visitor's own
+  stored consent decide the rest: `GaTag` stays unmounted until the consent
+  banner records `analytics: true`, and picks up a decision made mid-visit
+  through the banner's existing `getscholarship:consent-changed` event without
+  a reload. Missing or unreadable storage means no consent. Once granted, the
+  tag stays for the session; revoking takes effect on the next visit rather
+  than retroactively.
+- The snippet is the standard gtag.js bootstrap (`dataLayer` + `gtag('config', …)`
+  inline, `https://www.googletagmanager.com/gtag/js` via `next/script`,
+  `afterInteractive`), unchanged in behaviour from Google's snippet.
+
+Verified:
+
+- `npm run verify` exits 0: typecheck, lint (zero errors; two pre-existing
+  warnings in `tmp-admin-verify.mjs`, untouched), **480 unit tests — 7 new**
+  for the consent-decision pure function in `tests/unit/analytics-consent.test.ts`,
+  production build clean.
+- **4 end-to-end browser checks** against the real production build and the
+  linked database, run with a temporary Playwright spec that was deleted in the
+  same session: no Google request and no `dataLayer` before consent (2s window);
+  "Accept all" fires `gtag/js?id=G-JZYJWRRNVJ` and queues a `config` command
+  for that exact ID (the queued entry is an `arguments` object, not an array —
+  caught by the test, not by the code); "Reject optional" keeps it off; a saved
+  decision reloads the tag with no second interaction; `/auth/login` (outside
+  the `(public)` group) requests nothing from Google.
+
+Not done, deliberately:
+
+- Consent Mode v2 signals (`gtag('consent', …)`) are not implemented — the site
+  is *stricter*: nothing is requested before consent, rather than tags running
+  with denied signals. The roadmap item still tracks it.
+- Custom events (`view_scholarship`, `search_scholarships`, …) are not fired
+  beyond gtag's default `page_view` — Phase 6 work.
+- GA origins are not yet listed anywhere: no CSP is deployed (Phase 7 will need
+  `googletagmanager.com` / `google-analytics.com` folded into `connect-src`
+  and `script-src` when the time comes — recorded in
+  `docs/SECURITY_POLICY.md` §4.1).
+- The property receiving hits was not observed in the GA dashboard (agent has
+  no access); the request/queue behaviour is verified locally, and the operator
+  should confirm in GA's realtime view after the next production deploy.
+
 ### Fixed — Article social-media previews (og:image / og:site_name)
 
 Investigation against the live deployment (production HTML fetched as
