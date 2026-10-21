@@ -311,6 +311,14 @@ These are **not** implemented yet and must not be reported as working:
   landings that depended on it were dropped from the sitemap as thin pages.
   Content must arrive through the verified editorial workflow — never
   fabricated.
+- **The 26 taxonomy landings are 301 redirects to `/scholarships`.** A
+  taxonomy page 404s when it has no visible scholarships, by design — so with
+  no scholarships every one of them did, and Google reported them as broken
+  pages. Each term now redirects to the scholarship listing instead, created
+  through the CMS on 2026-10-21 and audited as `redirect.create`. **They are
+  placeholders: when a term gains its first scholarship the landing page comes
+  back on its own (the sitemap re-adds it), so the rule for that term must be
+  deleted or it will shadow a real page.**
 - **One `super_admin` account now exists in the linked project**, created
   out of band with `npm run admin:create`. The transient accounts used to verify
   the media library and inbox triage were destroyed in the same session they were

@@ -10,6 +10,51 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Fixed — every empty taxonomy landing now redirects instead of 404ing
+
+**Live-data change, 2026-10-21.** 26 URL changes, no code.
+
+A taxonomy landing page 404s when it has no visible scholarships, by design —
+`renderTaxonomyPage` calls `notFound()` on a zero result, and the sitemap
+omits the term so a thin page is never advertised. That rule is right, and it
+is unchanged.
+
+The problem was the consequence: the site has **no published scholarships at
+all**, so all 26 taxonomy landings 404'd — and Google had already discovered
+22 of them from an earlier crawl, and was reporting every one as a broken
+page. A URL with no content of its own should not answer `404`; it should
+point somewhere that does have content.
+
+Each term now has a **301 to `/scholarships`**:
+
+```
+/scholarships/category/<slug>              -> /scholarships
+/scholarships/education-level/<slug>       -> /scholarships
+/scholarships/field/<slug>                 -> /scholarships
+/scholarships/location/<slug>              -> /scholarships
+```
+
+The rules were created through the **CMS**, not by writing to the database, so
+the app's own validator and RLS decided what was stored and the audit log
+records all 26 creations (`redirect.create`). Every rule carries the note
+*"No scholarships in this term yet. Delete this rule when the term has
+listings."*
+
+Verified against the live site:
+
+- all 26 URLs answer **301** to `https://getscholarship.online/scholarships`
+- following the redirect lands on `/scholarships` with **200**
+- a query string is carried across the hop
+  (`/scholarships/field/nursing?page=2` → `/scholarships?page=2`)
+- `/scholarships`, `/articles` and `/` are untouched
+
+**These rules are standing placeholders.** When a term gains its first
+scholarship, the landing page comes back on its own — the sitemap adds it
+again, because the sitemap lists a term only when it has listings — so the
+redirect for that term **must be deleted** or it will keep shadowing a real
+page. The 301 is not permanent in intent even though it is permanent in
+status.
+
 ### Fixed — the apex domain now serves the site, and `www` redirects to it
 
 **Live-site change (Vercel domain configuration), 2026-10-21.** No code, no
