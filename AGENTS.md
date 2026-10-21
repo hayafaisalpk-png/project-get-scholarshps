@@ -288,10 +288,29 @@ These are **not** implemented yet and must not be reported as working:
   of the redesign (`npm run db:fixtures`). They are invented and are NOT real
   scholarships. Run `npm run db:fixtures:remove` before any launch. Never let
   them reach production, and never edit them into looking genuine.
-- **No scholarship or article content exists.** The database contains only
-  reference data (roles, permissions, taxonomy, settings, navigation) and the
-  five static pages. Content must arrive through the verified editorial workflow
-  — never fabricated.
+  **One of them did reach production.** The site was launched before the
+  cleanup ran, so `[SAMPLE] Award With An Application Fee` was published,
+  indexable and listed in the live sitemap. It was unpublished through the
+  CMS on 2026-10-21 (audited as `scholarship.status_change`,
+  `published` → `draft`) and now answers `404`; the other five were already
+  drafts. The rows are still in the database — unpublishing was reversible,
+  deleting them was not authorised — so **the cleanup is still outstanding**
+  and `npm run db:fixtures:remove` must still run before this content is
+  presented as real.
+- **The site is live at `https://getscholarship.online`.** The apex is the
+  canonical host: it serves the site, and `www.getscholarship.online` is a
+  308 redirect to it. This was reversed on 2026-10-21 — the domains had been
+  configured the other way round, which meant every canonical tag, every
+  `og:url`, and every `<loc>` in every sitemap pointed at a URL that
+  answered `308`. If the domains are ever reconfigured, re-check that
+  `NEXT_PUBLIC_SITE_URL` names the host that actually serves.
+- **Four articles are published** (`what-is-a-scholarship…`,
+  `complete-guide-to-hec-scholarships…`, `how-to-find-scholarships…`,
+  `10-best-verified-scholarship-search-sites…`). There are still **no real
+  scholarship records** — the scholarship list is empty, and the taxonomy
+  landings that depended on it were dropped from the sitemap as thin pages.
+  Content must arrive through the verified editorial workflow — never
+  fabricated.
 - **One `super_admin` account now exists in the linked project**, created
   out of band with `npm run admin:create`. The transient accounts used to verify
   the media library and inbox triage were destroyed in the same session they were

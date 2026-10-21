@@ -20,15 +20,11 @@ import type { ArticleStatus } from '@/lib/validation/article'
 export function ArticleRowActions({
   id,
   status,
-  scheduledFor,
-  hasScheduledTime,
   canDelete,
   canReview,
 }: {
   id: string
   status: string
-  scheduledFor: string | null
-  hasScheduledTime: boolean
   canDelete: boolean
   canReview: boolean
 }) {
@@ -76,28 +72,23 @@ export function ArticleRowActions({
           />
         )}
 
-        {status !== 'scheduled' ? (
-          <RowButton
-            label="Schedule"
-            onClick={() => move('scheduled')}
-            disabled={pending}
-            title={
-              hasScheduledTime
-                ? `Schedules for ${scheduledFor ?? 'the chosen time'}`
-                : 'Set a publication date in the editor first'
-            }
-          />
-        ) : (
+        {/*
+          Scheduling is done in the editor, where the publication date is set
+          (the server refuses to schedule an article that has no
+          `scheduled_for`). Moving a record back to a draft from here is
+          still offered, so an already-scheduled article is never stuck.
+        */}
+        {status === 'scheduled' ? (
           <RowButton
             label="Cancel schedule"
             onClick={() => move('draft')}
             disabled={pending}
           />
-        )}
+        ) : null}
 
         {status !== 'in_review' ? (
           <RowButton
-            label="Send for review"
+            label="In Review"
             onClick={() => move('in_review')}
             disabled={pending}
           />
@@ -165,13 +156,11 @@ function RowButton({
   onClick,
   disabled,
   tone = 'default',
-  title,
 }: {
   label: string
   onClick: () => void
   disabled: boolean
   tone?: 'default' | 'primary' | 'danger'
-  title?: string
 }) {
   const tones = {
     default:
@@ -187,7 +176,6 @@ function RowButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      title={title}
       className={`rounded-sm px-2.5 py-1.5 text-xs font-semibold transition-colors focus-visible:ring-2 focus-visible:outline-none disabled:opacity-60 ${tones[tone]}`}
     >
       {label}

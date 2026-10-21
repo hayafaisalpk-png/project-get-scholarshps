@@ -11,7 +11,7 @@ import {
   listAdminArticles,
 } from '@/features/articles/admin/queries'
 import { requirePermission } from '@/lib/auth/guards'
-import { formatDate } from '@/lib/format'
+import { formatDate, truncateText } from '@/lib/format'
 import {
   type ArticleStatus,
   ARTICLE_STATUSES,
@@ -26,6 +26,15 @@ const STATUS_LABELS: Record<ArticleStatus, string> = {
   published: 'Published',
   archived: 'Archived',
 }
+
+/**
+ * How much of a title the Article column shows before it is cut.
+ *
+ * A title is editor-controlled and can be arbitrarily long; without a cap one
+ * row can stretch the whole table. The full title stays on the link's tooltip
+ * and on the article itself.
+ */
+const TITLE_MAX_LENGTH = 50
 
 /**
  * Article list.
@@ -181,9 +190,6 @@ export default async function AdminArticlesPage({
                     Status
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Length
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-semibold">
                     Updated
                   </th>
                   <th scope="col" className="px-4 py-3 text-right font-semibold">
@@ -198,8 +204,13 @@ export default async function AdminArticlesPage({
                       <Link
                         href={`/admin/articles/${row.id}`}
                         className="font-medium text-brand-800 hover:underline"
+                        title={
+                          row.title.length > TITLE_MAX_LENGTH
+                            ? row.title
+                            : undefined
+                        }
                       >
-                        {row.title}
+                        {truncateText(row.title, TITLE_MAX_LENGTH)}
                       </Link>
                       {row.status === 'scheduled' && row.scheduled_for ? (
                         <p className="text-xs text-ink-500">
@@ -210,12 +221,6 @@ export default async function AdminArticlesPage({
                     <td className="px-4 py-3">
                       <StatusPill status={row.status} />
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-ink-700">
-                      {row.word_count.toLocaleString('en-GB')} words
-                      <span className="block text-xs text-ink-500">
-                        {row.reading_time_minutes} min
-                      </span>
-                    </td>
                     <td className="px-4 py-3 whitespace-nowrap text-ink-600">
                       {formatDate(row.updated_at)}
                     </td>
@@ -223,8 +228,6 @@ export default async function AdminArticlesPage({
                       <ArticleRowActions
                         id={row.id}
                         status={row.status}
-                        scheduledFor={row.scheduled_for}
-                        hasScheduledTime={Boolean(row.scheduled_for)}
                         canDelete={canDelete}
                         canReview={canReview}
                       />

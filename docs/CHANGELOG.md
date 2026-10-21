@@ -10,6 +10,238 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Fixed — the apex domain now serves the site, and `www` redirects to it
+
+**Live-site change (Vercel domain configuration), 2026-10-21.** No code, no
+redeploy.
+
+The project's domains were configured as:
+
+```
+getscholarship.online        redirect -> www.getscholarship.online  (308)
+www.getscholarship.online    serves the project
+```
+
+That is the opposite of what the application advertises. `NEXT_PUBLIC_SITE_URL`
+is `https://getscholarship.online`, and every canonical tag, every `og:url`,
+the `Host:` line in `robots.txt`, the `Sitemap:` line in `robots.txt`, the
+`<loc>` of the sitemap index and the `<loc>` of every URL inside every sitemap
+segment all used the **apex** — which was a redirect. So the entire site
+pointed at URLs that answered `308`, including the canonical of every page,
+which is a canonical pointing at a redirect.
+
+Both hosts are now assigned the other way round:
+
+```
+getscholarship.online        serves the project
+www.getscholarship.online    redirect -> getscholarship.online  (308)
+```
+
+The apex was changed **first** and confirmed serving `200` before `www` was
+turned into a redirect, so there was never a moment when both hosts were
+redirects and the site was unreachable.
+
+Verified against the live site, every URL the site advertises now returns
+`200` on its own host with no redirect hop:
+
+- `https://getscholarship.online/` → 200;
+  `https://www.getscholarship.online/` → 308 → apex
+- `https://getscholarship.online/sitemap.xml` → 200, listing 2 segments
+- all 4 segment files → 200
+- all 17 `<loc>` URLs across every segment → 200
+- the canonical on a live article resolves to `200` (not a redirect) and is on
+  the apex host
+- `robots.txt` → 200, and its `Sitemap:` line resolves to `200`
+
+This also means a Search Console **Domain** property for `getscholarship.online`
+now covers the host that actually serves, and the apex URL-prefix property
+already submitted keeps working.
+
+### Fixed — the live `[SAMPLE]` scholarship is no longer in the sitemap
+
+**Live-data change, 2026-10-21.** The site had been launched without the
+pre-launch fixture cleanup, so one of the six `[SAMPLE]` design-review rows —
+`[SAMPLE] Award With An Application Fee` — was **published**, indexable, and
+listed in the live sitemap at
+`https://getscholarship.online/scholarships/sample-fee-applies-award`. Its own
+description read "Sample record for design review. Not a real scholarship", so
+it was not passing itself off as real, but it was advertising an invented
+award to a crawler.
+
+It was unpublished **through the CMS**, not by editing the database, so the
+app's own Server Action wrote the change and the audit log recorded it:
+
+```
+action   : scholarship.status_change
+entity   : scholarship 8b7fde42-a9dd-4f56-b131-0f25f0a06fe3
+before   : {"status":"published"}
+after    : {"status":"draft"}
+```
+
+The row itself is kept — it is still one of the six design-review fixtures,
+and unpublishing is reversible from the admin. The other five were already
+drafts and correctly unreachable.
+
+Verified: the row is `status = draft`; the live URL now returns **404** (so
+it cannot be indexed even if a crawler still holds the old sitemap); the fresh
+sitemap index no longer lists a `scholarships` segment, because an empty
+group produces no segment rather than an empty `<urlset>`, and the
+`taxonomy` segment is gone for the same reason — its terms had no visible
+scholarships left, which is the "thin page" rule doing its job. The index is
+now `pages.xml` + `articles.xml`, and all four articles are still listed.
+
+The Vercel edge was still serving the previous index for the remainder of its
+`s-maxage=3600` window, because the cached entry is keyed by URL and the
+platform's tag-invalidation endpoint does not clear URL-keyed entries. That
+window does not affect indexing: the sample URL answers `404` immediately.
+
+### Changed — the article body editor is capped at 500px and scrolls
+
+The rich-text editor on the article edit screen
+(`/admin/articles/[id]`) now has a **maximum height of 500px** and a **vertical
+scrollbar**. A long body previously pushed the rest of the form off the
+screen; past 500px the body scrolls inside the editor instead of the page.
+
+The cap is on the ProseMirror contenteditable itself (the text area), not on
+the toolbar, so the toolbar stays put while the writing surface scrolls.
+`scrollbar-gutter-stable` reserves the scrollbar's space permanently, so the
+text does not shift sideways the moment an editor types past the cap and the
+scrollbar appears — a shifting caret in a writing surface is a real
+annoyance, not a cosmetic one. The loading placeholder got the same
+`max-h-[500px]` so the reserved space matches when the editor mounts.
+
+Verified: `npm run typecheck` clean, `npm run lint` 0 errors, production build
+clean. Verified in a browser against **both** a production build and the
+running dev server, with a throwaway `super_admin` (created with
+`npm run admin:create` and destroyed in the same session, with a temporary
+Playwright spec deleted afterwards). Measured on the live article:
+
+```
+offsetHeight: 500      maxHeight: "500px"      overflowY: "auto"
+clientHeight: 500      scrollHeight: 3896      scrollbarGutter: "stable"
+clientWidth: 861       offsetWidth: 876        ← the 15px scrollbar gutter
+```
+
+`scrollHeight` (3896) far exceeds `clientHeight` (500), and `scrollTo(0, 200)`
+moves the editor's own `scrollTop` to 200 — the editor box is the scrolling
+region, not the page.
+
+### Changed — the article list no longer has a "Length" column
+
+The `/admin/articles` table dropped its **Length** column (word count and
+reading time). The header and its cell were removed together, so the row and
+column counts still match.
+
+Because the list query existed only to feed that column, `word_count` and
+`reading_time_minutes` were dropped from the list `select` and from
+`AdminArticleRow` in `src/features/articles/admin/queries.ts` — the admin list
+no longer fetches two columns it does not display. Nothing else read them:
+`AdminArticleRow` had a single consumer (the list page), and the article
+**edit** screen still shows "Stored word count" from
+`AdminArticleDetail`, which is a separate query and is unchanged.
+
+Verified: `npm run typecheck` clean, `npm run lint` 0 errors (2 pre-existing
+warnings in `tmp-admin-verify.mjs`), **480 unit tests pass**, production build
+clean. Verified end-to-end in a browser against the running app with a
+throwaway `super_admin` (created with `npm run admin:create` and destroyed in
+the same session, using a temporary Playwright spec that was deleted
+afterwards): the table's headers are exactly `Article`, `Status`, `Updated`,
+`Actions`; each of the four body rows has exactly four cells, so the row and
+column counts still match; and the table body contains neither "words" nor
+"min".
+
+### Changed — the Article column cuts long titles at 50 characters
+
+The **Article** column of `/admin/articles` now shows at most 50 characters of
+a title, followed by a ` ...` marker when it was cut:
+
+> What Is a Scholarship? Everything You Need to Know ...
+
+A title is editor-controlled and can be arbitrarily long; without a cap a
+single row stretches the whole table. The cut is a hard character cut, not a
+word-boundary cut — the character budget is the contract, so the last visible
+word may be broken. A cut that lands on a space does not leave a double space
+before the marker.
+
+The full title is not lost: a truncated link carries the untruncated title in
+its `title` attribute, and the article itself is one click away. A title
+shorter than the limit is rendered exactly as before, with no marker and no
+redundant tooltip.
+
+`truncateText` is a new pure helper in `src/lib/format.ts` (the house home
+for display formatting), with **7 new unit tests** in
+`tests/unit/format.test.ts`. Note that this is the opposite trade-off to
+`truncateAtWord` in `src/features/articles/metadata.ts`, which cuts at a word
+boundary for prose and can end up shorter than the limit it was given.
+
+Verified: `npm run typecheck` clean, `npm run lint` 0 errors (2 pre-existing
+warnings in `tmp-admin-verify.mjs`), **487 unit tests pass**, production build
+clean. Verified end-to-end in a browser against the running app with a
+throwaway `super_admin` (created with `npm run admin:create` and destroyed in
+the same session, with a temporary Playwright spec deleted afterwards). The
+four articles in the linked project render as:
+
+```
+"What Is a Scholarship? Everything You Need to Know ..."
+"How to Find Scholarships, Grants & Financial Aid"
+"Complete Guide to HEC Scholarships: How to Apply a ..."
+"10 Best Verified Scholarship Search Sites Every St ..."
+```
+
+Each truncated link is exactly 50 characters plus the 4-character marker, and
+each carries its full title in the tooltip; the one title within the limit is
+untouched and has no tooltip.
+
+### Changed — the article list's review action is now labelled "In Review"
+
+The **Send for review** button in the actions column of `/admin/articles` is
+now labelled **In Review**. The label is the only thing that changed — the
+button still moves the article to the `in_review` status, is still hidden on
+an article that is already in review, and the server-side permission check
+(`article.manage`) is untouched.
+
+Verified: `npm run typecheck` clean, `npm run lint` 0 errors (2 pre-existing
+warnings in `tmp-admin-verify.mjs`), production build clean. Verified
+end-to-end in a browser against the running app with a throwaway
+`super_admin` (created with `npm run admin:create` and destroyed in the same
+session, with a temporary Playwright spec deleted afterwards): each of the
+four articles renders exactly `Unpublish`, `In Review`, `Archive`, `Delete`,
+and "Send for review" appears nowhere in the actions column.
+
+Not renamed: the scholarships admin has its own **Send for review** entry in
+the bulk-action dropdown (`src/features/scholarships/admin/components/bulk-actions.tsx`).
+That is a different control in a different screen and was left alone.
+
+### Changed — the article list actions no longer offer a "Schedule" button
+
+The **Schedule** button was removed from the actions column of
+`/admin/articles`. It only ever moved an article into the `scheduled` status,
+and the server refuses that move unless the article already has a
+`scheduled_for` date — which can only be set in the editor. So the button
+offered an action that would fail unless the editor had already been visited,
+and scheduling is now done where the date is actually set: the article
+editor's **Status** and **Publication date** fields.
+
+The two props that existed only to build the button's tooltip
+(`scheduledFor`, `hasScheduledTime`) were dropped from `ArticleRowActions`,
+and `RowButton`'s now-unused `title` prop went with them.
+
+**"Cancel schedule" was deliberately kept.** It is a differently-labelled
+control that moves an already-scheduled article back to a draft; removing it
+would take away working functionality that was not asked to be removed, and
+would leave an already-scheduled article with no way out of that state from
+the list.
+
+Verified: `npm run typecheck` clean, `npm run lint` 0 errors (2 pre-existing
+warnings in `tmp-admin-verify.mjs`), production build clean. Verified
+end-to-end in a browser against the running app with a throwaway
+`super_admin` (created with `npm run admin:create` and destroyed in the same
+session, with a temporary Playwright spec deleted afterwards): the four
+articles in the linked project each render exactly four action buttons —
+`Unpublish`, `Send for review`, `Archive`, `Delete` — and neither "Schedule"
+nor "Cancel schedule" appears anywhere in the actions column. (The
+"Send for review" label was renamed afterwards — see the entry above.)
+
 ### Added — Google Analytics 4 (consent-gated)
 
 The operator supplied a GA4 property: **`G-JZYJWRRNVJ`**. The tag is now

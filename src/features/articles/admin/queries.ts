@@ -22,8 +22,6 @@ export type AdminArticleRow = {
   title: string
   status: string
   excerpt: string | null
-  word_count: number
-  reading_time_minutes: number
   author_id: string | null
   scheduled_for: string | null
   published_at: string | null
@@ -66,7 +64,7 @@ export const listAdminArticles = cache(
     let query = supabase
       .from('articles')
       .select(
-        'id, slug, title, status, excerpt, word_count, reading_time_minutes, author_id, scheduled_for, published_at, updated_at, created_at',
+        'id, slug, title, status, excerpt, author_id, scheduled_for, published_at, updated_at, created_at',
         { count: 'exact' },
       )
       .order('updated_at', { ascending: false })

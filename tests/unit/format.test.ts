@@ -10,6 +10,7 @@ import {
   getDeadlineState,
   parseDateOnly,
   readingTime,
+  truncateText,
 } from '@/lib/format'
 import { cn } from '@/lib/utils/cn'
 
@@ -161,6 +162,41 @@ describe('readingTime', () => {
     expect(readingTime(0)).toBe('1 min read')
     expect(readingTime(220)).toBe('1 min read')
     expect(readingTime(660)).toBe('3 min read')
+  })
+})
+
+describe('truncateText', () => {
+  it('leaves a string within the limit untouched', () => {
+    expect(truncateText('Short title', 50)).toBe('Short title')
+  })
+
+  it('leaves a string of exactly the limit untouched', () => {
+    const exact = 'a'.repeat(50)
+    expect(truncateText(exact, 50)).toBe(exact)
+  })
+
+  it('cuts at exactly the character limit and marks the cut', () => {
+    const title = 'What Is a Scholarship? Everything You Need to Know'
+    expect(title.length).toBe(50)
+
+    expect(truncateText(`${title} and more`, 50)).toBe(`${title} ...`)
+  })
+
+  it('counts the limit in characters, not words', () => {
+    expect(truncateText('one two three four five six', 13)).toBe('one two three ...')
+  })
+
+  it('does not leave a double space when the cut lands on one', () => {
+    expect(truncateText('abcdefghij klmnopqrst uvw', 11)).toBe('abcdefghij ...')
+  })
+
+  it('accepts a different marker', () => {
+    expect(truncateText('abcdefghij', 4, '…')).toBe('abcd…')
+  })
+
+  it('returns an empty string for a zero or negative limit', () => {
+    expect(truncateText('abcdef', 0)).toBe('')
+    expect(truncateText('abcdef', -5)).toBe('')
   })
 })
 

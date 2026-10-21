@@ -133,8 +133,14 @@ export function RichTextEditor({
       attributes: {
         // Reuses the same typography as the published article, so what an
         // editor sees while writing is what a reader will see.
+        //
+        // The writing area is capped so a long article cannot push the rest of
+        // the form off the screen: past 500px the body scrolls inside the
+        // editor instead of the page. `scrollbar-gutter-stable` reserves the
+        // scrollbar's space, so the text does not shift sideways the moment an
+        // editor types past the cap and the scrollbar appears.
         class:
-          'prose-editorial min-h-96 w-full px-4 py-3 text-base leading-relaxed focus:outline-none',
+          'prose-editorial min-h-96 max-h-[500px] w-full overflow-y-auto scrollbar-gutter-stable px-4 py-3 text-base leading-relaxed focus:outline-none',
       },
     },
     onUpdate: ({ editor: e }) => {
@@ -188,7 +194,7 @@ export function RichTextEditor({
   if (!editor) {
     return (
       <div
-        className="min-h-96 rounded-b-sm border border-t-0 border-ink-300 bg-ink-50"
+        className="min-h-96 max-h-[500px] rounded-b-sm border border-t-0 border-ink-300 bg-ink-50"
         aria-busy="true"
       />
     )

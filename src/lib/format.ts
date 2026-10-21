@@ -212,3 +212,27 @@ export function readingTime(wordCount: number): string {
   const minutes = Math.max(1, Math.round(wordCount / 220))
   return `${minutes} min read`
 }
+
+/**
+ * Cut a string to a maximum number of characters, marking the cut.
+ *
+ * This is a HARD cut, not a word-boundary cut. The character budget is the
+ * contract — a table column is a fixed width — so the last visible word may
+ * be cut in half. The article metadata builder makes the opposite trade-off
+ * (`truncateAtWord` in `src/features/articles/metadata.ts`): it reads better
+ * inside a sentence but can end up shorter than the limit it was given.
+ *
+ * The ellipsis is a marker, not part of the budget: the result is at most
+ * `maxLength` characters of the original text plus the marker. A cut that
+ * lands on a space does not leave a double space before the marker.
+ */
+export function truncateText(
+  text: string,
+  maxLength: number,
+  ellipsis = ' ...',
+): string {
+  if (maxLength <= 0) return ''
+  if (text.length <= maxLength) return text
+
+  return `${text.slice(0, maxLength).trimEnd()}${ellipsis}`
+}
