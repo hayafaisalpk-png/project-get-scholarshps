@@ -1,5 +1,6 @@
 import { BRAND_MARK } from '@/lib/brand'
 import { absoluteUrl } from '@/lib/env'
+import { type FAQItem, normalizeFaqItems } from '@/lib/validation/faq'
 
 /**
  * Schema.org JSON-LD builders.
@@ -391,4 +392,62 @@ export function articleLd({
     wordCount: typeof wordCount === 'number' && wordCount > 0 ? wordCount : undefined,
     inLanguage: 'en',
   })
+}
+
+/* -------------------------------------------------------------------------- */
+/* FAQ                                                                         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * `FAQPage` for the questions an article answers.
+ *
+ * The shape is the one Google documents for FAQ rich results: a `FAQPage`
+ * node whose `mainEntity` is a list of `Question` nodes, each with an
+ * `acceptedAnswer` of type `Answer` carrying the answer text.
+ *
+ * Three rules keep this honest rather than decorative:
+ *
+ *   1. **It declines when there is nothing to say.** An article with no FAQ
+ *      emits no `FAQPage` node, because a `FAQPage` with an empty `mainEntity`
+ *      claims the page answers questions when it answers none.
+ *   2. **It declines on a `noindex` page**, for the same reason
+ *      `webPageLd` and `articleLd` do: structured data asks a consumer to
+ *      treat the page as notable, `noindex` asks it not to, and both at once
+ *      is a contradiction.
+ *   3. **The answer text is the visible answer text.** The same
+ *      `FAQItem[]` array renders the accordion and produces this node, so
+ *      the structured data cannot describe something the reader cannot see.
+ *      Google requires the marked-up text to be present on the page.
+ *
+ * The items are run through `normalizeFaqItems` first, so a malformed entry
+ * left in the database is dropped rather than emitted as an empty `Question`.
+ */
+export function faqLd({
+  faqs,
+  path,
+  noindex = false,
+}: {
+  faqs: FAQItem[]
+  path: string
+  noindex?: boolean | undefined
+}): JsonLdNode | null {
+  // A noindex page must not advertise answers it has asked not to be indexed.
+  if (noindex) return null
+
+  const items = normalizeFaqItems(faqs)
+  if (items.length === 0) return null
+
+  return {
+    '@type': 'FAQPage',
+    '@id': `${absoluteUrl(path)}#faq`,
+    url: absoluteUrl(path),
+    mainEntity: items.map((item) => ({
+      '@type': 'Question',
+      name: item.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: item.answer,
+      },
+    })),
+  }
 }

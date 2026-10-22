@@ -6,6 +6,7 @@ import { useFormStatus } from 'react-dom'
 import { Alert } from '@/components/ui/alert'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { describedBy, FormField, inputClasses } from '@/features/auth/components/form-field'
+import { FaqEditor } from '@/features/articles/admin/components/faq-editor'
 import { RichTextEditor } from '@/features/articles/admin/components/rich-text-editor'
 import type {
   AdminArticleDetail,
@@ -106,6 +107,20 @@ function ArticleFormFields({
 
   const fieldErrors = state && !state.ok ? state.fieldErrors : undefined
 
+  /*
+   * A FAQ error arrives keyed by its path in the array — `faq_items.0.answer` —
+   * because that is where Zod found the problem. The path is meaningless to an
+   * editor, so it is lifted out of the summary list and shown next to the
+   * questions block instead, where it can be acted on.
+   */
+  const faqError = fieldErrors
+    ? Object.entries(fieldErrors).find(([field]) => field.startsWith('faq_items'))?.[1]
+    : undefined
+
+  const summaryErrors = fieldErrors
+    ? Object.entries(fieldErrors).filter(([field]) => !field.startsWith('faq_items'))
+    : []
+
   return (
     <form action={formAction} className="space-y-6" noValidate>
       {record ? <input type="hidden" name="id" value={record.id} /> : null}
@@ -113,9 +128,9 @@ function ArticleFormFields({
       {state && !state.ok ? (
         <Alert tone="error">
           <p>{state.message}</p>
-          {fieldErrors && Object.keys(fieldErrors).length > 0 ? (
+          {summaryErrors.length > 0 ? (
             <ul className="mt-2 list-disc space-y-1 pl-5">
-              {Object.entries(fieldErrors).map(([field, message]) => (
+              {summaryErrors.map(([field, message]) => (
                 <li key={field}>
                   {field === '_form' ? message : `${field}: ${message}`}
                 </li>
@@ -247,6 +262,24 @@ function ArticleFormFields({
           ) : null}
         </p>
         {isEdit ? <p className="mt-2 text-xs text-ink-500" role="status">{autosaveState === 'saving' ? 'Autosaving draft…' : autosaveState === 'saved' ? 'Draft autosaved.' : autosaveState === 'error' ? 'Autosave failed; use Save changes.' : ''}</p> : null}
+      </section>
+
+      <section className="rounded-sm border border-ink-200 bg-white p-6 shadow-xs">
+        <h2 className="text-lg font-semibold text-ink-900">Questions</h2>
+        <p className="mt-1 mb-5 text-sm text-ink-600">
+          Optional. The questions this article answers. They are shown on the
+          article as a question-and-answer block, and the same text is published
+          as FAQ structured data. Both are generated from this list, so the
+          marked-up text and the visible text are always the same.
+        </p>
+
+        <FaqEditor initial={record?.faq_items ?? []} />
+
+        {faqError ? (
+          <p role="alert" className="mt-3 text-xs font-medium text-red-700">
+            {faqError}
+          </p>
+        ) : null}
       </section>
 
       <section className="py-1">

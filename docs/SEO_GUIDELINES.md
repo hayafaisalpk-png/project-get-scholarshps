@@ -106,7 +106,7 @@ must be validated and must match visible content.
 | Global site | `Organization`, `WebSite` (with `SearchAction` only if site search is crawlable) |
 | Any page | `BreadcrumbList` |
 | Homepage / landing | `WebPage`, `ItemList` for listings |
-| Article | `BlogPosting` + `Person` (author) |
+| Article | `BlogPosting` + `Person` (author); `FAQPage` only when the article has questions and is indexable |
 | Taxonomy landing | `CollectionPage` + `ItemList` |
 | Scholarship detail | *Evaluated carefully — see below* |
 
@@ -150,6 +150,71 @@ are enforced in code rather than by convention:
 The external validators named above have **not** been run. The documents are
 asserted well-formed and self-consistent in unit tests and against real pages;
 that is not the same as a consumer-side validation pass.
+
+### `FAQPage` on articles *(migration 039)*
+
+An article emits a `FAQPage` node **only when it has at least one question and
+the page is not `noindex`**. `faqLd()` returns `null` in either case: the page
+is not a FAQ page, so the type is not emitted. A `noindex` page must not
+advertise answers it has asked not to be indexed.
+
+The questions come from `articles.faq_items` — a CMS field, not a hardcoded
+list and not something scraped out of the article body — so there is exactly
+one source of truth and two renderings of it:
+
+| Half | Owner |
+| --- | --- |
+| Visible block | `src/features/articles/components/faq-section.tsx` |
+| JSON-LD node | `faqLd()` in `src/lib/structured-data.ts` |
+
+Both are driven by the same `FAQItem[]`, normalised by the same
+`normalizeFaqItems`. They cannot drift.
+
+#### Why the answers are plain text
+
+Google requires the marked-up question and answer to be **visible to the user
+on the page**. Storing the answer as HTML would mean the visible text is
+"whatever the browser makes of this markup" while `acceptedAnswer.text` is the
+raw source — two different strings. Plain text makes them the same characters
+by construction, so there is nothing to sanitise at render time and nothing to
+reconcile.
+
+#### Why the visible block is `<details>`, not a widget
+
+Native `<details>/<summary>` is keyboard operable, works with JavaScript
+disabled, is announced correctly, and — decisively for this purpose — keeps the
+answer text **in the initial HTML**. A JS accordion that fetches or reveals the
+answer on click hides it from any crawler that does not execute scripts. The
+homepage FAQ block uses the same pattern so the two read as one system.
+
+#### Shape
+
+```json
+{
+  "@type": "FAQPage",
+  "@id": "https://getscholarship.online/articles/<slug>#faq",
+  "url": "https://getscholarship.online/articles/<slug>",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "<question>",
+      "acceptedAnswer": { "@type": "Answer", "text": "<answer>" }
+    }
+  ]
+}
+```
+
+`<`, `>` and `&` are escaped during serialisation by `serializeJsonLd`, so an
+editor cannot break out of the `<script>` element. The payload is produced by
+`JSON.stringify`, never by concatenation.
+
+#### Honest limitation — Google FAQ rich results
+
+Google restricted FAQ rich results in **August 2023** to a small set of
+well-known, authoritative government and health websites. This site is neither.
+The markup here is valid Schema.org and is correct for other consumers, but
+**it should not be expected to produce a FAQ rich result in Google Search**, and
+nothing in this repository claims that it will.
 
 ---
 

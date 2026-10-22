@@ -31,6 +31,7 @@ function articleFixture(overrides: Partial<PublicArticle> = {}): PublicArticle {
     seoDescription: null,
     canonicalUrl: null,
     noindex: false,
+    faqs: [],
     categories: [],
     tags: [],
     featuredImage: null,

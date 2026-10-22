@@ -10,6 +10,80 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Fixed — unpublished articles and scholarships are no longer visible on the public site
+
+**Data-visibility defect, fixed in code.**
+
+The public reader surfaces use the session client (so signed-in editors can
+still use the CMS), and Row Level Security deliberately lets permission-holders
+read unpublished rows — that is how the administration interface works. The
+public queries relied on RLS alone, so an editor browsing the public site could
+see **draft** and **in_review** articles in listings, open them by slug, and
+have them appear in cached/public routes. Every public read now carries an
+explicit status filter as well:
+
+| Surface | Rule |
+| --- | --- |
+| Article listing (`/articles`) | `status = 'published'` |
+| Article detail | `status = 'published'` (404 indistinguishable from "not found") |
+| Sitemap (`/sitemaps/articles.xml`) | `status = 'published'` |
+| Scholarship listing/search surfaces | `status = 'published'` (the `search_scholarships` RPC already filtered; the public read paths now also enforce it) |
+| Sitemap (`/sitemaps/scholarships.xml`) | `status = 'published'` |
+| Content pages | `status = 'active'` |
+| Sitemap (`/sitemaps/pages.xml`) | `status = 'active'` |
+
+A regression guard (`tests/unit/public-visibility.test.ts`) mocks the Supabase
+client and asserts the filters are applied on `listPublishedArticles`,
+`getPublishedArticleBySlug` and `buildSitemapGroups`. The CMS continues to read
+unpublished rows through its own queries (RLS + permission checks) with no
+change.
+
+**Verified end-to-end against the live database with a throwaway super_admin
+(created and destroyed):** `/articles` listed only published articles for a
+signed-in editor; draft/in-review article URLs answered **404** for a signed-in
+editor; `GET /sitemaps/articles.xml` contained no unpublished slugs. Signed-out
+behaviour unchanged (published articles only).
+
+### Added — FAQ questions and `FAQPage` JSON-LD on article pages
+
+**Migration 039 — applied to the live project.**
+
+Articles can now publish a question-and-answer block managed in the CMS
+(article edit form → *Questions* section). The data is stored as plain-text
+`articles.faq_items` (`jsonb`, `[]` by default, max 20 items), with a database
+CHECK enforced by `public.article_faq_items_valid(jsonb)` (an `IMMUTABLE`
+function because constraints cannot contain subqueries), mirroring the Zod rule
+in `src/lib/validation/faq.ts`. The `published_articles` view (`security_invoker`)
+now includes `faq_items` (appended without disturbing grants).
+
+Both renderings share the same array, normalised once:
+
+- **Visible block** (`src/features/articles/components/faq-section.tsx`): native
+  `<details>/<summary>` accordion — keyboard operable, works without JS, answer
+  text present in initial HTML. Renders only when there are items.
+- **Structured data** (`faqLd` in `src/lib/structured-data.ts`): emits `FAQPage`
+  only if the page is indexable and there is at least one item. `acceptedAnswer.text`
+  and the visible answer are the **same plain-text characters** by construction
+  (answers are stored as plain text). Serialised through `serializeJsonLd` (which
+  escapes `<`, `>`, `&`); never string-concatenated. A `noindex` page never
+  advertises FAQ markup.
+
+The CMS editor (`src/features/articles/admin/components/faq-editor.tsx`) posts
+shared `faq_question`/`faq_answer` inputs paired by index; the action normalises
+and persists `faq_items`. Validation errors from array items are surfaced inline
+next to the Questions block.
+
+**Honest limitation:** Google restricted FAQ rich results to a small set of
+well-known government/health sites in August 2023. The markup is valid Schema.org
+and correct for other consumers, but **rich results are not expected for this
+site**.
+
+**Verified end-to-end against the live database with a throwaway super_admin:**
+added FAQ items via the CMS and confirmed they reached the database; the public
+article page showed the accordion *and* a `FAQPage` node in the JSON-LD graph
+with the correct question/answer; removing them reverted both the visible block
+and the markup. `npm run verify` passes (512 tests, build green).
+
 ### Fixed — every empty taxonomy landing now redirects instead of 404ing
 
 **Live-data change, 2026-10-21.** 26 URL changes, no code.

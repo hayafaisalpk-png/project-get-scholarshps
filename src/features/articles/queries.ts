@@ -6,21 +6,35 @@ import { type DbResult, toDatabaseError } from '@/lib/db/errors'
 import { sanitizeArticleHtml } from '@/lib/sanitize'
 import { altAttributeFor } from '@/features/media/selection'
 import { createClient } from '@/lib/supabase/server'
+import { type FAQItem, normalizeFaqItems } from '@/lib/validation/faq'
 
 /**
  * Public article queries.
  *
  * The CMS queries in `features/articles/admin/queries.ts` are for editors and
  * are scoped by the signed-in user's permissions. These are the reader-facing
- * equivalents and they work the same way: no status filter is applied in this
- * module at all.
+ * equivalents.
  *
- * That is deliberate. `articles_select_public` (migration 010, corrected in 012)
- * admits a row only when `public.article_is_public(status, published_at)` holds
- * — status `published` AND the publication time has passed. Drafts, submissions
- * under review, scheduled-but-not-yet-due articles and archived articles are all
- * invisible here, so a scheduled article cannot leak before its moment, and an
- * archived one cannot be read by guessing its slug.
+ * Two layers decide what a reader may see, and both are needed:
+ *
+ *   1. **Row Level Security.** `articles_select_public` (migration 010,
+ *      corrected in 012) admits a row only when
+ *      `public.article_is_public(status, published_at)` holds — status
+ *      `published` AND the publication time has passed. Drafts, submissions
+ *      under review, scheduled-but-not-yet-due articles and archived articles
+ *      are all invisible here, so a scheduled article cannot leak before its
+ *      moment, and an archived one cannot be read by guessing its slug.
+ *
+ *   2. **An explicit status filter on every query in this module.** RLS is
+ *      not enough on its own, because the client used here is the SESSION
+ *      client: when a signed-in editor browses the public site, their session
+ *      makes them `authenticated`, and the RLS policy deliberately lets
+ *      `article.manage`, `article.review` and `article.edit_own` holders read
+ *      unpublished rows — which is what makes the CMS work. Relying on RLS
+ *      alone therefore means an editor browsing `/articles` sees drafts and
+ *      in-review articles on the live site, and can open them. The
+ *      `.eq('status', 'published')` on each query below makes the public
+ *      surface independent of who is asking.
  *
  * Ordering, filtering, searching and pagination happen in PostgreSQL; only one
  * page of rows is ever sent to the browser.
@@ -168,8 +182,11 @@ export const listPublishedArticles = cache(
       .select(category ? CARD_COLUMNS_BY_CATEGORY : CARD_COLUMNS, {
         count: 'exact',
       })
-      .order('published_at', { ascending: false })
-      .order('id', { ascending: false })
+      // Belt and braces with RLS: see the note at the top of this file. An
+      // editor signed into the CMS must not see their drafts listed on the
+      // public site.
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })      .order('id', { ascending: false })
       .range(from, from + pageSize - 1)
 
     if (category) {
@@ -254,6 +271,13 @@ export type PublicArticle = {
   seoDescription: string | null
   canonicalUrl: string | null
   noindex: boolean
+  /**
+   * The article's frequently-asked-questions block.
+   *
+   * The same array renders the visible accordion and produces the `FAQPage`
+   * JSON-LD, so the marked-up text and the visible text cannot disagree.
+   */
+  faqs: FAQItem[]
   categories: { slug: string; name: string }[]
   tags: { slug: string; name: string }[]
   /**
@@ -278,9 +302,13 @@ export const getPublishedArticleBySlug = cache(
     const { data, error } = await supabase
       .from('articles')
       .select(
-        'id, slug, title, excerpt, content, published_at, reading_time_minutes, word_count, seo_title, seo_description, canonical_url, noindex, featured_image_id, author:authors(full_name, title)',
+        'id, slug, title, excerpt, content, published_at, reading_time_minutes, word_count, seo_title, seo_description, canonical_url, noindex, featured_image_id, faq_items, author:authors(full_name, title)',
       )
       .eq('slug', slug)
+      // Belt and braces with RLS: see the note at the top of this file. Without
+      // it, an editor signed into the CMS could open a draft or an in-review
+      // article on the live site by its slug.
+      .eq('status', 'published')
       .maybeSingle()
 
     if (error) return { ok: false, error: toDatabaseError(error) }
@@ -350,6 +378,9 @@ export const getPublishedArticleBySlug = cache(
         seoDescription: data.seo_description,
         canonicalUrl: data.canonical_url,
         noindex: data.noindex,
+        // Normalised on read: a malformed entry in the database is dropped
+        // rather than rendered as an empty question.
+        faqs: normalizeFaqItems(data.faq_items),
         categories: flattenTerms(categories.data, 'category'),
         tags: flattenTerms(tags.data, 'tag'),
         featuredImage,

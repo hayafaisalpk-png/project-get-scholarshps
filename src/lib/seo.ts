@@ -125,19 +125,29 @@ export const buildSitemapGroups = cache(
    *
    * Only the columns the sitemap needs are selected; selecting whole rows would
    * ship article bodies and rich descriptions to a file meant to hold URLs.
+   *
+   * The explicit status filters are NOT redundant with RLS. This module uses
+   * the SESSION client, so a signed-in editor is `authenticated`, and the RLS
+   * policies deliberately let CMS users read unpublished rows — which is how
+   * the CMS works. Without the filters below, an editor requesting the sitemap
+   * would get drafts in it, and this route is cached (`s-maxage=3600`), so that
+   * response could be served to anonymous visitors afterwards.
    */
   const [scholarships, articles, pages, terms] = await Promise.all([
     supabase
       .from('scholarships')
       .select('slug, updated_at, noindex')
+      .eq('status', 'published')
       .order('updated_at', { ascending: false }),
     supabase
       .from('articles')
       .select('slug, updated_at, noindex, allow_sitemap')
+      .eq('status', 'published')
       .order('updated_at', { ascending: false }),
     supabase
       .from('content_pages')
       .select('slug, updated_at, noindex')
+      .eq('status', 'active')
       .order('sort_order', { ascending: true }),
     supabase.rpc('sitemap_taxonomy_terms'),
   ])

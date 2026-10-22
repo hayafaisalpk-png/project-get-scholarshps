@@ -5,6 +5,7 @@ import { cache } from 'react'
 import { type DbResult, toDatabaseError } from '@/lib/db/errors'
 import { createClient } from '@/lib/supabase/server'
 import { type ArticleStatus, ARTICLE_STATUSES } from '@/lib/validation/article'
+import { type FAQItem, normalizeFaqItems } from '@/lib/validation/faq'
 
 /**
  * Administration queries for articles.
@@ -146,6 +147,8 @@ export type AdminArticleDetail = {
   canonical_url: string | null
   noindex: boolean
   allow_sitemap: boolean
+  /** The FAQ block, normalised into typed items. */
+  faq_items: FAQItem[]
   created_by: string | null
   updated_by: string | null
   created_at: string
@@ -204,7 +207,10 @@ export const getAdminArticle = cache(
     return {
       ok: true,
       data: {
-        record: data as AdminArticleDetail,
+        // The FAQ block is stored as `jsonb`; it is normalised into typed items
+        // here so the form and the public page work with the same shape and a
+        // malformed row cannot reach either of them.
+        record: { ...data, faq_items: normalizeFaqItems(data.faq_items) } as AdminArticleDetail,
         relations: {
           category_ids: (categories.data ?? []).map((r) => r.article_category_id),
           tag_ids: (tags.data ?? []).map((r) => r.tag_id),

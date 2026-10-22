@@ -6,6 +6,7 @@ import {
   articleLd,
   breadcrumbLd,
   collectionPageLd,
+  faqLd,
   graph,
   itemListLd,
   personLd,
@@ -333,5 +334,73 @@ describe('articleLd', () => {
   it('omits wordCount when it is zero or absent', () => {
     expect(articleLd({ ...base, wordCount: 0 })!.wordCount).toBeUndefined()
     expect(articleLd({ ...base, wordCount: null })!.wordCount).toBeUndefined()
+  })
+})
+describe('faqLd', () => {
+  const path = '/articles/how-to-write-a-scholarship-essay'
+
+  const faqs = [
+    { question: 'How long should my essay be?', answer: 'Five hundred words.' },
+    { question: 'Who reads it?', answer: 'The admissions panel.' },
+  ]
+
+  it('emits an FAQPage whose mainEntity is a list of Questions', () => {
+    const node = faqLd({ faqs, path })!
+    expect(node['@type']).toBe('FAQPage')
+    expect(node['@id']).toBe(`${ORIGIN}${path}#faq`)
+    expect(node.url).toBe(`${ORIGIN}${path}`)
+
+    const questions = list(node, 'mainEntity')
+    expect(questions).toHaveLength(2)
+    expect(questions[0]!['@type']).toBe('Question')
+    expect(questions[0]!.name).toBe('How long should my essay be?')
+  })
+
+  it('gives every question an acceptedAnswer of type Answer', () => {
+    const node = faqLd({ faqs, path })!
+    const answer = object(list(node, 'mainEntity')[0]!, 'acceptedAnswer')
+    expect(answer['@type']).toBe('Answer')
+    expect(answer.text).toBe('Five hundred words.')
+  })
+
+  it('declines when the article has no questions', () => {
+    expect(faqLd({ faqs: [], path })).toBeNull()
+  })
+
+  it('declines for a noindex article, like every other builder here', () => {
+    expect(faqLd({ faqs, path, noindex: true })).toBeNull()
+  })
+
+  /**
+   * A malformed row in the database must not become an empty Question in the
+   * markup. Google treats a `Question` with a blank name as invalid, and an
+   * empty answer is a claim the page cannot support.
+   */
+  it('drops a malformed item rather than emitting an empty Question', () => {
+    const node = faqLd({
+      faqs: [
+        { question: '   ', answer: 'An answer to nothing.' },
+        { question: 'Real question?', answer: 'Real answer.' },
+      ],
+      path,
+    })!
+
+    const questions = list(node, 'mainEntity')
+    expect(questions).toHaveLength(1)
+    expect(questions[0]!.name).toBe('Real question?')
+  })
+
+  it('survives serialisation with quotes and angle brackets in the text', () => {
+    const hostile = 'Is it "really" <b>free</b> & fast?'
+    const node = faqLd({
+      faqs: [{ question: hostile, answer: 'Yes — it is.' }],
+      path,
+    })!
+
+    const doc = graph(node)!
+    const serialized = serializeJsonLd(doc)
+
+    expect(serialized).not.toContain('<')
+    expect(parse(doc)['@graph'][0].mainEntity[0].name).toBe(hostile)
   })
 })

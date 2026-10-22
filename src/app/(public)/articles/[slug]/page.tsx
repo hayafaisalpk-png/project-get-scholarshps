@@ -11,12 +11,14 @@ import {
   articleMetaTags,
   articleTitle,
 } from '@/features/articles/metadata'
+import { FAQSection } from '@/features/articles/components/faq-section'
 import { getPublishedArticleBySlug } from '@/features/articles/queries'
 import { formatTimestamp, readingTime } from '@/lib/format'
 import { getString } from '@/lib/settings'
 import {
   articleLd,
   breadcrumbLd,
+  faqLd,
   graph,
   personLd,
   webPageLd,
@@ -85,6 +87,12 @@ export default async function ArticlePage({ params }: Params) {
    * article is `noindex`, and `personLd` declines when there is no author name
    * — an article can genuinely have no byline, and a `Person` node with an empty
    * name is a false claim rather than a thin one.
+   *
+   * `faqLd` describes the questions the article answers. It is built from the
+   * same `article.faqs` array that the visible accordion renders below, so the
+   * marked-up text and the text on the page are the same text — which is what
+   * Google requires. It declines when the article has no FAQ, and when the
+   * article is `noindex`.
    */
   const structuredData = graph(
     webPageLd({
@@ -109,6 +117,11 @@ export default async function ArticlePage({ params }: Params) {
       noindex: article.noindex,
     }),
     personLd({ name: article.authorName, path: detailPath }),
+    faqLd({
+      faqs: article.faqs,
+      path: detailPath,
+      noindex: article.noindex,
+    }),
   )
 
   return (
@@ -177,6 +190,13 @@ export default async function ArticlePage({ params }: Params) {
             nothing else.
           */}
           <Prose className="mt-8" dangerouslySetInnerHTML={{ __html: article.content }} />
+
+          {/*
+            The visible half of the FAQ markup. `faqLd` above describes exactly
+            these questions and answers, so the structured data is backed by
+            text the reader can actually see.
+          */}
+          <FAQSection faqs={article.faqs} />
 
           {article.categories.length > 0 || article.tags.length > 0 ? (
             <footer className="mt-10 border-t border-ink-200 pt-6">

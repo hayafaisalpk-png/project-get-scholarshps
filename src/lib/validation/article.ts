@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { fieldErrorsFrom } from '@/lib/validation/auth'
+import { faqItemsSchema } from '@/lib/validation/faq'
 
 /**
  * Article input validation.
@@ -134,6 +135,15 @@ export const articleSchema = z
 
     noindex: z.boolean().optional().default(false),
     allow_sitemap: z.boolean().optional().default(true),
+
+    /**
+     * The article's frequently-asked-questions block.
+     *
+     * Optional: an article with no FAQ is normal, and the JSON-LD builder
+     * declines to emit a `FAQPage` node in that case rather than describing
+     * questions that do not exist.
+     */
+    faq_items: faqItemsSchema.optional().default([]),
 
     seo_title: optionalText(300),
     seo_description: optionalText(500),

@@ -427,6 +427,7 @@ export type Database = {
           created_by: string | null
           editor_id: string | null
           excerpt: string | null
+          faq_items: Json
           featured_image_id: string | null
           id: string
           noindex: boolean
@@ -456,6 +457,7 @@ export type Database = {
           created_by?: string | null
           editor_id?: string | null
           excerpt?: string | null
+          faq_items?: Json
           featured_image_id?: string | null
           id?: string
           noindex?: boolean
@@ -485,6 +487,7 @@ export type Database = {
           created_by?: string | null
           editor_id?: string | null
           excerpt?: string | null
+          faq_items?: Json
           featured_image_id?: string | null
           id?: string
           noindex?: boolean
@@ -1866,6 +1869,7 @@ export type Database = {
           author_id: string | null
           content: string | null
           excerpt: string | null
+          faq_items: Json | null
           featured_image_id: string | null
           id: string | null
           published_at: string | null
@@ -1882,6 +1886,7 @@ export type Database = {
           author_id?: string | null
           content?: string | null
           excerpt?: string | null
+          faq_items?: Json | null
           featured_image_id?: string | null
           id?: string | null
           published_at?: string | null
@@ -1898,6 +1903,7 @@ export type Database = {
           author_id?: string | null
           content?: string | null
           excerpt?: string | null
+          faq_items?: Json | null
           featured_image_id?: string | null
           id?: string | null
           published_at?: string | null

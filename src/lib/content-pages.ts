@@ -55,6 +55,13 @@ export type ContentPage = {
  * Returns `data: null` when the slug is unknown or the row is not visible to
  * this session. Those two cases are deliberately indistinguishable, so a probe
  * cannot learn whether a withdrawn page exists.
+ *
+ * The explicit `status = 'active'` filter is not redundant with RLS. This
+ * module uses the SESSION client, so a signed-in editor is `authenticated`, and
+ * the `content_pages_select_public` policy deliberately lets `settings.manage`
+ * and `seo.manage` holders read a withdrawn page — which is how the CMS works.
+ * Without the filter, an editor browsing the public site would see a page that
+ * has been withdrawn for everyone else.
  */
 export const getContentPage = cache(
   async (slug: string): Promise<DbResult<ContentPage | null>> => {
@@ -66,6 +73,7 @@ export const getContentPage = cache(
         'slug, title, excerpt, body, seo_title, seo_description, canonical_url, noindex, updated_at',
       )
       .eq('slug', slug)
+      .eq('status', 'active')
       .maybeSingle()
 
     if (error) return { ok: false, error: toDatabaseError(error) }

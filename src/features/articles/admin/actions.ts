@@ -73,6 +73,28 @@ function idList(formData: FormData, key: string): string[] {
   return formData.getAll(key).map(String).filter(Boolean)
 }
 
+/**
+ * Pair the FAQ question and answer inputs into items.
+ *
+ * The form posts one `faq_question` and one `faq_answer` per row, so the two
+ * lists are zipped by index. A row where BOTH fields are blank is a row the
+ * editor has not filled in yet, and is dropped rather than rejected — being
+ * able to leave a spare empty row in the form is not an error. A row with only
+ * one of the two filled in IS an error, and is left for the Zod schema to
+ * report.
+ */
+function faqItemsFromFormData(formData: FormData): { question: string; answer: string }[] {
+  const questions = formData.getAll('faq_question').map(String)
+  const answers = formData.getAll('faq_answer').map(String)
+
+  return questions
+    .map((question, index) => ({
+      question,
+      answer: answers[index] ?? '',
+    }))
+    .filter((item) => item.question.trim() !== '' || item.answer.trim() !== '')
+}
+
 function buildInput(formData: FormData) {
   return {
     title: text(formData, 'title'),
@@ -85,6 +107,7 @@ function buildInput(formData: FormData) {
     featured_image_id: text(formData, 'featuredImageId'),
     noindex: flag(formData, 'noindex'),
     allow_sitemap: flag(formData, 'allow_sitemap'),
+    faq_items: faqItemsFromFormData(formData),
     seo_title: text(formData, 'seo_title'),
     seo_description: text(formData, 'seo_description'),
     canonical_url: text(formData, 'canonical_url'),
@@ -164,6 +187,10 @@ function buildRow(
     seo_title: value.seo_title,
     seo_description: value.seo_description,
     canonical_url: value.canonical_url,
+    // The FAQ block is stored whole. It is read and written as one value, never
+    // queried across articles, so a child table would cost a second query on
+    // the page that has to render it.
+    faq_items: value.faq_items,
     updated_by: userId,
   }
 

@@ -244,11 +244,54 @@ enforced by a check constraint), `reporter_email`, `reason`, `details`,
 | `canonical_url` | `text` | |
 | `noindex` | `boolean` | Default false |
 | `allow_sitemap` | `boolean` | Default true |
+| `faq_items` | `jsonb` | `[{question, answer}]`, plain-text answers, max 20. Default `'[]'` (migration 039) |
 | `created_by` / `updated_by` | `uuid` | |
 | `created_at` / `updated_at` | `timestamptz` | |
 
 **Indexes:** unique on `slug`; `(status, published_at DESC)`;
 `(status, scheduled_for)` partial for `scheduled`; GIN on `search_vector`.
+
+#### `articles.faq_items` *(migration 039)*
+
+A JSONB array rather than a child table. The block is always read and written
+whole — nothing asks "which articles mention scholarships?" — so a child table
+would cost a second query on the page that renders it and buy referential
+integrity the application has no use for.
+
+The default is `'[]'`, never `NULL`: "this article has no FAQ" is a real state
+and should not have to be told apart from "nobody has looked yet".
+
+Shape is enforced in the database, not only in application code:
+
+```sql
+check (public.article_faq_items_valid(faq_items))
+```
+
+`article_faq_items_valid(jsonb)` is `LANGUAGE sql IMMUTABLE`, because a CHECK
+constraint cannot contain a subquery and inspecting each element of an array is
+exactly one. It returns true only for an array of at most **20** objects whose
+`question` and `answer` are both **non-blank strings**. `EXECUTE` is granted to
+`anon`, `authenticated` and `service_role` — the constraint is evaluated as the
+writing role, and the function reveals nothing beyond the value it is handed.
+
+Answers are **plain text**, not HTML. That is what lets the visible answer and
+`acceptedAnswer.text` in the `FAQPage` markup be the same characters, which is
+what Google requires of FAQ structured data. The Zod rule that mirrors the
+constraint is `src/lib/validation/faq.ts`.
+
+#### `published_articles` *(view, `security_invoker`)*
+
+The reader-facing projection of `articles`. It selects only public columns and
+filters on `public.article_is_public(status, published_at)`; `faq_items` is
+appended last in migration 039 without disturbing the existing column order or
+the view's grants. Because it is `security_invoker = true`, the caller's RLS
+still applies — the view is a narrower *shape*, not a privilege escalation.
+
+**The view is not a substitute for the application's own status filter.** RLS
+deliberately permits CMS permission-holders to read unpublished rows (that is
+what makes the CMS work), so a signed-in editor querying through the session
+client sees drafts even via this view. Every public query therefore also carries
+`.eq('status', 'published')` — see `docs/SECURITY_POLICY.md`.
 
 ### `article_revisions`
 `article_id` FK, `revision_number integer`, `title`, `content`, `excerpt`,
