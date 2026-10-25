@@ -301,12 +301,12 @@ export default async function HomePage() {
       {/* ------------------------------------------------------------------- FAQ */}
       <FaqSection />
 
-      {/* ------------------------------------------------------ Featured articles */}
+      {/* ------------------------------------------------------ Feature articles */}
       {articles.length > 0 ? (
         <Section className="bg-ink-50">
           <Container>
             <SectionHeading
-              title="Featured articles"
+              title="Feature articles"
               description="Practical guidance for finding and applying for scholarships."
               action={
                 <Link
