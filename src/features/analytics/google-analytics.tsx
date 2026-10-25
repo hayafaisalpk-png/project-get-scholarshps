@@ -28,8 +28,6 @@ const MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9_-]+$/
  * group and is deliberately not tracked.
  */
 export async function GoogleAnalytics() {
-  if (!isProduction()) return null
-
   const measurementId = getPublicEnv().NEXT_PUBLIC_GA_MEASUREMENT_ID
   if (!measurementId) return null
 

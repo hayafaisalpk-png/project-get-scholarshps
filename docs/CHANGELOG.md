@@ -10,6 +10,20 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Fixed — the custom 404 page now handles unmatched URLs
+
+The 404 UI only existed at `src/app/(public)/not-found.tsx`, and a route-group
+`not-found` is used for `notFound()` calls inside that group — it is **not**
+used for URLs that match no route. Every unknown URL therefore fell through to
+the framework's default 404, which has no site chrome, no navigation and no way
+back. The UI moved to `src/components/layout/not-found-content.tsx` and is
+rendered by a new root `src/app/not-found.tsx`, which adds the header, footer
+and skip link because the `(public)` layout does not apply at the root. The
+route-group file remains as a thin wrapper so `notFound()` inside public routes
+still renders inside the public layout. Verified against a production build:
+`/this-page-does-not-exist-xyz` returns **404** with the custom heading, header,
+footer, skip link, `noindex`, and the title `Page not found | GetScholarship`.
+
 ### Fixed — unpublished articles and scholarships are no longer visible on the public site
 
 **Data-visibility defect, fixed in code.**
