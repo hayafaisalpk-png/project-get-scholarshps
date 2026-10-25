@@ -239,10 +239,6 @@ export default async function HomePage() {
       {closingSoon.length > 0 ? (
         <Section className="bg-ink-50">
           <Container>
-            <SectionHeading
-              title={byKey.get('deadlines')?.heading ?? 'Closing soon'}
-              description={byKey.get('deadlines')?.subheading}
-            />
             <div className="space-y-4">
               {closingSoon.map((s) => (
                 <ScholarshipRow key={s.id} scholarship={s} />
