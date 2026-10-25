@@ -699,7 +699,6 @@ export type Database = {
         Row: {
           created_at: string
           email: string
-          whatsapp_no: string | null
           handled_at: string | null
           handled_by: string | null
           id: string
@@ -709,11 +708,11 @@ export type Database = {
           status: Database["public"]["Enums"]["contact_status"]
           subject: string
           updated_at: string
+          whatsapp_no: string | null
         }
         Insert: {
           created_at?: string
           email: string
-          whatsapp_no?: string | null
           handled_at?: string | null
           handled_by?: string | null
           id?: string
@@ -723,11 +722,11 @@ export type Database = {
           status?: Database["public"]["Enums"]["contact_status"]
           subject: string
           updated_at?: string
+          whatsapp_no?: string | null
         }
         Update: {
           created_at?: string
           email?: string
-          whatsapp_no?: string | null
           handled_at?: string | null
           handled_by?: string | null
           id?: string
@@ -737,6 +736,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["contact_status"]
           subject?: string
           updated_at?: string
+          whatsapp_no?: string | null
         }
         Relationships: []
       }
@@ -2079,6 +2079,7 @@ export type Database = {
       }
     }
     Functions: {
+      article_faq_items_valid: { Args: { p_items: Json }; Returns: boolean }
       article_is_public: {
         Args: {
           p_published_at: string
