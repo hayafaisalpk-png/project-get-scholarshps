@@ -10,7 +10,23 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
-### Fixed — the custom 404 page now handles unmatched URLs
+### Changed — environment migrated to new GitHub repo and Supabase project
+
+- Git `origin` repointed to `https://github.com/hayafaisalpk-png/project-get-scholarshps`.
+- `.env.local`, `supabase/config.toml` and the `types:db` script now target
+  Supabase project `qmasjdpwzcdgosaftewj` ("Get_Scholarship Project").
+- The new project's database already carried the full schema and data, but no
+  table/function grants for `anon`/`authenticated`/`service_role` (only
+  `postgres`). Migration `20260101000040_restore_grants.sql` re-applies every
+  GRANT/REVOKE from migrations 004–039 plus the service-role defaults and the
+  `article_is_public` / `scholarship_is_public` execute grants to anon (needed
+  by RLS policies and security_invoker views). Verified: `npm run test:rls`
+  111/111, `npm run verify` (typecheck, lint, 512 tests, build) all pass, and
+  the dev server serves `/`, `/scholarships`, `/articles` with 200.
+- DB types regenerated (`src/types/database.ts`).
+- Pending: force-push `main` to the new remote (histories diverge; the remote
+  holds an unrelated "Initial commit"). Push needs credentials for
+  `hayafaisalpk-png`.
 
 The 404 UI only existed at `src/app/(public)/not-found.tsx`, and a route-group
 `not-found` is used for `notFound()` calls inside that group — it is **not**
