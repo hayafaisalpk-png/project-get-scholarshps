@@ -1,5 +1,5 @@
 import Image from 'next/image'
-import { Award, GraduationCap, MapPin, Search, TrendingUp } from 'lucide-react'
+import { Award, GraduationCap, MapPin, Newspaper, Search } from 'lucide-react'
 import Link from 'next/link'
 
 import { Container, Section, SectionHeading } from '@/components/layout/container'
@@ -190,9 +190,9 @@ export default async function HomePage() {
                 label="Scholarships listed"
               />
               <Stat
-                icon={<TrendingUp className="h-10 w-10" aria-hidden="true" />}
-                value={stats.openScholarships.toLocaleString('en-US')}
-                label="Applications still open"
+                icon={<Newspaper className="h-10 w-10" aria-hidden="true" />}
+                value={(articleResult.ok ? articleResult.data.total : 0).toLocaleString('en-US')}
+                label="Articles"
               />
               <Stat
                 icon={<GraduationCap className="h-10 w-10" aria-hidden="true" />}
