@@ -14,10 +14,13 @@ verified by running the relevant command.
 
 - `.env.local` (URL and publishable key), `supabase/config.toml` and the
   `types:db` script now target project `bxyanilboaexzipynrqh`.
-- `SUPABASE_SERVICE_ROLE_KEY` is deliberately empty until the new project's
-  secret key is supplied. The previous project's key was removed rather than
-  reused against a different database; privileged CMS paths fail loudly until
-  the secret is set.
+- `SUPABASE_SERVICE_ROLE_KEY` now holds the new project's secret key. The
+  previous project's key was removed rather than reused against a different
+  database. Verified with the secret key: privileged reads of `redirects`,
+  `newsletter_subscribers`, `audit_logs`, `profiles`, `contact_submissions` and
+  `media_assets` all return 200, and redirect enforcement serves a real rule
+  (`/scholarships/field/arts` → `301` → `/scholarships`) through the running dev
+  server.
 - The new project already carried the application schema and content, verified
   read-only through the Data API with the publishable key: `scholarships` 1,
   `articles` 9, `content_pages` 5, `categories` 6, `education_levels` 6,
@@ -28,10 +31,11 @@ verified by running the relevant command.
   serves `/`, `/scholarships`, the Hult scholarship detail, `/articles`, an
   article detail, `/privacy` and `/sitemap.xml` with 200 and renders the new
   project's real content. `/admin` still redirects to login, as expected.
-- Not verified: service-role paths (CMS, inboxes, media upload, audit log), the
-  RLS suite (`npm run test:rls` needs the secret key), regenerated database
-  types (`supabase gen types` currently fails with an invalid CLI access
-  token), and whether auth accounts were carried across.
+- Not verified: interactive CMS flows (media upload, inbox writes), the RLS
+  suite (`npm run test:rls` was not run against this project), regenerated
+  database types (`supabase gen types` currently fails with an invalid CLI
+  access token). A super-admin profile and audit-log actor exist in the new
+  project, but sign-in was not exercised.
 - Deployment note: Vercel environment variables must be updated separately.
 - `supabase/.temp` still links the CLI to the previous project; re-link with
   `npx supabase link --project-ref bxyanilboaexzipynrqh`.
