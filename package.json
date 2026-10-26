@@ -22,7 +22,7 @@
     "admin:create": "node --env-file=.env.local supabase/scripts/create-first-admin.mjs",
     "db:fixtures": "node --env-file=.env.local supabase/scripts/sample-data.mjs load",
     "db:fixtures:remove": "node --env-file=.env.local supabase/scripts/sample-data.mjs remove",
-    "types:db": "supabase gen types typescript --project-id qmasjdpwzcdgosaftewj > src/types/database.ts",
+    "types:db": "supabase gen types typescript --project-id bxyanilboaexzipynrqh > src/types/database.ts",
     "brand:assets": "node scripts/generate-brand-assets.mjs",
     "verify": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
