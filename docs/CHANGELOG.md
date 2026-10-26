@@ -40,6 +40,20 @@ verified by running the relevant command.
 - `supabase/.temp` still links the CLI to the previous project; re-link with
   `npx supabase link --project-ref bxyanilboaexzipynrqh`.
 
+### Fixed — production domain served a stale deployment after the Supabase switch
+
+- Vercel project `getscholarship-online-unfasten` had an **Instant Rollback**
+  pinning the domain to a pre-switch deployment, and **Auto-assign Custom
+  Production Domains** was disabled, so Production deployments from `main` were
+  staged but never aliased. The live site therefore kept the old build whose
+  Supabase project had been deleted — every query returned empty while
+  localhost worked.
+- Promoted the `d7ec742` Production deployment and enabled auto-assignment.
+  Verified live: the homepage renders the Hult scholarship and article titles
+  and `/privacy` returns 200.
+- A temporary `/api/diag` probe (browser-safe values and PostgREST status only)
+  was used to diagnose this and has been removed.
+
 ### Changed — environment migrated to new GitHub repo and Supabase project
 
 - Git `origin` repointed to `https://github.com/hayafaisalpk-png/project-get-scholarshps`.
