@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -212,9 +213,34 @@ export default async function ScholarshipDetailPage({ params }: Params) {
               {scholarship.title}
             </h1>
 
-            <p className="mt-2 text-lg text-ink-600">
-              Offered by {scholarship.sponsor_name}
-            </p>
+            <div className="mt-2 flex items-center gap-3">
+              {scholarship.institution?.logo_url ? (
+                <Image
+                  src={scholarship.institution.logo_url}
+                  alt={`${scholarship.institution.name} logo`}
+                  width={40}
+                  height={40}
+                  unoptimized
+                  className="h-10 w-10 flex-none object-contain"
+                />
+              ) : (
+                <span
+                  aria-hidden="true"
+                  className="flex h-10 w-10 flex-none items-center justify-center rounded-sm bg-ink-100 text-lg font-semibold text-ink-600"
+                >
+                  {(scholarship.institution?.name ?? scholarship.sponsor_name)
+                    .charAt(0)
+                    .toUpperCase()}
+                </span>
+              )}
+              <p className="text-lg text-ink-600">
+                Offered by{' '}
+                {scholarship.institution?.name ?? scholarship.sponsor_name}
+                {scholarship.institution?.country
+                  ? ` · ${scholarship.institution.country}`
+                  : null}
+              </p>
+            </div>
 
             {isClosed ? (
               <Alert tone="info" className="mt-6" title="Applications have closed">

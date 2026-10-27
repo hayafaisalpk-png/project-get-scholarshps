@@ -34,11 +34,14 @@ ipassgenerator.online project. Where a specific administrative behaviour cannot 
 inspected, say so rather than guessing.
 
 **No content image is rendered on any public page except the homepage hero
-banner.** `scholarships.image_id` and `articles.featured_image_id` exist and
-can now be set from the CMS (Phase 4 increment 7), but no public route renders
-a content `<img>` — the OG cards come from `ImageResponse` — apart from the
-homepage hero, which renders `public/hero-image.jpg` (`next/image`, priority).
-Do not describe the site's *editorial* imagery as shipped.
+banner and institution logos.** `scholarships.image_id` and
+`articles.featured_image_id` exist and can now be set from the CMS (Phase 4
+increment 7), but no public route renders a content `<img>` for editorial
+imagery — the OG cards come from `ImageResponse` — apart from the homepage
+hero, which renders `public/hero-image.jpg` (`next/image`, priority), and
+institution logos, which are rendered from `institutions.logo_url` on
+scholarship cards and detail pages (`next/image`, with a neutral placeholder
+fallback). Do not describe the site's *editorial* imagery as shipped.
 
 The one exception is the brand mark in the header and footer, which is not CMS
 content: `logo-getscholarship.jpg` in the project root is the operator-supplied

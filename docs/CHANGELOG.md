@@ -474,6 +474,21 @@ articles in the linked project each render exactly four action buttons —
 nor "Cancel schedule" appears anywhere in the actions column. (The
 "Send for review" label was renamed afterwards — see the entry above.)
 
+### Added — Institution data model
+
+Normalised awarding bodies into a dedicated `institutions` table so multiple
+scholarships can share one record (and one logo). Migration `042` creates the
+table, adds `scholarships.institution_id` (nullable, `ON DELETE SET NULL`),
+back-fills one institution per distinct `sponsor_name` (exact match only — no
+fuzzy merging), and exposes `institution_id` through `published_scholarships`.
+RLS restricts writes to `scholarship.manage` holders while allowing public
+reads. Public queries attach the institution (name, slug, logo URL, country) to
+cards and detail pages; admin forms resolve or create the institution from the
+sponsor name plus optional logo URL / country. Institution logos are now rendered on scholarship cards and detail pages via
+`next/image` (with a neutral initials placeholder fallback), and the
+no-content-image rule in `AGENTS.md` was lifted specifically for institution
+logos. Country is shown alongside the institution name.
+
 ### Added — Google Analytics 4 (consent-gated)
 
 The operator supplied a GA4 property: **`G-JZYJWRRNVJ`**. The tag is now

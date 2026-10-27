@@ -86,6 +86,8 @@ function buildInput(formData: FormData) {
     title: text(formData, 'title'),
     slug: text(formData, 'slug') || slugify(text(formData, 'title')),
     sponsor_name: text(formData, 'sponsor_name'),
+    institution_logo_url: text(formData, 'institution_logo_url'),
+    institution_country: text(formData, 'institution_country'),
     summary: text(formData, 'summary'),
     description: text(formData, 'description'),
     eligibility_requirements: text(formData, 'eligibility_requirements'),
@@ -129,6 +131,8 @@ function echoValues(formData: FormData): Record<string, string | string[]> {
     'title',
     'slug',
     'sponsor_name',
+    'institution_logo_url',
+    'institution_country',
     'summary',
     'eligibility_requirements',
     'application_instructions',
@@ -221,6 +225,7 @@ function toRow(
   value: ReturnType<typeof scholarshipSchema.parse>,
   userId: string,
   mode: 'create' | 'update',
+  institutionId: string | null = null,
 ): ScholarshipInsert {
   const now = new Date().toISOString()
 
@@ -228,6 +233,7 @@ function toRow(
     slug: value.slug,
     title: value.title,
     sponsor_name: value.sponsor_name,
+    institution_id: institutionId,
     summary: value.summary,
     description: value.description,
     eligibility_requirements: sanitizeArticleHtml(value.eligibility_requirements) || null,
@@ -367,6 +373,64 @@ function revalidate(slug?: string | null) {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Institution resolution                                                     */
+/* -------------------------------------------------------------------------- */
+
+async function resolveInstitutionId(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  name: string,
+  logoUrl: string | null,
+  country: string | null,
+): Promise<string | null> {
+  const trimmed = name.trim()
+  if (!trimmed) return null
+
+  let existing: { id: string } | null = null
+  try {
+    const { data } = await supabase
+      .from('institutions')
+      .select('id')
+      .ilike('name', trimmed)
+      .maybeSingle()
+    existing = (data as { id: string } | null) ?? null
+  } catch {
+    // Institutions table may not exist yet (migration not applied).
+    return null
+  }
+
+  if (existing?.id) {
+    const patch: { logo_url?: string; country?: string } = {}
+    if (logoUrl?.trim()) patch.logo_url = logoUrl.trim()
+    if (country?.trim()) patch.country = country.trim()
+    if (Object.keys(patch).length > 0) {
+      await supabase.from('institutions').update(patch).eq('id', existing.id)
+    }
+    return existing.id
+  }
+
+  const baseSlug =
+    trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') ||
+    'institution'
+  const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 8)}`
+
+  const { data: created, error } = await supabase
+    .from('institutions')
+    .insert({
+      name: trimmed,
+      slug,
+      institution_type: 'other',
+      logo_url: logoUrl?.trim() || null,
+      country: country?.trim() || null,
+      is_verified: false,
+    })
+    .select('id')
+    .single()
+
+  if (error || !created) return null
+  return created.id
+}
+
+/* -------------------------------------------------------------------------- */
 /* Create                                                                     */
 /* -------------------------------------------------------------------------- */
 
@@ -390,6 +454,13 @@ export async function createScholarshipAction(
   const value = parsed.data
   const supabase = await createClient()
 
+  const institutionId = await resolveInstitutionId(
+    supabase,
+    value.sponsor_name,
+    value.institution_logo_url,
+    value.institution_country,
+  )
+
   // Check the slug before writing so the editor gets a field-level message
   // rather than a generic constraint failure.
   const { data: clash } = await supabase
@@ -407,11 +478,30 @@ export async function createScholarshipAction(
     }
   }
 
-  const { data: inserted, error } = await supabase
-    .from('scholarships')
-    .insert(toRow(value, user.id, 'create'))
-    .select('id, slug')
-    .single()
+  let inserted: { id: string; slug: string } | null = null
+  let error: { code?: string; message?: string } | null = null
+  {
+    const res = await supabase
+      .from('scholarships')
+      .insert(toRow(value, user.id, 'create', institutionId))
+      .select('id, slug')
+      .single()
+    inserted = res.data as { id: string; slug: string } | null
+    error = res.error as { code?: string; message?: string } | null
+  }
+  if (error && error.code === '42703') {
+    // institution_id column missing (migration 042 not applied yet): retry
+    // without it so existing functionality keeps working.
+    const rowWithout = toRow(value, user.id, 'create', null) as Record<string, unknown>
+    delete rowWithout.institution_id
+    const res2 = await supabase
+      .from('scholarships')
+      .insert(rowWithout as never)
+      .select('id, slug')
+      .single()
+    inserted = res2.data as { id: string; slug: string } | null
+    error = res2.error as { code?: string; message?: string } | null
+  }
 
   if (error || !inserted) {
     return { ok: false, message: friendlyWriteError(error?.code, error?.message), values: echoValues(formData) }
@@ -473,6 +563,13 @@ export async function updateScholarshipAction(
   const value = parsed.data
   const supabase = await createClient()
 
+  const institutionId = await resolveInstitutionId(
+    supabase,
+    value.sponsor_name,
+    value.institution_logo_url,
+    value.institution_country,
+  )
+
   // Capture the previous state for the audit trail before overwriting it.
   const { data: before } = await supabase
     .from('scholarships')
@@ -496,10 +593,23 @@ export async function updateScholarshipAction(
     }
   }
 
-  const { error } = await supabase
-    .from('scholarships')
-    .update(toRow(value, user.id, 'update'))
-    .eq('id', id)
+  let updateError = (
+    await supabase
+      .from('scholarships')
+      .update(toRow(value, user.id, 'update', institutionId))
+      .eq('id', id)
+  ).error as { code?: string; message?: string } | null
+  if (updateError && updateError.code === '42703') {
+    const rowWithout = toRow(value, user.id, 'update', null) as Record<string, unknown>
+    delete rowWithout.institution_id
+    updateError = (
+      await supabase
+        .from('scholarships')
+        .update(rowWithout as never)
+        .eq('id', id)
+    ).error as { code?: string; message?: string } | null
+  }
+  const error = updateError
 
   if (error) {
     return { ok: false, message: friendlyWriteError(error.code, error.message), values: echoValues(formData) }

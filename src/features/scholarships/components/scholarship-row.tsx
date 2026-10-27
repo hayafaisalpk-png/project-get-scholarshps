@@ -1,4 +1,5 @@
 import { Award, CalendarClock, Repeat, Users } from 'lucide-react'
+import Image from 'next/image'
 import Link from 'next/link'
 
 import { ButtonLink } from '@/components/ui/button'
@@ -124,7 +125,12 @@ export function ScholarshipRow({
 
         <p className="mt-1 text-sm text-ink-500">
           Provided by{' '}
-          <span className="font-medium text-ink-700">{scholarship.sponsor_name}</span>
+          <span className="font-medium text-ink-700">
+            {scholarship.institution?.name ?? scholarship.sponsor_name}
+          </span>
+          {scholarship.institution?.country
+            ? ` · ${scholarship.institution.country}`
+            : null}
         </p>
 
         {scholarship.summary ? (
@@ -157,6 +163,29 @@ export function ScholarshipRow({
       </div>
 
       <div className="flex shrink-0 flex-col justify-center gap-3 border-t border-ink-200 p-5 sm:w-58 sm:border-t-0 sm:border-l">
+        {scholarship.institution?.logo_url ? (
+          <div className="flex justify-center">
+            <Image
+              src={scholarship.institution.logo_url}
+              alt={`${scholarship.institution.name} logo`}
+              width={64}
+              height={64}
+              unoptimized
+              className="h-16 w-16 object-contain"
+            />
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <span
+              aria-hidden="true"
+              className="flex h-16 w-16 items-center justify-center rounded-sm bg-ink-100 text-2xl font-semibold text-ink-600"
+            >
+              {(scholarship.institution?.name ?? scholarship.sponsor_name)
+                .charAt(0)
+                .toUpperCase()}
+            </span>
+          </div>
+        )}
         <ButtonLink href={href} className="w-full">
           View details
           <span className="sr-only-focusable"> for {scholarship.title}</span>

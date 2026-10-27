@@ -952,6 +952,48 @@ export type Database = {
         }
         Relationships: []
       }
+      institutions: {
+        Row: {
+          country: string | null
+          created_at: string
+          description: string | null
+          id: string
+          institution_type: string
+          is_verified: boolean
+          logo_url: string | null
+          name: string
+          slug: string
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution_type?: string
+          is_verified?: boolean
+          logo_url?: string | null
+          name: string
+          slug: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          institution_type?: string
+          is_verified?: boolean
+          logo_url?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       locations: {
         Row: {
           archived_at: string | null
@@ -1632,6 +1674,7 @@ export type Database = {
           featured_until: string | null
           id: string
           image_id: string | null
+          institution_id: string | null
           internal_notes: string | null
           is_renewable: boolean
           is_rolling: boolean
@@ -1676,6 +1719,7 @@ export type Database = {
           featured_until?: string | null
           id?: string
           image_id?: string | null
+          institution_id?: string | null
           internal_notes?: string | null
           is_renewable?: boolean
           is_rolling?: boolean
@@ -1720,6 +1764,7 @@ export type Database = {
           featured_until?: string | null
           id?: string
           image_id?: string | null
+          institution_id?: string | null
           internal_notes?: string | null
           is_renewable?: boolean
           is_rolling?: boolean
@@ -1977,6 +2022,7 @@ export type Database = {
           featured: boolean | null
           id: string | null
           image_id: string | null
+          institution_id: string | null
           is_expired: boolean | null
           is_renewable: boolean | null
           is_rolling: boolean | null
@@ -2007,6 +2053,7 @@ export type Database = {
           featured?: boolean | null
           id?: string | null
           image_id?: string | null
+          institution_id?: string | null
           is_expired?: never
           is_renewable?: boolean | null
           is_rolling?: boolean | null
@@ -2037,6 +2084,7 @@ export type Database = {
           featured?: boolean | null
           id?: string | null
           image_id?: string | null
+          institution_id?: string | null
           is_expired?: never
           is_renewable?: boolean | null
           is_rolling?: boolean | null

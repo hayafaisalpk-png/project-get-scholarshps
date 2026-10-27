@@ -22,11 +22,20 @@ import { sanitizeArticleHtml } from '@/lib/sanitize'
  */
 
 /** Shape consumed by scholarship cards. Kept narrow to limit payload size. */
+export type InstitutionSummary = {
+  id: string
+  name: string
+  slug: string
+  logo_url: string | null
+  country: string | null
+}
+
 export type ScholarshipCard = {
   id: string
   slug: string
   title: string
   sponsor_name: string
+  institution: InstitutionSummary | null
   summary: string | null
   award_amount_min_cents: number | null
   award_amount_max_cents: number | null
@@ -60,11 +69,11 @@ export type SearchResult = {
  * `join()` widens to `string`, which collapses the result to GenericStringError.
  */
 export const CARD_FIELDS =
-  'id,slug,title,sponsor_name,summary,award_amount_min_cents,award_amount_max_cents,award_amount_text,award_currency,number_of_awards,is_renewable,application_fee_cents,deadline,is_rolling,verification_status,verified_at,last_reviewed_at,featured,published_at' as const
+  'id,slug,title,sponsor_name,institution_id,summary,award_amount_min_cents,award_amount_max_cents,award_amount_text,award_currency,number_of_awards,is_renewable,application_fee_cents,deadline,is_rolling,verification_status,verified_at,last_reviewed_at,featured,published_at' as const
 
 /** Column list for the detail page, including embedded taxonomy. */
 const DETAIL_SELECT =
-  'id,slug,title,sponsor_name,summary,description,eligibility_requirements,application_instructions,required_documents,application_url,opens_at,deadline,is_rolling,award_amount_min_cents,award_amount_max_cents,award_amount_text,award_currency,number_of_awards,award_per_year,application_fee_cents,is_renewable,renewal_details,max_renewals,status,verification_status,verified_at,last_reviewed_at,seo_title,seo_description,published_at,noindex,updated_at,scholarship_categories(categories(slug,name)),scholarship_education_levels(education_levels(slug,name)),scholarship_fields(academic_fields(slug,name)),scholarship_locations(locations(slug,name)),scholarship_tags(tags(slug,name))' as const
+  'id,slug,title,sponsor_name,institution_id,institutions(id,name,slug,logo_url,country),summary,description,eligibility_requirements,application_instructions,required_documents,application_url,opens_at,deadline,is_rolling,award_amount_min_cents,award_amount_max_cents,award_amount_text,award_currency,number_of_awards,award_per_year,application_fee_cents,is_renewable,renewal_details,max_renewals,status,verification_status,verified_at,last_reviewed_at,seo_title,seo_description,published_at,noindex,updated_at,scholarship_categories(categories(slug,name)),scholarship_education_levels(education_levels(slug,name)),scholarship_fields(academic_fields(slug,name)),scholarship_locations(locations(slug,name)),scholarship_tags(tags(slug,name))' as const
 
 /* -------------------------------------------------------------------------- */
 /* Derived deadline state                                                      */
@@ -142,10 +151,29 @@ export async function searchScholarships(
   // result there is no row to read it from, so the total is correctly zero.
   const total = rows.length > 0 ? Number(rows[0]?.total_count ?? 0) : 0
 
+  // Batch-fetch institution records for the sponsors on this page so cards can
+  // render a shared logo without an N+1 query. Matched by exact name, mirroring
+  // the migration that created one institution per distinct sponsor_name.
+  const sponsorNames = Array.from(
+    new Set(rows.map((r) => r.sponsor_name).filter(Boolean)),
+  )
+  const institutionByName = new Map<string, InstitutionSummary>()
+  if (sponsorNames.length > 0) {
+    const { data: instData } = await supabase
+      .from('institutions')
+      .select('id,name,slug,logo_url,country')
+      .in('name', sponsorNames)
+    for (const inst of instData ?? []) {
+      institutionByName.set(inst.name, inst as InstitutionSummary)
+    }
+  }
+
   return {
     ok: true,
     data: {
-      items: rows.map(toCard),
+      items: rows.map((row) =>
+        toCard(row, institutionByName.get(row.sponsor_name) ?? null),
+      ),
       total,
       page: search.page,
       pageSize: args.p_page_size,
@@ -187,7 +215,10 @@ type SearchRpcRow = {
  * `search_rank` is an internal sort signal and `total_count` is pagination
  * metadata; neither belongs on a card.
  */
-function toCard(row: SearchRpcRow): ScholarshipCard & {
+function toCard(
+  row: SearchRpcRow,
+  institution: InstitutionSummary | null,
+): ScholarshipCard & {
   is_expired: boolean
   days_remaining: number | null
 } {
@@ -196,6 +227,7 @@ function toCard(row: SearchRpcRow): ScholarshipCard & {
     slug: row.slug,
     title: row.title,
     sponsor_name: row.sponsor_name,
+    institution,
     summary: row.summary,
     award_amount_min_cents: row.award_amount_min_cents,
     award_amount_max_cents: row.award_amount_max_cents,
@@ -225,6 +257,7 @@ export type ScholarshipDetail = {
   slug: string
   title: string
   sponsor_name: string
+  institution: InstitutionSummary | null
   summary: string | null
   description: string | null
   eligibility_requirements: string | null
@@ -323,6 +356,7 @@ export const getScholarshipBySlug = cache(
           locations: { slug: string; name: string } | null
         }[]
         scholarship_tags?: { tags: { slug: string; name: string } | null }[]
+        institutions?: InstitutionSummary | null
       }
 
     const unwrap = <T>(rows: { [k: string]: T | null }[] | undefined): T[] =>
@@ -336,11 +370,13 @@ export const getScholarshipBySlug = cache(
       scholarship_fields,
       scholarship_locations,
       scholarship_tags,
+      institutions,
       ...fields
     } = raw
 
     return {
       ...(fields as unknown as ScholarshipDetail),
+      institution: (institutions as InstitutionSummary | null) ?? null,
       // Sanitised on read; see the article query for the rationale.
       eligibility_requirements: sanitizeArticleHtml(
         (fields as { eligibility_requirements?: string | null }).eligibility_requirements,
@@ -364,6 +400,44 @@ export const getScholarshipBySlug = cache(
 )
 
 /* -------------------------------------------------------------------------- */
+/* Institution attachment helper                                               */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Attach the shared institution record to a batch of scholarship rows.
+ *
+ * Curated list queries read from `published_scholarships` (which exposes
+ * `institution_id` but not the joined institution), so this performs one
+ * follow-up query for all distinct sponsor names on the page. Matching by name
+ * mirrors the migration that created one institution per distinct sponsor_name.
+ */
+async function attachInstitutions<
+  T extends { sponsor_name: string },
+>(rows: T[]): Promise<Array<T & { institution: InstitutionSummary | null }>> {
+  if (rows.length === 0) return []
+
+  const supabase = await createClient()
+  const sponsorNames = Array.from(
+    new Set(rows.map((r) => r.sponsor_name).filter(Boolean)),
+  )
+  const institutionByName = new Map<string, InstitutionSummary>()
+  if (sponsorNames.length > 0) {
+    const { data: instData } = await supabase
+      .from('institutions')
+      .select('id,name,slug,logo_url,country')
+      .in('name', sponsorNames)
+    for (const inst of instData ?? []) {
+      institutionByName.set(inst.name, inst as InstitutionSummary)
+    }
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    institution: institutionByName.get(r.sponsor_name) ?? null,
+  }))
+}
+
+/* -------------------------------------------------------------------------- */
 /* Curated lists                                                               */
 /* -------------------------------------------------------------------------- */
 
@@ -383,7 +457,9 @@ export const getFeaturedScholarships = cache(
       return []
     }
 
-    return (data ?? []) as ScholarshipCard[]
+    return (await attachInstitutions((data ?? []) as Array<
+      Omit<ScholarshipCard, 'institution'>
+    >)) as ScholarshipCard[]
   },
 )
 
@@ -406,7 +482,9 @@ export const getClosingSoonScholarships = cache(
       return []
     }
 
-    return (data ?? []) as ScholarshipCard[]
+    return (await attachInstitutions((data ?? []) as Array<
+      Omit<ScholarshipCard, 'institution'>
+    >)) as ScholarshipCard[]
   },
 )
 
@@ -425,7 +503,9 @@ export const getRecentScholarships = cache(
       return []
     }
 
-    return (data ?? []) as ScholarshipCard[]
+    return (await attachInstitutions((data ?? []) as Array<
+      Omit<ScholarshipCard, 'institution'>
+    >)) as ScholarshipCard[]
   },
 )
 
@@ -470,6 +550,8 @@ export const getRelatedScholarships = cache(
       return []
     }
 
-    return (data ?? []) as ScholarshipCard[]
+    return (await attachInstitutions((data ?? []) as Array<
+      Omit<ScholarshipCard, 'institution'>
+    >)) as ScholarshipCard[]
   },
 )

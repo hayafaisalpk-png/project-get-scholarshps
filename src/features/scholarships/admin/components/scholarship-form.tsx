@@ -64,6 +64,8 @@ type Draft = {
   title: string
   slug: string
   sponsor_name: string
+  institution_logo_url: string
+  institution_country: string
   summary: string
   eligibility_requirements: string
   application_instructions: string
@@ -98,6 +100,8 @@ const TEXT_KEYS: (keyof Draft)[] = [
   'title',
   'slug',
   'sponsor_name',
+  'institution_logo_url',
+  'institution_country',
   'summary',
   'eligibility_requirements',
   'application_instructions',
@@ -159,6 +163,8 @@ function ScholarshipFormFields({
     title: record?.title ?? '',
     slug: record?.slug ?? '',
     sponsor_name: record?.sponsor_name ?? '',
+    institution_logo_url: record?.institution_logo_url ?? '',
+    institution_country: record?.institution_country ?? '',
     summary: record?.summary ?? '',
     eligibility_requirements: record?.eligibility_requirements ?? '',
     application_instructions: record?.application_instructions ?? '',
@@ -314,6 +320,40 @@ function ScholarshipFormFields({
                 'sponsor_name',
                 fieldErrors?.sponsor_name,
               )}
+            />
+          </FormField>
+
+          <FormField
+            id="institution_logo_url"
+            label="Institution logo URL"
+            hint="HTTPS URL to the university/college logo. Reused across scholarships with the same sponsor."
+            error={fieldErrors?.institution_logo_url}
+          >
+            <input
+              id="institution_logo_url"
+              name="institution_logo_url"
+              type="url"
+              maxLength={2000}
+              className={inputClasses}
+              value={draft.institution_logo_url}
+              onChange={(e) => setField('institution_logo_url', e.target.value)}
+              aria-invalid={Boolean(fieldErrors?.institution_logo_url)}
+            />
+          </FormField>
+
+          <FormField
+            id="institution_country"
+            label="Institution country"
+            error={fieldErrors?.institution_country}
+          >
+            <input
+              id="institution_country"
+              name="institution_country"
+              maxLength={100}
+              className={inputClasses}
+              value={draft.institution_country}
+              onChange={(e) => setField('institution_country', e.target.value)}
+              aria-invalid={Boolean(fieldErrors?.institution_country)}
             />
           </FormField>
 

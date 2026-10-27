@@ -163,6 +163,9 @@ export type AdminScholarshipDetail = {
   slug: string
   title: string
   sponsor_name: string
+  institution_id: string | null
+  institution_logo_url: string | null
+  institution_country: string | null
   summary: string | null
   description: string | null
   eligibility_requirements: string | null
@@ -231,6 +234,19 @@ export const getAdminScholarship = cache(
     if (error) return { ok: false, error: toDatabaseError(error) }
     if (!data) return { ok: true, data: null }
 
+    // Hydrate institution display fields (logo, country) from the related record.
+    let institutionLogoUrl: string | null = null
+    let institutionCountry: string | null = null
+    if (data.institution_id) {
+      const { data: inst } = await supabase
+        .from('institutions')
+        .select('logo_url, country')
+        .eq('id', data.institution_id)
+        .maybeSingle()
+      institutionLogoUrl = inst?.logo_url ?? null
+      institutionCountry = inst?.country ?? null
+    }
+
     const [categories, levels, fields, locations] = await Promise.all([
       supabase
         .from('scholarship_categories')
@@ -253,7 +269,11 @@ export const getAdminScholarship = cache(
     return {
       ok: true,
       data: {
-        record: data as AdminScholarshipDetail,
+        record: {
+          ...(data as unknown as AdminScholarshipDetail),
+          institution_logo_url: institutionLogoUrl,
+          institution_country: institutionCountry,
+        },
         taxonomy: {
           category_ids: (categories.data ?? []).map((r) => r.category_id),
           education_level_ids: (levels.data ?? []).map(

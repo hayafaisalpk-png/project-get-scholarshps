@@ -5,6 +5,7 @@ import { useState, useTransition } from 'react'
 
 import { deleteUserAction, resetPasswordAction, assignRoleAction, revokeRoleAction } from '@/features/users/actions'
 import type { RoleRow, UserRow } from '@/features/users/queries'
+import { formatDate } from '@/lib/format'
 
 export function UsersTable({ users, roles }: { users: UserRow[]; roles: RoleRow[] }) {
   const router = useRouter()
@@ -115,9 +116,7 @@ export function UsersTable({ users, roles }: { users: UserRow[]; roles: RoleRow[
                 </td>
                 <td className="px-4 py-3 text-ink-700">{user.status ?? '—'}</td>
                 <td className="px-4 py-3 whitespace-nowrap text-ink-600">
-                  {user.createdAt
-                    ? new Date(user.createdAt).toLocaleDateString()
-                    : '—'}
+                  {user.createdAt ? formatDate(user.createdAt) || '—' : '—'}
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-col gap-2">

@@ -188,6 +188,9 @@ export const scholarshipSchema = z
       .min(1, 'A sponsor or provider name is required.')
       .max(300, 'The sponsor name must be 300 characters or fewer.'),
 
+    institution_logo_url: optionalText(2000),
+    institution_country: optionalText(100),
+
     summary: optionalText(400),
     description: optionalText(8000),
     eligibility_requirements: optionalText(4000),
