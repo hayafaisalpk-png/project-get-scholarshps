@@ -281,9 +281,12 @@ export default async function ScholarshipDetailPage({ params }: Params) {
             <section className="mt-8">
               <h2 className="text-xl font-bold text-ink-900">Eligibility</h2>
               {scholarship.eligibility_requirements ? (
-                <div className="mt-3 whitespace-pre-line text-ink-700">
-                  {scholarship.eligibility_requirements}
-                </div>
+                <div
+                  className="prose-editorial mt-3 text-ink-700"
+                  dangerouslySetInnerHTML={{
+                    __html: scholarship.eligibility_requirements,
+                  }}
+                />
               ) : (
                 <p className="mt-3 text-ink-600">
                   Eligibility requirements have not been recorded. Check the
@@ -307,16 +310,17 @@ export default async function ScholarshipDetailPage({ params }: Params) {
               ) : null}
             </section>
 
-            {scholarship.required_documents?.length ? (
+            {scholarship.required_documents ? (
               <section className="mt-8">
                 <h2 className="text-xl font-bold text-ink-900">
                   Documents you may need
                 </h2>
-                <ul className="mt-3 list-disc space-y-1.5 pl-5 text-ink-700">
-                  {scholarship.required_documents.map((doc) => (
-                    <li key={doc}>{doc}</li>
-                  ))}
-                </ul>
+                <div
+                  className="prose-editorial mt-3 text-ink-700"
+                  dangerouslySetInnerHTML={{
+                    __html: scholarship.required_documents,
+                  }}
+                />
               </section>
             ) : null}
 
@@ -325,9 +329,12 @@ export default async function ScholarshipDetailPage({ params }: Params) {
                 <h2 className="text-xl font-bold text-ink-900">
                   How to apply
                 </h2>
-                <div className="mt-3 whitespace-pre-line text-ink-700">
-                  {scholarship.application_instructions}
-                </div>
+                <div
+                  className="prose-editorial mt-3 text-ink-700"
+                  dangerouslySetInnerHTML={{
+                    __html: scholarship.application_instructions,
+                  }}
+                />
               </section>
             ) : null}
 

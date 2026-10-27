@@ -8,6 +8,7 @@ import {
 } from '@/features/scholarships/search-params'
 import { type DbResult, toDatabaseError } from '@/lib/db/errors'
 import { createClient } from '@/lib/supabase/server'
+import { sanitizeArticleHtml } from '@/lib/sanitize'
 
 /**
  * Scholarship queries.
@@ -228,7 +229,7 @@ export type ScholarshipDetail = {
   description: string | null
   eligibility_requirements: string | null
   application_instructions: string | null
-  required_documents: string[] | null
+  required_documents: string | null
   application_url: string | null
   opens_at: string | null
   deadline: string | null
@@ -340,6 +341,16 @@ export const getScholarshipBySlug = cache(
 
     return {
       ...(fields as unknown as ScholarshipDetail),
+      // Sanitised on read; see the article query for the rationale.
+      eligibility_requirements: sanitizeArticleHtml(
+        (fields as { eligibility_requirements?: string | null }).eligibility_requirements,
+      ),
+      application_instructions: sanitizeArticleHtml(
+        (fields as { application_instructions?: string | null }).application_instructions,
+      ),
+      required_documents: sanitizeArticleHtml(
+        (fields as { required_documents?: string | null }).required_documents,
+      ),
       sources: (sourceRows ?? []) as ScholarshipDetail['sources'],
       categories: unwrap<{ slug: string; name: string }>(scholarship_categories),
       education_levels: unwrap<{ slug: string; name: string }>(

@@ -167,7 +167,7 @@ export type AdminScholarshipDetail = {
   description: string | null
   eligibility_requirements: string | null
   application_instructions: string | null
-  required_documents: string[]
+  required_documents: string | null
   application_url: string | null
   award_amount_min_cents: number | null
   award_amount_max_cents: number | null

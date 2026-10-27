@@ -40,6 +40,45 @@ verified by running the relevant command.
 - `supabase/.temp` still links the CLI to the previous project; re-link with
   `npx supabase link --project-ref bxyanilboaexzipynrqh`.
 
+### Added — rich-text editors for scholarship Eligibility, Application instructions and Required documents
+
+- `/admin/scholarships/new` (and edit): the three plain-text areas are now
+  TipTap rich-text editors (bold, italic, headings, lists, links, undo/redo),
+  matching the article editor.
+- `required_documents` changed from `text[]` to `text` (migration 041) so it
+  can store HTML; existing arrays are joined with newlines on migration.
+- `eligibility_requirements`, `application_instructions` and
+  `required_documents` are sanitised with `sanitizeArticleHtml` on write and
+  again on read; the public detail page renders them via `dangerouslySetInnerHTML`
+  with the sanitised HTML.
+- The form keeps the controlled-draft + echo-on-failure behaviour, including
+  remounting the editors with the restored content after a rejected submission.
+- Verified: `npm run verify` exits 0 (typecheck, lint, 512 tests, production
+  build).
+
+### Fixed — administration and authentication routes now carry `X-Robots-Tag: noindex`
+
+- `src/proxy.ts` now sets `X-Robots-Tag: noindex, nofollow, noarchive` on every
+  response (including redirects) for `/admin/*` and `/auth/*`, reinforcing the
+  per-route `robots` metadata at the HTTP layer so intermediaries and non-HTML
+  responses honour it.
+- Verified live against a production build: `/admin` answers `200`→redirect with
+  the header present and the HTML meta `noindex, nofollow, nocache`; the public
+  homepage answers `200` with no `X-Robots-Tag` header and meta `index, follow`.
+  GA4 remains mounted only in the `(public)` layout, so admin traffic is never
+  tracked; admin URLs are absent from the sitemap and disallowed in `robots.txt`.
+
+### Fixed — scholarship create/edit form no longer wipes fields on a failed submission
+
+- `/admin/scholarships/new` (and edit): inputs were uncontrolled with `defaultValue`,
+  so React's post-action form reset emptied every field after a rejected submit,
+  even though the alert told the editor to correct the highlighted fields.
+- Converted the form to a controlled draft (text, money, date, select, checkbox and
+  taxonomy-group fields) and echoed the submitted values back from `createScholarshipAction`
+  / `updateScholarshipAction` on every failure path, restoring them through the
+  documented adjust-state-during-render pattern used by the contact/report forms.
+- Verified: `npm run verify` exits 0 (typecheck, lint, 512 tests, production build).
+
 ### Fixed — production domain served a stale deployment after the Supabase switch
 
 - Vercel project `getscholarship-online-unfasten` had an **Instant Rollback**

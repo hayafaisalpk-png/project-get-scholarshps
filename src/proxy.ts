@@ -24,6 +24,19 @@ import { getPublicEnv } from '@/lib/env'
  * This is a session *refresh* concern only. It is NOT an authorization layer —
  * every protected route and mutation is authorized server-side and by RLS.
  */
+/**
+ * Whether a path belongs to the administration or authentication area, which
+ * must never be indexed or cached by a search engine.
+ */
+function isNoindexPath(pathname: string): boolean {
+  return (
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/') ||
+    pathname === '/auth' ||
+    pathname.startsWith('/auth/')
+  )
+}
+
 export async function proxy(request: NextRequest) {
   /*
    * Redirects first, and before any auth work.
@@ -33,7 +46,14 @@ export async function proxy(request: NextRequest) {
    * on the common case of "no rule matches", with no cookie work at all.
    */
   const redirect = await matchRedirect(request)
-  if (redirect) return redirect
+  if (redirect) {
+    // Keep the administration and authentication areas out of search indexes even
+    // when the response is a redirect rather than a rendered page.
+    if (isNoindexPath(request.nextUrl.pathname)) {
+      redirect.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+    }
+    return redirect
+  }
 
   let supabaseResponse = NextResponse.next({ request })
 
@@ -72,6 +92,12 @@ export async function proxy(request: NextRequest) {
   for (const header of ['cache-control', 'expires', 'pragma']) {
     const value = supabaseResponse.headers.get(header)
     if (value) supabaseResponse.headers.set(header, value)
+  }
+
+  // Reinforce the per-route `robots` metadata at the HTTP layer so that
+  // non-HTML responses and any intermediary cache also honour the directive.
+  if (isNoindexPath(request.nextUrl.pathname)) {
+    supabaseResponse.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
   }
 
   return supabaseResponse

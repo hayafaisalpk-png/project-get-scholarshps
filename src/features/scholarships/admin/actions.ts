@@ -5,8 +5,8 @@ import { redirect } from 'next/navigation'
 
 import { requirePermission } from '@/lib/auth/guards'
 import { fieldErrorsFrom } from '@/lib/validation/auth'
+import { sanitizeArticleHtml } from '@/lib/sanitize'
 import {
-  parseRequiredDocuments,
   type ScholarshipStatus,
   scholarshipSchema,
   SCHOLARSHIP_STATUSES,
@@ -41,6 +41,8 @@ export type ScholarshipActionResult =
       fieldErrors?: Record<string, string>
       /** Present when the record was created but a later step failed. */
       id?: string
+      /** Submitted values echoed back so the form can restore them after a failed submission. */
+      values?: Record<string, string | string[]>
     }
 
 const bulkSchema = z.object({
@@ -117,6 +119,67 @@ function buildInput(formData: FormData) {
   }
 }
 
+/**
+ * Echo the submitted form values back to the client so a failed submission does
+ * not wipe what the editor typed. Strings are clipped to a sane length; taxonomy
+ * checkboxes are echoed as arrays (possibly empty) so an unchecked group clears.
+ */
+function echoValues(formData: FormData): Record<string, string | string[]> {
+  const textKeys = [
+    'title',
+    'slug',
+    'sponsor_name',
+    'summary',
+    'eligibility_requirements',
+    'application_instructions',
+    'internal_notes',
+    'required_documents',
+    'award_amount_min',
+    'award_amount_max',
+    'award_currency',
+    'award_amount_text',
+    'number_of_awards',
+    'application_fee',
+    'max_renewals',
+    'opens_at',
+    'deadline',
+    'application_url',
+    'status',
+    'verification_status',
+    'seo_title',
+    'seo_description',
+  ]
+  const checkboxKeys = [
+    'award_per_year',
+    'is_renewable',
+    'is_rolling',
+    'featured',
+    'noindex',
+  ]
+  const arrayKeys = [
+    'category_ids',
+    'education_level_ids',
+    'field_ids',
+    'location_ids',
+  ]
+
+  const out: Record<string, string | string[]> = {}
+  for (const key of textKeys) {
+    const raw = formData.get(key)
+    if (typeof raw === 'string') {
+      const clipped = raw.slice(0, 5000)
+      if (clipped.length > 0) out[key] = clipped
+    }
+  }
+  for (const key of checkboxKeys) {
+    if (formData.get(key) !== null) out[key] = 'on'
+  }
+  for (const key of arrayKeys) {
+    out[key] = formData.getAll(key).map(String).filter(Boolean)
+  }
+  return out
+}
+
 /* -------------------------------------------------------------------------- */
 /* Row payload                                                                */
 /* -------------------------------------------------------------------------- */
@@ -167,11 +230,11 @@ function toRow(
     sponsor_name: value.sponsor_name,
     summary: value.summary,
     description: value.description,
-    eligibility_requirements: value.eligibility_requirements,
-    application_instructions: value.application_instructions,
+    eligibility_requirements: sanitizeArticleHtml(value.eligibility_requirements) || null,
+    application_instructions: sanitizeArticleHtml(value.application_instructions) || null,
     internal_notes: value.internal_notes,
     renewal_details: value.renewal_details,
-    required_documents: parseRequiredDocuments(value.required_documents),
+    required_documents: sanitizeArticleHtml(value.required_documents) || null,
     award_amount_min_cents: value.award_amount_min,
     award_amount_max_cents: value.award_amount_max,
     award_amount_text: value.award_amount_text,
@@ -320,6 +383,7 @@ export async function createScholarshipAction(
       ok: false,
       message: 'Please correct the highlighted fields.',
       fieldErrors: fieldErrorsFrom(parsed.error),
+      values: echoValues(formData),
     }
   }
 
@@ -339,6 +403,7 @@ export async function createScholarshipAction(
       ok: false,
       message: 'That URL slug is already in use.',
       fieldErrors: { slug: 'This slug is already taken.' },
+      values: echoValues(formData),
     }
   }
 
@@ -349,7 +414,7 @@ export async function createScholarshipAction(
     .single()
 
   if (error || !inserted) {
-    return { ok: false, message: friendlyWriteError(error?.code, error?.message) }
+    return { ok: false, message: friendlyWriteError(error?.code, error?.message), values: echoValues(formData) }
   }
 
   const joins = await replaceJoins(inserted.id, {
@@ -366,6 +431,7 @@ export async function createScholarshipAction(
       ok: false,
       message: `The scholarship was created, but its categories could not be saved: ${joins.message}`,
       id: inserted.id,
+      values: echoValues(formData),
     }
   }
 
@@ -391,7 +457,7 @@ export async function updateScholarshipAction(
   const { user } = await requirePermission('scholarship.manage')
 
   const id = text(formData, 'id')
-  if (!id) return { ok: false, message: 'Missing scholarship reference.' }
+  if (!id) return { ok: false, message: 'Missing scholarship reference.', values: echoValues(formData) }
 
   const parsed = scholarshipSchema.safeParse(buildInput(formData))
 
@@ -400,6 +466,7 @@ export async function updateScholarshipAction(
       ok: false,
       message: 'Please correct the highlighted fields.',
       fieldErrors: fieldErrorsFrom(parsed.error),
+      values: echoValues(formData),
     }
   }
 
@@ -425,6 +492,7 @@ export async function updateScholarshipAction(
       ok: false,
       message: 'That URL slug is already in use.',
       fieldErrors: { slug: 'This slug is already taken.' },
+      values: echoValues(formData),
     }
   }
 
@@ -434,7 +502,7 @@ export async function updateScholarshipAction(
     .eq('id', id)
 
   if (error) {
-    return { ok: false, message: friendlyWriteError(error.code, error.message) }
+    return { ok: false, message: friendlyWriteError(error.code, error.message), values: echoValues(formData) }
   }
 
   const joins = await replaceJoins(id, {
@@ -448,6 +516,7 @@ export async function updateScholarshipAction(
     return {
       ok: false,
       message: `The changes were saved, but the categories could not be updated: ${joins.message}`,
+      values: echoValues(formData),
     }
   }
 

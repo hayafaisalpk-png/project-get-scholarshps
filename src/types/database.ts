@@ -1642,7 +1642,7 @@ export type Database = {
           opens_at: string | null
           published_at: string | null
           renewal_details: string | null
-          required_documents: string[]
+          required_documents: string | null
           search_vector: unknown
           seo_description: string | null
           seo_title: string | null
@@ -1686,7 +1686,7 @@ export type Database = {
           opens_at?: string | null
           published_at?: string | null
           renewal_details?: string | null
-          required_documents?: string[]
+          required_documents?: string | null
           search_vector?: unknown
           seo_description?: string | null
           seo_title?: string | null
@@ -1730,7 +1730,7 @@ export type Database = {
           opens_at?: string | null
           published_at?: string | null
           renewal_details?: string | null
-          required_documents?: string[]
+          required_documents?: string | null
           search_vector?: unknown
           seo_description?: string | null
           seo_title?: string | null

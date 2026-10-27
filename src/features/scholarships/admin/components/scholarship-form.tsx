@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useId, useState } from 'react'
+import { useActionState, useEffect, useId, useRef, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 
 import { Alert } from '@/components/ui/alert'
@@ -17,39 +17,14 @@ import type {
   TaxonomyOptions,
 } from '@/features/scholarships/admin/queries'
 import { fromCents, slugify } from '@/lib/validation/scholarship'
+import { RichTextEditor } from '@/features/articles/admin/components/rich-text-editor'
 
 /**
  * Scholarship create / edit form.
  *
- * The only client component in the scholarship screens; every page around it is
- * a Server Component.
- *
- * IMPORTANT — `action` is passed in as a prop by the calling Server Component
- * rather than chosen here with a ternary:
- *
- *   const [state, action] = useActionState(
- *     isEdit ? updateAction : createAction, null)   // BROKEN
- *
- * A conditional expression between two Server Actions cannot be resolved
- * statically by the compiler. The form then renders an indirect `$ACTION_REF`
- * reference instead of a registered `$ACTION_ID`, the server cannot resolve it,
- * and the submit 404s. Passing the action down from a Server Component keeps it
- * a statically-known reference while still avoiding a duplicated form.
- *
- * Two behaviours worth calling out:
- *
- *   - The slug is suggested from the title until the editor edits it by hand.
- *     Once touched it is never overwritten, because silently changing a live
- *     URL under the editor is far worse than an imperfect initial guess.
- *   - Money is entered as decimal currency and converted to integer cents
- *     server-side. No float ever touches an amount.
- */
-/**
- * Create form.
- *
- * The Server Action is imported and referenced directly rather than chosen
- * with a conditional expression, so the reference stays statically analysable
- * and Next.js emits a registered action id for the form.
+ * See the contact form for the rationale behind the controlled draft: React
+ * resets a `<form action={…}>` once the action resolves, which wipes every
+ * field on a rejected submission unless the values live in component state.
  */
 export function CreateScholarshipForm(props: FormProps) {
   const [state, formAction] = useActionState(createScholarshipAction, null)
@@ -85,13 +60,80 @@ export type FormProps = {
   selected: ScholarshipTaxonomy
 }
 
-/**
- * Shared form body.
- *
- * Not exported: it receives an already-bound `formAction` from the wrapper
- * above, which is an ordinary in-module value rather than something crossing the
- * server/client boundary.
- */
+type Draft = {
+  title: string
+  slug: string
+  sponsor_name: string
+  summary: string
+  eligibility_requirements: string
+  application_instructions: string
+  internal_notes: string
+  required_documents: string
+  award_amount_min: string
+  award_amount_max: string
+  award_currency: string
+  award_amount_text: string
+  number_of_awards: string
+  award_per_year: boolean
+  application_fee: string
+  is_renewable: boolean
+  max_renewals: string
+  opens_at: string
+  deadline: string
+  is_rolling: boolean
+  application_url: string
+  status: string
+  verification_status: string
+  featured: boolean
+  noindex: boolean
+  seo_title: string
+  seo_description: string
+  category_ids: string[]
+  education_level_ids: string[]
+  field_ids: string[]
+  location_ids: string[]
+}
+
+const TEXT_KEYS: (keyof Draft)[] = [
+  'title',
+  'slug',
+  'sponsor_name',
+  'summary',
+  'eligibility_requirements',
+  'application_instructions',
+  'internal_notes',
+  'required_documents',
+  'award_amount_min',
+  'award_amount_max',
+  'award_currency',
+  'award_amount_text',
+  'number_of_awards',
+  'application_fee',
+  'max_renewals',
+  'opens_at',
+  'deadline',
+  'application_url',
+  'status',
+  'verification_status',
+  'seo_title',
+  'seo_description',
+]
+
+const BOOL_KEYS: (keyof Draft)[] = [
+  'award_per_year',
+  'is_renewable',
+  'is_rolling',
+  'featured',
+  'noindex',
+]
+
+const ARRAY_KEYS: (keyof Draft)[] = [
+  'category_ids',
+  'education_level_ids',
+  'field_ids',
+  'location_ids',
+]
+
 function ScholarshipFormFields({
   state,
   formAction,
@@ -107,17 +149,90 @@ function ScholarshipFormFields({
   taxonomyOptions: TaxonomyOptions
   selected: ScholarshipTaxonomy
 }) {
+  const formRef = useRef<HTMLFormElement>(null)
+  const statusRef = useRef<HTMLDivElement>(null)
 
-  const [slug, setSlug] = useState(record?.slug ?? '')
   const [slugTouched, setSlugTouched] = useState(isEdit)
+  const [editorResetKey, setEditorResetKey] = useState(0)
+
+  const [draft, setDraft] = useState<Draft>(() => ({
+    title: record?.title ?? '',
+    slug: record?.slug ?? '',
+    sponsor_name: record?.sponsor_name ?? '',
+    summary: record?.summary ?? '',
+    eligibility_requirements: record?.eligibility_requirements ?? '',
+    application_instructions: record?.application_instructions ?? '',
+    internal_notes: record?.internal_notes ?? '',
+    required_documents: record?.required_documents ?? '',
+    award_amount_min: fromCents(record?.award_amount_min_cents),
+    award_amount_max: fromCents(record?.award_amount_max_cents),
+    award_currency: record?.award_currency ?? 'USD',
+    award_amount_text: record?.award_amount_text ?? '',
+    number_of_awards:
+      record?.number_of_awards != null ? String(record.number_of_awards) : '',
+    award_per_year: record?.award_per_year ?? false,
+    application_fee: fromCents(record?.application_fee_cents),
+    is_renewable: record?.is_renewable ?? false,
+    max_renewals: record?.max_renewals != null ? String(record.max_renewals) : '',
+    opens_at: record?.opens_at ?? '',
+    deadline: record?.deadline ?? '',
+    is_rolling: record?.is_rolling ?? false,
+    application_url: record?.application_url ?? '',
+    status: record?.status ?? 'draft',
+    verification_status: record?.verification_status ?? 'unverified',
+    featured: record?.featured ?? false,
+    noindex: record?.noindex ?? false,
+    seo_title: record?.seo_title ?? '',
+    seo_description: record?.seo_description ?? '',
+    category_ids: selected.category_ids,
+    education_level_ids: selected.education_level_ids,
+    field_ids: selected.field_ids,
+    location_ids: selected.location_ids,
+  }))
+
   const fieldErrors = state && !state.ok ? state.fieldErrors : undefined
 
-  const onTitleChange = (value: string) => {
-    if (!slugTouched) setSlug(slugify(value))
+  const [lastState, setLastState] = useState(state)
+  if (state !== lastState) {
+    setLastState(state)
+    if (state?.ok) {
+      // Keep the edited values in place; the form stays usable for further edits.
+    } else if (state?.values) {
+      setDraft((current) => {
+        const v = state.values as Record<string, string | string[]>
+        const next = { ...current }
+        for (const key of TEXT_KEYS) {
+          if (v[key] !== undefined) (next as Record<string, unknown>)[key] = String(v[key])
+        }
+        for (const key of BOOL_KEYS) {
+          (next as Record<string, unknown>)[key] = v[key] === 'on'
+        }
+        for (const key of ARRAY_KEYS) {
+          if (Array.isArray(v[key])) (next as Record<string, unknown>)[key] = v[key]
+        }
+        return next
+      })
+      setEditorResetKey((k) => k + 1)
+      if (state.values.slug) setSlugTouched(true)
+    }
   }
 
+  useEffect(() => {
+    if (!state) return
+    if (state.ok) {
+      statusRef.current?.focus()
+      return
+    }
+    const firstError = Object.keys(state.fieldErrors ?? {})[0]
+    if (firstError) document.getElementById(firstError)?.focus()
+    else statusRef.current?.focus()
+  }, [state])
+
+  const setField = (key: keyof Draft, value: unknown) =>
+    setDraft((d) => ({ ...d, [key]: value }))
+
   return (
-    <form action={formAction} className="space-y-8" noValidate>
+    <form ref={formRef} action={formAction} className="space-y-8" noValidate>
       {record ? (
         <input type="hidden" name="id" value={record.id} />
       ) : null}
@@ -145,8 +260,15 @@ function ScholarshipFormFields({
               required
               maxLength={300}
               className={inputClasses}
-              defaultValue={record?.title ?? ''}
-              onChange={(e) => onTitleChange(e.target.value)}
+              value={draft.title}
+              onChange={(e) => {
+                const value = e.target.value
+                setDraft((d) => ({
+                  ...d,
+                  title: value,
+                  ...(slugTouched ? {} : { slug: slugify(value) }),
+                }))
+              }}
               aria-invalid={Boolean(fieldErrors?.title)}
               aria-describedby={describedBy('title', fieldErrors?.title)}
             />
@@ -164,9 +286,9 @@ function ScholarshipFormFields({
               required
               maxLength={200}
               className={inputClasses}
-              value={slug}
+              value={draft.slug}
               onChange={(e) => {
-                setSlug(e.target.value)
+                setDraft((d) => ({ ...d, slug: e.target.value }))
                 setSlugTouched(true)
               }}
               aria-invalid={Boolean(fieldErrors?.slug)}
@@ -185,7 +307,8 @@ function ScholarshipFormFields({
               required
               maxLength={300}
               className={inputClasses}
-              defaultValue={record?.sponsor_name ?? ''}
+              value={draft.sponsor_name}
+              onChange={(e) => setField('sponsor_name', e.target.value)}
               aria-invalid={Boolean(fieldErrors?.sponsor_name)}
               aria-describedby={describedBy(
                 'sponsor_name',
@@ -207,7 +330,8 @@ function ScholarshipFormFields({
               rows={3}
               maxLength={400}
               className={inputClasses}
-              defaultValue={record?.summary ?? ''}
+              value={draft.summary}
+              onChange={(e) => setField('summary', e.target.value)}
               aria-describedby={describedBy('summary', undefined, hintId('summary'))}
             />
           </FormField>
@@ -224,7 +348,8 @@ function ScholarshipFormFields({
           >
             <MoneyInput
               name="award_amount_min"
-              defaultValue={fromCents(record?.award_amount_min_cents)}
+              value={draft.award_amount_min}
+              onChange={(v) => setField('award_amount_min', v)}
               invalid={Boolean(fieldErrors?.award_amount_min)}
             />
           </FormField>
@@ -236,7 +361,8 @@ function ScholarshipFormFields({
           >
             <MoneyInput
               name="award_amount_max"
-              defaultValue={fromCents(record?.award_amount_max_cents)}
+              value={draft.award_amount_max}
+              onChange={(v) => setField('award_amount_max', v)}
               invalid={Boolean(fieldErrors?.award_amount_max)}
             />
           </FormField>
@@ -251,7 +377,8 @@ function ScholarshipFormFields({
               id="award_currency"
               name="award_currency"
               className={inputClasses}
-              defaultValue={record?.award_currency ?? 'USD'}
+              value={draft.award_currency}
+              onChange={(e) => setField('award_currency', e.target.value)}
               maxLength={3}
               aria-invalid={Boolean(fieldErrors?.award_currency)}
             />
@@ -267,7 +394,8 @@ function ScholarshipFormFields({
               id="award_amount_text"
               name="award_amount_text"
               className={inputClasses}
-              defaultValue={record?.award_amount_text ?? ''}
+              value={draft.award_amount_text}
+              onChange={(e) => setField('award_amount_text', e.target.value)}
               maxLength={120}
             />
           </FormField>
@@ -283,7 +411,8 @@ function ScholarshipFormFields({
               type="number"
               min={1}
               className={inputClasses}
-              defaultValue={record?.number_of_awards ?? ''}
+              value={draft.number_of_awards}
+              onChange={(e) => setField('number_of_awards', e.target.value)}
             />
           </FormField>
 
@@ -294,7 +423,8 @@ function ScholarshipFormFields({
           >
             <MoneyInput
               name="application_fee"
-              defaultValue={fromCents(record?.application_fee_cents)}
+              value={draft.application_fee}
+              onChange={(v) => setField('application_fee', v)}
               invalid={Boolean(fieldErrors?.application_fee)}
             />
           </FormField>
@@ -303,12 +433,14 @@ function ScholarshipFormFields({
         <Checkbox
           name="award_per_year"
           label="Award is paid per year"
-          defaultChecked={record?.award_per_year ?? false}
+          checked={draft.award_per_year}
+          onChange={(c) => setField('award_per_year', c)}
         />
         <Checkbox
           name="is_renewable"
           label="Renewable"
-          defaultChecked={record?.is_renewable ?? false}
+          checked={draft.is_renewable}
+          onChange={(c) => setField('is_renewable', c)}
         />
         <FormField id="max_renewals" label="Maximum renewals">
           <input
@@ -317,7 +449,8 @@ function ScholarshipFormFields({
             type="number"
             min={0}
             className={inputClasses}
-            defaultValue={record?.max_renewals ?? ''}
+            value={draft.max_renewals}
+            onChange={(e) => setField('max_renewals', e.target.value)}
           />
         </FormField>
       </Fieldset>
@@ -331,7 +464,8 @@ function ScholarshipFormFields({
               name="opens_at"
               type="date"
               className={inputClasses}
-              defaultValue={record?.opens_at ?? ''}
+              value={draft.opens_at}
+              onChange={(e) => setField('opens_at', e.target.value)}
             />
           </FormField>
 
@@ -345,7 +479,8 @@ function ScholarshipFormFields({
               name="deadline"
               type="date"
               className={inputClasses}
-              defaultValue={record?.deadline ?? ''}
+              value={draft.deadline}
+              onChange={(e) => setField('deadline', e.target.value)}
               aria-invalid={Boolean(fieldErrors?.deadline)}
               aria-describedby={describedBy('deadline', fieldErrors?.deadline)}
             />
@@ -355,7 +490,8 @@ function ScholarshipFormFields({
         <Checkbox
           name="is_rolling"
           label="Rolling applications (no fixed deadline)"
-          defaultChecked={record?.is_rolling ?? false}
+          checked={draft.is_rolling}
+          onChange={(c) => setField('is_rolling', c)}
         />
       </Fieldset>
 
@@ -378,7 +514,8 @@ function ScholarshipFormFields({
               inputMode="url"
               placeholder="https://"
               className={inputClasses}
-              defaultValue={record?.application_url ?? ''}
+              value={draft.application_url}
+              onChange={(e) => setField('application_url', e.target.value)}
               aria-invalid={Boolean(fieldErrors?.application_url)}
               aria-describedby={describedBy(
                 'application_url',
@@ -391,13 +528,16 @@ function ScholarshipFormFields({
             id="eligibility_requirements"
             label="Eligibility"
             className="sm:col-span-2"
+            error={fieldErrors?.eligibility_requirements}
           >
-            <textarea
-              id="eligibility_requirements"
+            <RichTextEditor
+              key={`eligibility-${editorResetKey}`}
               name="eligibility_requirements"
-              rows={5}
-              className={inputClasses}
-              defaultValue={record?.eligibility_requirements ?? ''}
+              label="Eligibility"
+              initialContent={draft.eligibility_requirements}
+              onHtmlChange={(html) =>
+                setField('eligibility_requirements', html)
+              }
             />
           </FormField>
 
@@ -405,13 +545,16 @@ function ScholarshipFormFields({
             id="application_instructions"
             label="Application instructions"
             className="sm:col-span-2"
+            error={fieldErrors?.application_instructions}
           >
-            <textarea
-              id="application_instructions"
+            <RichTextEditor
+              key={`instructions-${editorResetKey}`}
               name="application_instructions"
-              rows={5}
-              className={inputClasses}
-              defaultValue={record?.application_instructions ?? ''}
+              label="Application instructions"
+              initialContent={draft.application_instructions}
+              onHtmlChange={(html) =>
+                setField('application_instructions', html)
+              }
             />
           </FormField>
 
@@ -419,14 +562,16 @@ function ScholarshipFormFields({
             id="required_documents"
             label="Required documents"
             className="sm:col-span-2"
-            hint="One per line."
+            error={fieldErrors?.required_documents}
           >
-            <textarea
-              id="required_documents"
+            <RichTextEditor
+              key={`documents-${editorResetKey}`}
               name="required_documents"
-              rows={4}
-              className={inputClasses}
-              defaultValue={(record?.required_documents ?? []).join('\n')}
+              label="Required documents"
+              initialContent={draft.required_documents}
+              onHtmlChange={(html) =>
+                setField('required_documents', html)
+              }
             />
           </FormField>
         </div>
@@ -443,7 +588,8 @@ function ScholarshipFormFields({
               id="status"
               name="status"
               className={inputClasses}
-              defaultValue={record?.status ?? 'draft'}
+              value={draft.status}
+              onChange={(e) => setField('status', e.target.value)}
             >
               <option value="draft">Draft</option>
               <option value="pending_review">Pending review</option>
@@ -462,7 +608,8 @@ function ScholarshipFormFields({
               id="verification_status"
               name="verification_status"
               className={inputClasses}
-              defaultValue={record?.verification_status ?? 'unverified'}
+              value={draft.verification_status}
+              onChange={(e) => setField('verification_status', e.target.value)}
               aria-invalid={Boolean(fieldErrors?.verification_status)}
               aria-describedby={describedBy(
                 'verification_status',
@@ -480,12 +627,14 @@ function ScholarshipFormFields({
         <Checkbox
           name="featured"
           label="Feature on the homepage"
-          defaultChecked={record?.featured ?? false}
+          checked={draft.featured}
+          onChange={(c) => setField('featured', c)}
         />
         <Checkbox
           name="noindex"
           label="Hide from search engines (noindex)"
-          defaultChecked={record?.noindex ?? false}
+          checked={draft.noindex}
+          onChange={(c) => setField('noindex', c)}
         />
       </Fieldset>
 
@@ -498,25 +647,29 @@ function ScholarshipFormFields({
           legend="Categories"
           name="category_ids"
           options={taxonomyOptions.categories}
-          selected={selected.category_ids}
+          selected={draft.category_ids}
+          onChange={(ids) => setField('category_ids', ids)}
         />
         <CheckboxGroup
           legend="Education levels"
           name="education_level_ids"
           options={taxonomyOptions.educationLevels}
-          selected={selected.education_level_ids}
+          selected={draft.education_level_ids}
+          onChange={(ids) => setField('education_level_ids', ids)}
         />
         <CheckboxGroup
           legend="Fields of study"
           name="field_ids"
           options={taxonomyOptions.fields}
-          selected={selected.field_ids}
+          selected={draft.field_ids}
+          onChange={(ids) => setField('field_ids', ids)}
         />
         <CheckboxGroup
           legend="Locations"
           name="location_ids"
           options={taxonomyOptions.locations}
-          selected={selected.location_ids}
+          selected={draft.location_ids}
+          onChange={(ids) => setField('location_ids', ids)}
         />
       </Fieldset>
 
@@ -533,7 +686,8 @@ function ScholarshipFormFields({
               name="seo_title"
               className={inputClasses}
               maxLength={300}
-              defaultValue={record?.seo_title ?? ''}
+              value={draft.seo_title}
+              onChange={(e) => setField('seo_title', e.target.value)}
             />
           </FormField>
 
@@ -547,7 +701,8 @@ function ScholarshipFormFields({
               name="seo_description"
               className={inputClasses}
               maxLength={500}
-              defaultValue={record?.seo_description ?? ''}
+              value={draft.seo_description}
+              onChange={(e) => setField('seo_description', e.target.value)}
             />
           </FormField>
 
@@ -562,7 +717,8 @@ function ScholarshipFormFields({
               name="internal_notes"
               rows={3}
               className={inputClasses}
-              defaultValue={record?.internal_notes ?? ''}
+              value={draft.internal_notes}
+              onChange={(e) => setField('internal_notes', e.target.value)}
             />
           </FormField>
         </div>
@@ -610,11 +766,13 @@ function Fieldset({
 
 function MoneyInput({
   name,
-  defaultValue,
+  value,
+  onChange,
   invalid,
 }: {
   name: string
-  defaultValue: string
+  value: string
+  onChange: (value: string) => void
   invalid?: boolean
 }) {
   return (
@@ -624,7 +782,8 @@ function MoneyInput({
       inputMode="decimal"
       placeholder="0.00"
       className={inputClasses}
-      defaultValue={defaultValue}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
       aria-invalid={invalid || undefined}
     />
   )
@@ -633,11 +792,13 @@ function MoneyInput({
 function Checkbox({
   name,
   label,
-  defaultChecked,
+  checked,
+  onChange,
 }: {
   name: string
   label: string
-  defaultChecked?: boolean
+  checked: boolean
+  onChange: (checked: boolean) => void
 }) {
   const id = useId()
 
@@ -647,7 +808,8 @@ function Checkbox({
         id={id}
         name={name}
         type="checkbox"
-        defaultChecked={defaultChecked}
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
         className="mt-0.5 size-4 rounded border-ink-300 text-brand-700 focus:ring-2 focus:ring-brand-200"
       />
       <label htmlFor={id} className="text-sm text-ink-800">
@@ -662,12 +824,21 @@ function CheckboxGroup({
   name,
   options,
   selected,
+  onChange,
 }: {
   legend: string
   name: string
   options: { id: string; name: string }[]
   selected: string[]
+  onChange: (ids: string[]) => void
 }) {
+  const toggle = (id: string, checked: boolean) => {
+    const next = checked
+      ? [...selected, id]
+      : selected.filter((x) => x !== id)
+    onChange(next)
+  }
+
   return (
     <fieldset>
       <legend className="mb-2 text-sm font-medium text-ink-800">
@@ -687,7 +858,8 @@ function CheckboxGroup({
                 type="checkbox"
                 name={name}
                 value={option.id}
-                defaultChecked={selected.includes(option.id)}
+                checked={selected.includes(option.id)}
+                onChange={(e) => toggle(option.id, e.target.checked)}
                 className="size-4 rounded border-ink-300 text-brand-700 focus:ring-2 focus:ring-brand-200"
               />
               {option.name}
