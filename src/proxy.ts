@@ -88,10 +88,17 @@ export async function proxy(request: NextRequest) {
   // cookie without verification.
   await supabase.auth.getClaims()
 
-  // Never let a shared cache store an authenticated response.
-  for (const header of ['cache-control', 'expires', 'pragma']) {
-    const value = supabaseResponse.headers.get(header)
-    if (value) supabaseResponse.headers.set(header, value)
+  // Never let a shared cache store an authenticated response. The cookie is the
+  // signal that a session is in play: an anonymous visitor's page may be cached
+  // by the CDN, a signed-in visitor's may not, because the response carries a
+  // refreshed token.
+  const hasSessionCookie = request.cookies
+    .getAll()
+    .some((cookie) => cookie.name.startsWith('sb-'))
+  if (hasSessionCookie) {
+    supabaseResponse.headers.set('Cache-Control', 'private, no-store, max-age=0')
+    supabaseResponse.headers.set('Pragma', 'no-cache')
+    supabaseResponse.headers.set('Expires', '0')
   }
 
   // Reinforce the per-route `robots` metadata at the HTTP layer so that

@@ -196,6 +196,7 @@ export type AdminScholarshipDetail = {
   internal_notes: string | null
   seo_title: string | null
   seo_description: string | null
+  social_media_share_image_url: string | null
   noindex: boolean
   created_at: string
   updated_at: string

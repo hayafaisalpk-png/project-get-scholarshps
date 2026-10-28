@@ -1072,6 +1072,7 @@ export type Database = {
           is_decorative: boolean
           is_public: boolean
           mime_type: string
+          public_token: string
           public_url: string | null
           storage_path: string
           updated_at: string
@@ -1093,6 +1094,7 @@ export type Database = {
           is_decorative?: boolean
           is_public?: boolean
           mime_type: string
+          public_token?: string
           public_url?: string | null
           storage_path: string
           updated_at?: string
@@ -1114,6 +1116,7 @@ export type Database = {
           is_decorative?: boolean
           is_public?: boolean
           mime_type?: string
+          public_token?: string
           public_url?: string | null
           storage_path?: string
           updated_at?: string
@@ -1690,6 +1693,7 @@ export type Database = {
           seo_description: string | null
           seo_title: string | null
           slug: string
+          social_media_share_image_url: string | null
           sponsor_name: string
           status: Database["public"]["Enums"]["scholarship_status"]
           summary: string | null
@@ -1735,6 +1739,7 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           slug: string
+          social_media_share_image_url?: string | null
           sponsor_name: string
           status?: Database["public"]["Enums"]["scholarship_status"]
           summary?: string | null
@@ -1780,6 +1785,7 @@ export type Database = {
           seo_description?: string | null
           seo_title?: string | null
           slug?: string
+          social_media_share_image_url?: string | null
           sponsor_name?: string
           status?: Database["public"]["Enums"]["scholarship_status"]
           summary?: string | null

@@ -90,6 +90,7 @@ type Draft = {
   noindex: boolean
   seo_title: string
   seo_description: string
+  social_media_share_image_url: string
   category_ids: string[]
   education_level_ids: string[]
   field_ids: string[]
@@ -121,6 +122,7 @@ const TEXT_KEYS: (keyof Draft)[] = [
   'verification_status',
   'seo_title',
   'seo_description',
+  'social_media_share_image_url',
 ]
 
 const BOOL_KEYS: (keyof Draft)[] = [
@@ -190,6 +192,7 @@ function ScholarshipFormFields({
     noindex: record?.noindex ?? false,
     seo_title: record?.seo_title ?? '',
     seo_description: record?.seo_description ?? '',
+    social_media_share_image_url: record?.social_media_share_image_url ?? '',
     category_ids: selected.category_ids,
     education_level_ids: selected.education_level_ids,
     field_ids: selected.field_ids,
@@ -743,6 +746,32 @@ function ScholarshipFormFields({
               maxLength={500}
               value={draft.seo_description}
               onChange={(e) => setField('seo_description', e.target.value)}
+            />
+          </FormField>
+
+          <FormField
+            id="social_media_share_image_url"
+            label="Social Media Share Image URL"
+            hint="Optional. This image is used only for social media sharing previews on platforms such as Facebook, WhatsApp, LinkedIn, and X. It does not change the images displayed on the scholarship page."
+            error={fieldErrors?.social_media_share_image_url}
+          >
+            <input
+              id="social_media_share_image_url"
+              name="social_media_share_image_url"
+              type="url"
+              inputMode="url"
+              placeholder="https://example.com/scholarship-social-image.jpg"
+              maxLength={2000}
+              className={inputClasses}
+              value={draft.social_media_share_image_url}
+              onChange={(e) =>
+                setField('social_media_share_image_url', e.target.value)
+              }
+              aria-invalid={Boolean(fieldErrors?.social_media_share_image_url)}
+              aria-describedby={describedBy(
+                'social_media_share_image_url',
+                fieldErrors?.social_media_share_image_url,
+              )}
             />
           </FormField>
 

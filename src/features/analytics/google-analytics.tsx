@@ -29,7 +29,16 @@ const MEASUREMENT_ID_PATTERN = /^G-[A-Z0-9_-]+$/
  */
 export async function GoogleAnalytics() {
   const measurementId = getPublicEnv().NEXT_PUBLIC_GA_MEASUREMENT_ID
-  if (!measurementId) return null
+  if (!measurementId) {
+    if (isProduction()) {
+      console.warn(
+        '[analytics] NEXT_PUBLIC_GA_MEASUREMENT_ID is empty; GA4 is disabled in production.',
+      )
+    }
+    return null
+  }
+
+  if (!isProduction()) return null
 
   if (!MEASUREMENT_ID_PATTERN.test(measurementId)) {
     console.error(

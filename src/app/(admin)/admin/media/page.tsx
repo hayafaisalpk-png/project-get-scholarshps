@@ -2,6 +2,7 @@ import Link from 'next/link'
 
 import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
+import { CopyUrlButton } from '@/features/media/components/copy-url-button'
 import { MediaEditor } from '@/features/media/components/media-editor'
 import { MediaUploadForm } from '@/features/media/components/media-upload-form'
 import {
@@ -282,6 +283,10 @@ export default async function AdminMediaPage({
                           No alt text and not marked decorative.
                         </p>
                       ) : null}
+
+                      <div className="mt-3">
+                        <CopyUrlButton token={asset.publicToken} />
+                      </div>
 
                       {canManage ? (
                         <div className="mt-auto">

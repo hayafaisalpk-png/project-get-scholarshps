@@ -23,6 +23,9 @@ import {
 } from '@/lib/format'
 import { breadcrumbLd, graph, webPageLd } from '@/lib/structured-data'
 import { absoluteUrl } from '@/lib/env'
+import {
+  resolveScholarshipSocialImage,
+} from '@/features/scholarships/metadata'
 
 /**
  * Scholarship detail page.
@@ -60,6 +63,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     scholarship.summary ||
     `${scholarship.title} from ${scholarship.sponsor_name}.`
 
+  const socialImageUrl = resolveScholarshipSocialImage(scholarship)
+
   return {
     title,
     description: description.slice(0, 300),
@@ -81,7 +86,18 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       title,
       description: description.slice(0, 300),
       url: absoluteUrl(`/scholarships/${scholarship.slug}`),
+      ...(socialImageUrl ? { images: [{ url: socialImageUrl }] } : {}),
     },
+    ...(socialImageUrl
+      ? {
+          twitter: {
+            card: 'summary_large_image',
+            title,
+            description: description.slice(0, 300),
+            images: [{ url: socialImageUrl }],
+          },
+        }
+      : {}),
     other: {
       'article:published_time': scholarship.published_at ?? '',
     },

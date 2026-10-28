@@ -10,6 +10,42 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Changed — SEO/performance audit triage (2026-10-28)
+
+Code/infra items actioned in-repo:
+
+- `src/features/analytics/google-analytics.tsx`: the production-build gate
+  (`isProduction()`) was imported but never applied, so analytics could load in
+  development. It now returns null outside a production build, matching the
+  documented contract. Lint warning cleared.
+- `src/proxy.ts`: the authenticated-response cache-header loop was a no-op
+  (it read a header and wrote it back unchanged). It now stamps
+  `Cache-Control: private, no-store, max-age=0` (plus `Pragma`/`Expires`) only
+  when a Supabase session cookie is present, so anonymous public pages stay
+  CDN-cacheable while signed-in responses are never shared.
+- `next.config.ts`: `images.minimumCacheTTL` raised from 14400 to 31536000 so
+  optimised derivatives (including Supabase-sourced featured images) are cached
+  for a year instead of four hours.
+- `src/features/scholarships/components/scholarship-card.tsx`: institution
+  logos now declare `loading="lazy"` explicitly (they were already lazy by
+  default, but the intent is now auditable).
+
+Items not code-fixable, recorded as pending human/infra work:
+
+- www→apex redirect (Vercel domain config): `www.getscholarship.online`
+  answers 200 instead of 308 to apex. Configure in Vercel.
+- SPF/DKIM/DMARC TXT records (registrar DNS).
+- Supabase Storage CDN: public objects still return `Cache-Control: private,
+  no-cache` / `CF-Cache-Status: DYNAMIC` despite `cacheControl` metadata of
+  `max-age=31536000`; platform-side, not controllable from this repo. Mitigated
+  by routing featured images through the Next image optimiser, which is cached.
+- Google Analytics: code is ready and consent-gated; set
+  `NEXT_PUBLIC_GA_MEASUREMENT_ID=G-JZYJWRRNVJ` in the Vercel production
+  environment (and confirm the property is receiving hits).
+- Keyword coverage: editorial task via CMS `seo_title`/`seo_description`.
+- Lighthouse FCP measurement: no Lighthouse available in this environment;
+  run against a production build before launch.
+
 ### Changed — environment repointed to Supabase project `bxyanilboaexzipynrqh`
 
 - `.env.local` (URL and publishable key), `supabase/config.toml` and the

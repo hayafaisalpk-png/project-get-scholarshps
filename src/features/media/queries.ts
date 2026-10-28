@@ -48,6 +48,8 @@ export type MediaAsset = {
   folder: string
   isPublic: boolean
   publicUrl: string | null
+  /** Opaque public identifier used in /media/<token> URLs. */
+  publicToken: string
   /** Always present for a caller who can see the asset. */
   displayUrl: string | null
   /**
@@ -83,6 +85,7 @@ type MediaRow = {
   id: string
   storage_path: string
   public_url: string | null
+  public_token?: string
   is_public: boolean
   file_name: string
   mime_type: string
@@ -103,12 +106,11 @@ export const listMediaAssets = cache(
     const page = Math.max(1, params.page ?? 1)
     const from = (page - 1) * pageSize
 
+    let selectColumns =
+      'id, storage_path, public_url, public_token, is_public, file_name, mime_type, file_size, alt_text, is_decorative, caption, attribution, folder, archived_at, created_at'
     let query = supabase
       .from('media_assets')
-      .select(
-        'id, storage_path, public_url, is_public, file_name, mime_type, file_size, alt_text, is_decorative, caption, attribution, folder, archived_at, created_at',
-        { count: 'exact' },
-      )
+      .select(selectColumns, { count: 'exact' })
       .order('created_at', { ascending: false })
       .range(from, from + pageSize - 1)
 
@@ -127,11 +129,46 @@ export const listMediaAssets = cache(
     if (archived === 'active') query = query.is('archived_at', null)
     else if (archived === 'archived') query = query.not('archived_at', 'is', null)
 
-    const { data, error, count } = await query
+    let { data, error, count } = await query
 
-    if (error) return { ok: false, error: toDatabaseError(error) }
+    const originalError = error
+    if (error) {
+      // public_token column not yet migrated (migration 044): fall back so the
+      // library keeps working. Tokens default to the row id in that case.
+      selectColumns =
+        'id, storage_path, public_url, is_public, file_name, mime_type, file_size, alt_text, is_decorative, caption, attribution, folder, archived_at, created_at'
+      const retry = supabase
+        .from('media_assets')
+        .select(selectColumns, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1)
+      // Re-apply filters? The query variable already had filters applied before
+      // execution, but `query` was the filtered builder. Rebuild filters below.
+      void retry
+      // Simpler: re-run the original filtered query shape without public_token.
+      let q2 = supabase
+        .from('media_assets')
+        .select(selectColumns, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(from, from + pageSize - 1)
+      if (folder) q2 = q2.eq('folder', folder)
+      if (term) {
+        const safe = term.replace(/[,()%]/g, ' ').trim()
+        if (safe) q2 = q2.or(`file_name.ilike.%${safe}%,alt_text.ilike.%${safe}%`)
+      }
+      if (archived === 'active') q2 = q2.is('archived_at', null)
+      else if (archived === 'archived') q2 = q2.not('archived_at', 'is', null)
+      const r2 = await q2
+      data = r2.data
+      error = r2.error
+      count = r2.count
+    }
 
-    const rows = (data ?? []) as MediaRow[]
+    if (error) {
+      return { ok: false, error: toDatabaseError(originalError ?? error) }
+    }
+
+    const rows = (data ?? []) as unknown as (MediaRow & { public_token?: string })[]
     const total = count ?? 0
 
     const signed = await signPrivateAssets(supabase, rows)
@@ -151,6 +188,7 @@ export const listMediaAssets = cache(
           folder: row.folder,
           isPublic: row.is_public,
           publicUrl: row.public_url,
+          publicToken: row.public_token ?? row.id,
           displayUrl: row.public_url ?? signed.get(row.id) ?? null,
           archivedAt: row.archived_at,
           createdAt: row.created_at,

@@ -174,6 +174,43 @@ export const slugSchema = z
 /* Schema                                                                     */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Optional absolute HTTP(S) URL for a social sharing image.
+ *
+ * Blank input becomes null. Relative URLs and unsupported schemes are rejected
+ * so a malformed value can never reach the metadata layer as a broken og:image.
+ */
+const optionalHttpUrl = (max: number) =>
+  z
+    .string()
+    .trim()
+    .max(max, `Must be ${max} characters or fewer.`)
+    .transform((v) => (v.length === 0 ? null : v))
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null)
+    .superRefine((value, ctx) => {
+      if (value === null) return
+
+      let parsed: URL
+      try {
+        parsed = new URL(value)
+      } catch {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Enter a valid URL, including https://',
+        })
+        return
+      }
+
+      if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'Use an http:// or https:// URL.',
+        })
+      }
+    })
+
 export const scholarshipSchema = z
   .object({
     title: z
@@ -248,6 +285,7 @@ export const scholarshipSchema = z
     seo_title: optionalText(300),
     seo_description: optionalText(500),
 
+    social_media_share_image_url: optionalHttpUrl(2000),
     // Taxonomy assignment: arrays of UUIDs.
     category_ids: z.array(z.string().uuid()).optional().default([]),
     education_level_ids: z.array(z.string().uuid()).optional().default([]),

@@ -132,6 +132,7 @@ export async function uploadMediaAction(
   }
 
   const id = crypto.randomUUID()
+  const publicToken = crypto.randomUUID()
   const storagePath = buildStoragePath({
     id,
     mimeType: check.mimeType as AllowedMimeType,
@@ -170,10 +171,11 @@ export async function uploadMediaAction(
   // `uploaded_by = auth.uid()` is required by the media_insert_upload policy.
   const uploadedBy = await currentUserId(supabase)
 
-  const { error: insertError } = await supabase
+  const firstInsert = await supabase
     .from('media_assets')
     .insert({
       id,
+      public_token: publicToken,
       storage_path: storagePath,
       public_url: publicUrl,
       is_public: isPublic,
@@ -192,6 +194,29 @@ export async function uploadMediaAction(
       // Width and height are left null: they are not known client-side and are
       // not required by any schema constraint. A future image-probe can fill them.
     })
+
+  let insertError = firstInsert.error
+
+  if (insertError && insertError.code === '42703') {
+    const retryInsert = await supabase
+      .from('media_assets')
+      .insert({
+        id,
+        storage_path: storagePath,
+        public_url: publicUrl,
+        is_public: isPublic,
+        file_name: file.name.slice(0, 300),
+        mime_type: check.mimeType,
+        file_size: file.size,
+        alt_text: parsed.data.altText === '' ? null : parsed.data.altText,
+        is_decorative: parsed.data.isDecorative,
+        caption: parsed.data.caption === '' ? null : parsed.data.caption,
+        attribution: parsed.data.attribution === '' ? null : parsed.data.attribution,
+        folder: parsed.data.folder,
+        uploaded_by: uploadedBy,
+      })
+    insertError = retryInsert.error
+  }
 
   if (insertError) {
     // The bytes are in the bucket but nothing points at them. Remove them now

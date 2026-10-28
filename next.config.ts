@@ -53,7 +53,7 @@ const nextConfig: NextConfig = {
     // Next 16 defaults these; declared explicitly so the intent is auditable.
     qualities: [75],
     imageSizes: [32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 14400,
+    minimumCacheTTL: 31536000,
     maximumRedirects: 3,
   },
 

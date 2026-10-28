@@ -114,7 +114,7 @@ function buildInput(formData: FormData) {
     noindex: flag(formData, 'noindex'),
     seo_title: text(formData, 'seo_title'),
     seo_description: text(formData, 'seo_description'),
-    category_ids: idList(formData, 'category_ids'),
+    social_media_share_image_url: text(formData, 'social_media_share_image_url'),    category_ids: idList(formData, 'category_ids'),
     education_level_ids: idList(formData, 'education_level_ids'),
     field_ids: idList(formData, 'field_ids'),
     location_ids: idList(formData, 'location_ids'),
@@ -152,6 +152,7 @@ function echoValues(formData: FormData): Record<string, string | string[]> {
     'verification_status',
     'seo_title',
     'seo_description',
+    'social_media_share_image_url',
   ]
   const checkboxKeys = [
     'award_per_year',
@@ -260,6 +261,7 @@ function toRow(
     noindex: value.noindex,
     seo_title: value.seo_title,
     seo_description: value.seo_description,
+    social_media_share_image_url: value.social_media_share_image_url,
     updated_by: userId,
 
     // Timestamps that only make sense when entering or leaving a state.

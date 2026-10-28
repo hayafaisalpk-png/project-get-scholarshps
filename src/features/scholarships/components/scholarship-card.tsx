@@ -90,6 +90,7 @@ export function ScholarshipCard({
               width={48}
               height={48}
               unoptimized
+              loading="lazy"
               className="h-12 w-12 object-contain"
             />
           ) : (
@@ -149,6 +150,7 @@ export function ScholarshipCardCompact({
             width={16}
             height={16}
             unoptimized
+            loading="lazy"
             className="h-4 w-4 flex-none object-contain"
           />
         ) : null}

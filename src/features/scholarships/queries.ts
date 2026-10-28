@@ -73,7 +73,7 @@ export const CARD_FIELDS =
 
 /** Column list for the detail page, including embedded taxonomy. */
 const DETAIL_SELECT =
-  'id,slug,title,sponsor_name,institution_id,institutions(id,name,slug,logo_url,country),summary,description,eligibility_requirements,application_instructions,required_documents,application_url,opens_at,deadline,is_rolling,award_amount_min_cents,award_amount_max_cents,award_amount_text,award_currency,number_of_awards,award_per_year,application_fee_cents,is_renewable,renewal_details,max_renewals,status,verification_status,verified_at,last_reviewed_at,seo_title,seo_description,published_at,noindex,updated_at,scholarship_categories(categories(slug,name)),scholarship_education_levels(education_levels(slug,name)),scholarship_fields(academic_fields(slug,name)),scholarship_locations(locations(slug,name)),scholarship_tags(tags(slug,name))' as const
+  'id,slug,title,sponsor_name,institution_id,institutions(id,name,slug,logo_url,country),summary,description,eligibility_requirements,application_instructions,required_documents,application_url,opens_at,deadline,is_rolling,award_amount_min_cents,award_amount_max_cents,award_amount_text,award_currency,number_of_awards,award_per_year,application_fee_cents,is_renewable,renewal_details,max_renewals,status,verification_status,verified_at,last_reviewed_at,seo_title,seo_description,social_media_share_image_url,published_at,noindex,updated_at,scholarship_categories(categories(slug,name)),scholarship_education_levels(education_levels(slug,name)),scholarship_fields(academic_fields(slug,name)),scholarship_locations(locations(slug,name)),scholarship_tags(tags(slug,name))' as const
 
 /* -------------------------------------------------------------------------- */
 /* Derived deadline state                                                      */
@@ -283,6 +283,7 @@ export type ScholarshipDetail = {
   last_reviewed_at: string | null
   seo_title: string | null
   seo_description: string | null
+  social_media_share_image_url: string | null
   published_at: string | null
   /**
    * Set by an editor to keep a published record out of search results.
