@@ -31,9 +31,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: '/',
         disallow: [
           '/admin',
-          '/admin/',
           '/auth',
-          '/auth/',
           // Query-string filtering is handled by per-page meta tags, but these
           // prefixes also produce large numbers of near-duplicate URLs. Blocking
           // the crawl saves the budget without affecting indexability, because
@@ -44,6 +42,5 @@ export default function robots(): MetadataRoute.Robots {
       },
     ],
     sitemap: absoluteUrl('/sitemap.xml'),
-    host: absoluteUrl('/'),
   }
 }

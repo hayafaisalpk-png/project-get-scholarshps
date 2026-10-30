@@ -10,6 +10,17 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Fixed — robots.txt (2026-10-30)
+
+- `src/app/robots.ts`: removed the `Host:` directive, which Googlebot ignores and
+  flagged as "Rule ignored by Googlebot" (line 10 of the generated file). Also
+  dropped the redundant trailing-slash `Disallow` entries (`/admin/`, `/auth/`),
+  which are already covered by the `/admin` and `/auth` prefixes. `Allow: /`,
+  the `/scholarships?` and `/articles?` query-prefix blocks and the `Sitemap:`
+  entry are unchanged. Verified: `npm run typecheck`, `npm run lint`
+  (src/app/robots.ts), `npm run build` (exit 0) and the generated
+  `.next/server/app/robots.txt.body` now contains no `Host:` line.
+
 ### Changed — SEO/performance audit triage (2026-10-28)
 
 Code/infra items actioned in-repo:
