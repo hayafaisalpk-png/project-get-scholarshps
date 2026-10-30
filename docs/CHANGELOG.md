@@ -10,6 +10,18 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Fixed — stale taxonomy redirect rules shadowing real landing pages (2026-10-30)
+
+- The catalogue is no longer empty, so the 26 placeholder 301 redirects created
+  when it was (`/scholarships/{category,education-level,field,location}/*` →
+  `/scholarships`) were shadowing real, content-rich taxonomy landing pages.
+  Bing Webmaster Tools reported "Indexing allowed? No" for every one of them.
+  Deleted all 26 rules (each audited as `redirect.delete` with `before` state)
+  so the landings now serve their own content with `index, follow`. Verified
+  live: all 26 URLs now return 200 with `<meta name="robots" content="index, follow"/>`
+  and are listed in `/sitemaps/taxonomy.xml`. Proxy redirect cache TTL is 15s,
+  so the change is fully live within that window.
+
 ### Fixed — robots.txt (2026-10-30)
 
 - `src/app/robots.ts`: removed the `Host:` directive, which Googlebot ignores and
