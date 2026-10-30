@@ -1,12 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { Container, Section } from '@/components/layout/container'
+import { Container, Section, SectionHeading } from '@/components/layout/container'
 import { Alert } from '@/components/ui/alert'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
 import { JsonLd } from '@/components/structured-data'
 import { ArticleCard } from '@/features/articles/components/article-card'
+import { ScholarshipRow } from '@/features/scholarships/components/scholarship-row'
+import { getRecentScholarships } from '@/features/scholarships/queries'
 import {
   ARTICLE_PAGE_SIZE,
   getArticleCategories,
@@ -62,7 +64,7 @@ export async function generateMetadata({
       : articlesPath({ category, q, page })
 
   return {
-    title: 'Articles',
+    title: 'Read Articles',
     description:
       'Guides on scholarship applications, financial aid, essays and study choices.',
     alternates: { canonical },
@@ -104,9 +106,10 @@ export default async function ArticlesPage({
   const q = raw.q?.trim() || undefined
   const requestedPage = parsePage(raw.page)
 
-  const [categories, result] = await Promise.all([
+  const [categories, result, recent] = await Promise.all([
     getArticleCategories(),
     listPublishedArticles({ page: requestedPage, category, q }),
+    getRecentScholarships(),
   ])
 
   if (!result.ok) {
@@ -114,7 +117,7 @@ export default async function ArticlesPage({
       <Section>
         <Container>
           <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
-            Articles
+            Read Articles
           </h1>
           <Alert tone="error" className="mt-8">
             We could not load articles right now. Please try again in a moment.
@@ -140,13 +143,13 @@ export default async function ArticlesPage({
   const structuredData = isCanonicalIndex
     ? graph(
         webPageLd({
-          name: 'Articles',
+          name: 'Read Articles',
           description:
             'Guides on scholarship applications, financial aid, essays and study choices.',
           path: '/articles',
         }),
         itemListLd({
-          name: 'Articles',
+          name: 'Read Articles',
           path: '/articles',
           items: items.map((item) => ({
             name: item.title,
@@ -157,18 +160,15 @@ export default async function ArticlesPage({
     : null
 
   return (
+    <>
     <Section>
       <Container>
         <JsonLd data={structuredData} />
         <header className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-ink-900 sm:text-4xl">
-            Articles
+            Read Articles
           </h1>
-          <p className="mt-2 text-ink-600">
-            {total > 0
-              ? `${total.toLocaleString('en-US')} ${total === 1 ? 'article' : 'articles'}`
-              : 'Guidance on applications, financial aid and essays'}
-          </p>
+
         </header>
 
         {/*
@@ -280,6 +280,7 @@ export default async function ArticlesPage({
               buildHref={(target) =>
                 articlesPath({ category, q, page: target })
               }
+              showPageCount={false}
             />
           </>
         ) : (
@@ -300,6 +301,33 @@ export default async function ArticlesPage({
         )}
       </Container>
     </Section>
+
+    {/* --------------------------------------------------- Recent added scholarships */}
+    {recent.length > 0 ? (
+      <Section className="bg-ink-50">
+        <Container>
+          <SectionHeading
+            title="Recent Added"
+            description="Scholarships recently added to our database."
+            action={
+              <Link
+                href="/scholarships"
+                className="text-sm font-semibold text-brand-700 hover:underline underline-offset-4"
+              >
+                View all
+                <span aria-hidden="true"> &rarr;</span>
+              </Link>
+            }
+          />
+          <div className="space-y-4">
+            {recent.map((scholarship) => (
+              <ScholarshipRow key={scholarship.id} scholarship={scholarship} />
+            ))}
+          </div>
+        </Container>
+      </Section>
+    ) : null}
+    </>
   )
 }
 

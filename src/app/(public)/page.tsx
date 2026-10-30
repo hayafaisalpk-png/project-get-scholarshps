@@ -64,7 +64,7 @@ export default async function HomePage() {
   const hero = byKey.get('hero')
   const isEmpty = stats.totalScholarships === 0
   const articles = articleResult.ok
-    ? articleResult.data.items.slice(0, 3)
+    ? articleResult.data.items.slice(0, 6)
     : []
 
   // Taxonomy landing pages intentionally return 404 when they have no

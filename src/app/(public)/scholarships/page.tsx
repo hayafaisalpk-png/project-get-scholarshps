@@ -1,13 +1,15 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-import { Container, Section } from '@/components/layout/container'
+import { Container, Section, SectionHeading } from '@/components/layout/container'
 import { Button, ButtonLink } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
 import { JsonLd } from '@/components/structured-data'
 import { ScholarshipRow } from '@/features/scholarships/components/scholarship-row'
 import { AutoSubmitForm } from '@/features/scholarships/components/auto-submit-form'
+import { ArticleCard } from '@/features/articles/components/article-card'
+import { listPublishedArticles } from '@/features/articles/queries'
 import {
   DEADLINE_OPTIONS,
   SORT_OPTIONS,
@@ -135,10 +137,11 @@ export default async function ScholarshipsPage({
   const raw = await searchParams
   const search = parseScholarshipSearch(raw)
 
-  const [levels, fields, categories] = await Promise.all([
+  const [levels, fields, categories, articleResult] = await Promise.all([
     getEducationLevels(),
     getAcademicFields(),
     getScholarshipCategories(),
+    listPublishedArticles({ page: 1 }),
   ])
 
   const result = await searchScholarships(search, { pageSize: PAGE_SIZE })
@@ -167,6 +170,8 @@ export default async function ScholarshipsPage({
 
   const { items, total, page, totalPages } = result.data
   const filtered = hasActiveFilters(search)
+
+  const articles = articleResult.ok ? articleResult.data.items.slice(0, 6) : []
 
   /*
    * `ItemList` only on the canonical, unfiltered, unsorted first page.
@@ -223,6 +228,7 @@ export default async function ScholarshipsPage({
   }
 
   return (
+    <>
     <Section>
       <Container>
         <JsonLd data={structuredData} />
@@ -442,6 +448,33 @@ export default async function ScholarshipsPage({
         </div>
       </Container>
     </Section>
+
+    {/* ------------------------------------------------------ Feature articles */}
+    {articles.length > 0 ? (
+      <Section className="bg-ink-50">
+        <Container>
+          <SectionHeading
+            title="Read Articles"
+            description="Practical guidance for finding and applying for scholarships."
+            action={
+              <Link
+                href="/articles"
+                className="text-sm font-semibold text-brand-700 hover:underline underline-offset-4"
+              >
+                View all
+                <span aria-hidden="true"> &rarr;</span>
+              </Link>
+            }
+          />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {articles.map((article) => (
+              <ArticleCard key={article.id} article={article} />
+            ))}
+          </div>
+        </Container>
+      </Section>
+    ) : null}
+  </>
   )
 }
 

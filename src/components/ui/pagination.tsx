@@ -16,6 +16,8 @@ export type PaginationProps = {
   /** Builds the href for a given page, preserving current filters. */
   buildHref: (page: number) => string
   className?: string
+  /** Whether to show the "Page X of Y" label beneath the controls. Defaults to true. */
+  showPageCount?: boolean
 }
 
 /** How many page links to show either side of the current page. */
@@ -47,6 +49,7 @@ export function Pagination({
   totalPages,
   buildHref,
   className,
+  showPageCount = true,
 }: PaginationProps) {
   if (totalPages <= 1) return null
 
@@ -122,9 +125,11 @@ export function Pagination({
         </li>
       </ul>
 
-      <p className="mt-4 text-center text-sm text-ink-600">
-        Page {page} of {totalPages}
-      </p>
+      {showPageCount ? (
+        <p className="mt-4 text-center text-sm text-ink-600">
+          Page {page} of {totalPages}
+        </p>
+      ) : null}
     </nav>
   )
 }
