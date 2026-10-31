@@ -18,7 +18,6 @@ import {
   formatCurrency,
   formatDate,
   formatDeadlineNote,
-  formatTimestamp,
   getDeadlineState,
 } from '@/lib/format'
 import { breadcrumbLd, graph, webPageLd } from '@/lib/structured-data'
@@ -389,61 +388,6 @@ export default async function ScholarshipDetailPage({ params }: Params) {
               </section>
             ) : null}
 
-            <section className="mt-10 rounded-sm border border-ink-200 bg-surface p-5">
-              <h2 className="text-base font-semibold text-ink-900">
-                About this information
-              </h2>
-              <dl className="mt-3 space-y-2 text-sm">
-                <div className="flex flex-wrap gap-x-2">
-                  <dt className="font-medium text-ink-700">Last reviewed:</dt>
-                  <dd className="text-ink-600">
-                    {scholarship.last_reviewed_at
-                      ? formatTimestamp(scholarship.last_reviewed_at)
-                      : 'Not yet reviewed'}
-                  </dd>
-                </div>
-                <div className="flex flex-wrap gap-x-2">
-                  <dt className="font-medium text-ink-700">Source status:</dt>
-                  <dd className="text-ink-600">
-                    {scholarship.verification_status === 'verified'
-                      ? 'Checked against the official provider page'
-                      : 'Not yet verified — confirm details on the official page'}
-                  </dd>
-                </div>
-              </dl>
-
-              {scholarship.sources.length > 0 ? (
-                <div className="mt-3">
-                  <h3 className="text-sm font-medium text-ink-700">
-                    Official sources
-                  </h3>
-                  <ul className="mt-1.5 space-y-1 text-sm">
-                    {scholarship.sources.map((source) => (
-                      <li key={source.source_url}>
-                        <a
-                          href={source.source_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-brand-700 underline underline-offset-2"
-                        >
-                          {source.source_name}
-                          <span className="sr-only-focusable"> (opens in a new tab)</span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-
-              <p className="mt-4 text-sm">
-                <Link
-                  href={`/contact?type=report&slug=${encodeURIComponent(scholarship.slug)}`}
-                  className="font-medium text-brand-700 underline underline-offset-2"
-                >
-                  Report incorrect information
-                </Link>
-              </p>
-            </section>
           </article>
 
           {/* --------------------------------------------------------- Sidebar */}
