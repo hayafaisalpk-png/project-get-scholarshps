@@ -9,11 +9,14 @@ import { ScholarshipRowActions } from '@/features/scholarships/admin/components/
 import { ScholarshipBulkForm } from '@/features/scholarships/admin/components/bulk-actions'
 import { VerificationControl } from '@/features/scholarships/admin/components/verification-control'
 import {
+  SCHOLARSHIP_SORT_KEYS,
+  type ScholarshipSortDirection,
+  type ScholarshipSortKey,
   listAdminScholarships,
   scholarshipStatusCounts,
 } from '@/features/scholarships/admin/queries'
 import { requirePermission } from '@/lib/auth/guards'
-import { formatDate, formatAwardAmount } from '@/lib/format'
+import { formatDate } from '@/lib/format'
 import {
   type ScholarshipStatus,
   SCHOLARSHIP_STATUSES,
@@ -43,17 +46,30 @@ const STATUS_LABELS: Record<ScholarshipStatus, string> = {
 export default async function AdminScholarshipsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; page?: string }>
+  searchParams: Promise<{
+    q?: string
+    status?: string
+    page?: string
+    sort?: string
+    direction?: string
+  }>
 }) {
   const { permissions } = await requirePermission('scholarship.manage')
 
   const params = await searchParams
 
   const page = Number.parseInt(params.page ?? '1', 10)
+  const sort =
+    SCHOLARSHIP_SORT_KEYS.find((s) => s === params.sort) ?? 'updated'
+  const direction: ScholarshipSortDirection =
+    params.direction === 'asc' ? 'asc' : 'desc'
+
   const result = await listAdminScholarships({
     q: params.q,
     status: params.status,
     page: Number.isFinite(page) ? page : 1,
+    sort,
+    direction,
   })
 
   const counts = await scholarshipStatusCounts()
@@ -63,15 +79,6 @@ export default async function AdminScholarshipsPage({
   const q = params.q?.trim() ?? ''
   const activeStatus = params.status ?? ''
 
-  /** Page URL preserving the current search and status filters. */
-  function pageHref(page: number): string {
-    const next = new URLSearchParams()
-    if (q) next.set('q', q)
-    if (activeStatus) next.set('status', activeStatus)
-    if (page > 1) next.set('page', String(page))
-    const query = next.toString()
-    return query ? `/admin/scholarships?${query}` : '/admin/scholarships'
-  }
 
   return (
     <div className="space-y-6">
@@ -188,19 +195,29 @@ export default async function AdminScholarshipsPage({
                 <tr>
                   <th scope="col" className="px-4 py-3 font-semibold">Select</th>
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Scholarship
+                    <SortLink
+                      label="Scholarship"
+                      sort="title"
+                      activeSort={sort}
+                      direction={direction}
+                    />
                   </th>
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Status
+                    <SortLink
+                      label="Status"
+                      sort="status"
+                      activeSort={sort}
+                      direction={direction}
+                    />
                   </th>
+
                   <th scope="col" className="px-4 py-3 font-semibold">
-                    Award
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-semibold">
-                    Deadline
-                  </th>
-                  <th scope="col" className="px-4 py-3 font-semibold">
-                    Updated
+                    <SortLink
+                      label="Updated"
+                      sort="updated"
+                      activeSort={sort}
+                      direction={direction}
+                    />
                   </th>
                   <th scope="col" className="px-4 py-3 text-right font-semibold">
                     Actions
@@ -233,25 +250,7 @@ export default async function AdminScholarshipsPage({
                         verification={row.verification_status}
                       />
                     </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-ink-700">
-                      {row.award_amount_max_cents !== null ||
-                      row.award_amount_min_cents !== null ||
-                      row.award_amount_text
-                        ? formatAwardAmount(
-                            row.award_amount_min_cents,
-                            row.award_amount_max_cents,
-                            row.award_amount_text,
-                            row.award_currency,
-                          )
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap text-ink-700">
-                      {row.is_rolling ? (
-                        <span className="text-ink-500">Rolling</span>
-                      ) : (
-                        formatDate(row.deadline)
-                      )}
-                    </td>
+
                     <td className="px-4 py-3 whitespace-nowrap text-ink-600">
                       {formatDate(row.updated_at)}
                     </td>
@@ -275,7 +274,15 @@ export default async function AdminScholarshipsPage({
             <Pagination
               page={result.data.page}
               totalPages={result.data.totalPages}
-              buildHref={pageHref}
+              buildHref={(target) =>
+                buildHref({
+                  q,
+                  status: activeStatus || undefined,
+                  page: target,
+                  sort,
+                  direction,
+                })
+              }
             />
           ) : null}
         </>
@@ -314,5 +321,64 @@ function StatusPill({
         <span className="text-xs text-ink-500">{verification}</span>
       ) : null}
     </span>
+  )
+}
+
+function buildHref({
+  q,
+  status,
+  page,
+  sort,
+  direction,
+}: {
+  q?: string
+  status?: string
+  page?: number
+  sort?: ScholarshipSortKey
+  direction?: ScholarshipSortDirection
+}): string {
+  const search = new URLSearchParams()
+  if (q) search.set('q', q)
+  if (status) search.set('status', status)
+  if (page && page > 1) search.set('page', String(page))
+  const activeSort = sort ?? 'updated'
+  const activeDirection = direction ?? 'desc'
+  if (activeSort !== 'updated') search.set('sort', activeSort)
+  if (activeSort === 'updated' && activeDirection !== 'desc') {
+    search.set('direction', activeDirection)
+  } else if (activeSort !== 'updated' && activeDirection !== 'asc') {
+    search.set('direction', activeDirection)
+  }
+  const query = search.toString()
+  return query ? `/admin/scholarships?${query}` : '/admin/scholarships'
+}
+
+function SortLink({
+  label: text,
+  sort,
+  activeSort,
+  direction,
+}: {
+  label: string
+  sort: ScholarshipSortKey
+  activeSort: ScholarshipSortKey
+  direction: ScholarshipSortDirection
+}) {
+  const active = sort === activeSort
+  const nextDirection = active && direction === 'asc' ? 'desc' : 'asc'
+  const href = buildHref({ sort, direction: nextDirection })
+
+  return (
+    <Link
+      href={href}
+      aria-label={`Sort by ${text}${active ? `, currently ${direction}ending` : ''}`}
+      aria-sort={active ? (direction === 'asc' ? 'ascending' : 'descending') : undefined}
+      className="inline-flex items-center gap-1 hover:text-ink-900"
+    >
+      {text}
+      <span aria-hidden="true" className="text-ink-400">
+        {active ? (direction === 'asc' ? '↑' : '↓') : '↕'}
+      </span>
+    </Link>
   )
 }

@@ -51,10 +51,21 @@ export type AdminListResult = {
   totalPages: number
 }
 
+export const SCHOLARSHIP_SORT_KEYS = [
+  'title',
+  'sponsor',
+  'status',
+  'updated',
+] as const
+export type ScholarshipSortKey = (typeof SCHOLARSHIP_SORT_KEYS)[number]
+export type ScholarshipSortDirection = 'asc' | 'desc'
+
 export type AdminListParams = {
   q?: string | undefined
   status?: string | undefined
   page?: number | undefined
+  sort?: ScholarshipSortKey | undefined
+  direction?: ScholarshipSortDirection | undefined
 }
 
 /**
@@ -74,6 +85,13 @@ function escapeSearch(term: string): string {
   return term.replace(/[,()%]/g, ' ').trim()
 }
 
+const SCHOLARSHIP_SORT_COLUMNS: Record<ScholarshipSortKey, string> = {
+  title: 'title',
+  sponsor: 'sponsor_name',
+  status: 'status',
+  updated: 'updated_at',
+}
+
 export const listAdminScholarships = cache(
   async (params: AdminListParams): Promise<DbResult<AdminListResult>> => {
     const supabase = await createClient()
@@ -81,6 +99,9 @@ export const listAdminScholarships = cache(
     const page = Math.max(1, params.page ?? 1)
     const from = (page - 1) * pageSize
     const status = parseStatus(params.status)
+    const sort = SCHOLARSHIP_SORT_KEYS.find((s) => s === params.sort) ?? 'updated'
+    const direction: ScholarshipSortDirection =
+      params.direction === 'asc' ? 'asc' : 'desc'
 
     /*
      * Single string literal, never concatenation: PostgREST's type parser needs
@@ -94,7 +115,7 @@ export const listAdminScholarships = cache(
         'id, slug, title, sponsor_name, status, verification_status, featured, deadline, is_rolling, published_at, award_amount_min_cents, award_amount_max_cents, award_amount_text, award_currency, updated_at, created_at, created_by',
         { count: 'exact' },
       )
-      .order('updated_at', { ascending: false })
+      .order(SCHOLARSHIP_SORT_COLUMNS[sort], { ascending: direction === 'asc' })
       .range(from, from + pageSize - 1)
 
     if (status) {

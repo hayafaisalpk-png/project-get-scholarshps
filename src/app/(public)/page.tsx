@@ -114,7 +114,7 @@ export default async function HomePage() {
         <div className="relative min-h-[560px] w-full sm:min-h-[580px] lg:min-h-[600px]">
           <Image
             src="/hero-image.jpg"
-            alt=""
+            alt="Students exploring scholarship opportunities"
             fill
             priority
             sizes="100vw"
