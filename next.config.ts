@@ -49,6 +49,18 @@ const nextConfig: NextConfig = {
         hostname: '*.supabase.in',
         pathname: '/storage/v1/object/public/**',
       },
+      // Institution logos and social share images are editor-supplied arbitrary
+      // HTTPS URLs, so the host cannot be enumerated in advance. A wildcard is
+      // required or `next/image` refuses to render them in production (it is
+      // lenient about this only in development).
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
     ],
     // Next 16 defaults these; declared explicitly so the intent is auditable.
     qualities: [75],
