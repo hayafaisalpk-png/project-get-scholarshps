@@ -192,7 +192,9 @@ function ScholarshipFormFields({
     noindex: record?.noindex ?? false,
     seo_title: record?.seo_title ?? '',
     seo_description: record?.seo_description ?? '',
-    social_media_share_image_url: record?.social_media_share_image_url ?? '',
+    social_media_share_image_url: record
+      ? (record.social_media_share_image_url ?? '')
+      : 'https://getscholarship.online/media/9b773adf-a249-4559-a4fe-cb65e69a2378',
     category_ids: selected.category_ids,
     education_level_ids: selected.education_level_ids,
     field_ids: selected.field_ids,
