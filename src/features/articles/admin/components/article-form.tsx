@@ -31,6 +31,11 @@ import {
  * directly rather than selected conditionally, so the action reference stays
  * statically analysable and is not silently rebuilt during hydration.
  */
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://getscholarship.online').replace(
+  /\/+$/,
+  '',
+)
+
 export function CreateArticleForm(props: FormProps) {
   const [state, formAction] = useActionState(createArticleAction, null)
   return (
@@ -87,6 +92,13 @@ function ArticleFormFields({
 }) {
   const [slug, setSlug] = useState(record?.slug ?? '')
   const [slugTouched, setSlugTouched] = useState(isEdit)
+  const [canonicalUrl, setCanonicalUrl] = useState(
+    record?.canonical_url ??
+      (record?.slug ? `${SITE_URL}/articles/${record.slug}` : ''),
+  )
+  const [canonicalTouched, setCanonicalTouched] = useState(
+    Boolean(record?.canonical_url),
+  )
   const [words, setWords] = useState(record?.word_count ?? 0)
   const [title, setTitle] = useState(record?.title ?? '')
   const [body, setBody] = useState(record?.content ?? '')
@@ -172,7 +184,13 @@ function ArticleFormFields({
               defaultValue={record?.title ?? ''}
               onChange={(e) => {
                 setTitle(e.target.value)
-                if (!slugTouched) setSlug(slugifyArticle(e.target.value))
+                if (!slugTouched) {
+                  const nextSlug = slugifyArticle(e.target.value)
+                  setSlug(nextSlug)
+                  if (!canonicalTouched && nextSlug) {
+                    setCanonicalUrl(`${SITE_URL}/articles/${nextSlug}`)
+                  }
+                }
               }}
               aria-invalid={Boolean(fieldErrors?.title)}
               aria-describedby={describedBy('title', fieldErrors?.title)}
@@ -195,6 +213,9 @@ function ArticleFormFields({
               onChange={(e) => {
                 setSlug(e.target.value)
                 setSlugTouched(true)
+                if (!canonicalTouched && e.target.value) {
+                  setCanonicalUrl(`${SITE_URL}/articles/${e.target.value}`)
+                }
               }}
               aria-invalid={Boolean(fieldErrors?.slug)}
               aria-describedby={describedBy('slug', fieldErrors?.slug)}
@@ -407,7 +428,11 @@ function ArticleFormFields({
               name="canonical_url"
               type="url"
               className={inputClasses}
-              defaultValue={record?.canonical_url ?? ''}
+              value={canonicalUrl}
+          onChange={(e) => {
+            setCanonicalUrl(e.target.value)
+            setCanonicalTouched(true)
+          }}
               aria-invalid={Boolean(fieldErrors?.canonical_url)}
             />
           </FormField>
