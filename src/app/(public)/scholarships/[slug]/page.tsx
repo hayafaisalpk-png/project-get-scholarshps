@@ -3,13 +3,15 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
-import { Container, Section } from '@/components/layout/container'
+import { Container, Section, SectionHeading } from '@/components/layout/container'
 import { Alert } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { ButtonExternal, ButtonLink } from '@/components/ui/button'
 import { JsonLd } from '@/components/structured-data'
 import { ScholarshipCardCompact } from '@/features/scholarships/components/scholarship-card'
+import { ScholarshipRow } from '@/features/scholarships/components/scholarship-row'
 import {
+  getFeaturedScholarships,
   getRelatedScholarships,
   getScholarshipBySlug,
 } from '@/features/scholarships/queries'
@@ -131,6 +133,10 @@ export default async function ScholarshipDetailPage({ params }: Params) {
     limit: 3,
   })
 
+  const featured = (await getFeaturedScholarships(6)).filter(
+    (item) => item.id !== scholarship.id,
+  )
+
   const taxonomyLinks = [
     ...scholarship.education_levels.map((t) => ({
       name: t.name,
@@ -178,8 +184,9 @@ export default async function ScholarshipDetailPage({ params }: Params) {
   )
 
   return (
-    <Section>
-      <Container>
+    <>
+      <Section>
+        <Container>
         <JsonLd data={structuredData} />
 
         {/* Breadcrumbs give both orientation and a clear hierarchy to crawlers. */}
@@ -487,7 +494,32 @@ export default async function ScholarshipDetailPage({ params }: Params) {
         </div>
       </Container>
     </Section>
-  )
+
+    {featured.length > 0 ? (
+      <Section className="bg-ink-50">
+        <Container>
+          <SectionHeading
+            title="Featured scholarships"
+            action={
+              <Link
+                href="/scholarships"
+                className="text-sm font-semibold text-brand-700 hover:underline underline-offset-4"
+              >
+                View all
+                <span aria-hidden="true"> &rarr;</span>
+              </Link>
+            }
+          />
+          <div className="space-y-4">
+            {featured.map((s) => (
+              <ScholarshipRow key={s.id} scholarship={s} />
+            ))}
+          </div>
+        </Container>
+      </Section>
+    ) : null}
+  </>
+)
 }
 
 /** Eyebrow label over a bold value — the reference's sidebar fact pattern. */
