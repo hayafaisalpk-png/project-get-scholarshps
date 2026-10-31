@@ -165,7 +165,9 @@ function ScholarshipFormFields({
     title: record?.title ?? '',
     slug: record?.slug ?? '',
     sponsor_name: record?.sponsor_name ?? '',
-    institution_logo_url: record?.institution_logo_url ?? '',
+    institution_logo_url: record
+      ? (record.institution_logo_url ?? '')
+      : 'http://localhost:3000/media/f319d4d2-484f-4fed-a492-290d0542fb37',
     institution_country: record?.institution_country ?? '',
     summary: record?.summary ?? '',
     eligibility_requirements: record?.eligibility_requirements ?? '',
