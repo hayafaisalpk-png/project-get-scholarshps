@@ -73,6 +73,11 @@ export async function generateMetadata({
     robots: filtered
       ? { index: false, follow: true }
       : { index: true, follow: true },
+    other: {
+      bingbot: filtered
+        ? 'noindex, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+        : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+    },
   }
 }
 

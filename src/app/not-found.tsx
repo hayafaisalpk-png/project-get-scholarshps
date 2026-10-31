@@ -14,6 +14,9 @@ import { SiteHeader } from '@/components/layout/site-header'
 export const metadata: Metadata = {
   title: 'Page not found',
   robots: { index: false, follow: true },
+  other: {
+    bingbot: 'noindex, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+  },
 }
 
 export default function NotFound() {

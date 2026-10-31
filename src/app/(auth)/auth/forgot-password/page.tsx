@@ -5,6 +5,9 @@ import { ForgotPasswordForm } from '@/features/auth/components/password-forms'
 export const metadata: Metadata = {
   title: 'Reset your password',
   robots: { index: false, follow: false },
+  other: {
+    bingbot: 'noindex, nofollow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+  },
 }
 
 export default function ForgotPasswordPage() {

@@ -49,6 +49,9 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    'max-video-preview': -1,
+    'max-image-preview': 'large',
+    'max-snippet': -1,
     googleBot: {
       index: true,
       follow: true,
@@ -56,6 +59,10 @@ export const metadata: Metadata = {
       'max-image-preview': 'large',
       'max-snippet': -1,
     },
+  },
+  other: {
+    bingbot:
+      'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
   },
 }
 

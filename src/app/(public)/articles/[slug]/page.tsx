@@ -59,6 +59,11 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     robots: article.noindex
       ? { index: false, follow: true }
       : { index: true, follow: true },
+    other: {
+      bingbot: article.noindex
+        ? 'noindex, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+        : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+    },
     /*
      * `articleMetaTags` composes `openGraph` and — when the article has a
      * featured image — `twitter`. With no featured image neither key is

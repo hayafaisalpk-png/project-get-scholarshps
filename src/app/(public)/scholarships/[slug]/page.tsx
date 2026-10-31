@@ -99,6 +99,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       : {}),
     other: {
       'article:published_time': scholarship.published_at ?? '',
+      bingbot: scholarship.noindex
+        ? 'noindex, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+        : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
     },
   }
 }

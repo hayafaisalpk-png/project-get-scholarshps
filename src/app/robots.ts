@@ -1,7 +1,5 @@
 import type { MetadataRoute } from 'next'
 
-import { absoluteUrl } from '@/lib/env'
-
 /**
  * `robots.txt`.
  *
@@ -41,6 +39,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: absoluteUrl('/sitemap.xml'),
+    sitemap: 'https://www.getscholarship.online/sitemap.xml',
   }
 }

@@ -35,6 +35,9 @@ export const metadata: Metadata = {
   alternates: { canonical: '/contact' },
   // A contact page has no value in a search index and is often scraped.
   robots: { index: true, follow: true },
+  other: {
+    bingbot: 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+  },
 }
 
 type Params = {

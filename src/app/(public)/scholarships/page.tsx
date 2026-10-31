@@ -120,6 +120,11 @@ export async function generateMetadata({
     robots: indexable
       ? { index: true, follow: true }
       : { index: false, follow: true },
+    other: {
+      bingbot: indexable
+        ? 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+        : 'noindex, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+    },
   }
 }
 

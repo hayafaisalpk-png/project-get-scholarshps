@@ -308,5 +308,10 @@ export async function taxonomyMetadata({
     // Pagination beyond page 1 canonicalises to page 1; the deeper pages are
     // reachable but not competing with it.
     robots: thin ? { index: false, follow: true } : { index: true, follow: true },
+    other: {
+      bingbot: thin
+        ? 'noindex, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1'
+        : 'index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1',
+    },
   }
 }
