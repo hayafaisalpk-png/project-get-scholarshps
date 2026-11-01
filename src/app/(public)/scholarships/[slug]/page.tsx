@@ -229,9 +229,7 @@ export default async function ScholarshipDetailPage({ params }: Params) {
               ) : null}
               {scholarship.verification_status === 'verified' ? (
                 <Badge tone="success">Verified source</Badge>
-              ) : (
-                <Badge tone="warning">Source not yet verified</Badge>
-              )}
+              ) : null}
             </div>
 
             <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-ink-900 sm:text-4xl">
