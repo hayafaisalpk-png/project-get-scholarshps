@@ -16,7 +16,7 @@ import {
   scholarshipStatusCounts,
 } from '@/features/scholarships/admin/queries'
 import { requirePermission } from '@/lib/auth/guards'
-import { formatDate } from '@/lib/format'
+import { formatDate, formatDeadlineNote } from '@/lib/format'
 import {
   type ScholarshipStatus,
   SCHOLARSHIP_STATUSES,
@@ -238,6 +238,11 @@ export default async function AdminScholarshipsPage({
                         {row.title}
                       </Link>
                       <p className="text-xs text-ink-500">{row.sponsor_name}</p>
+                      {formatDeadlineNote(row.deadline, row.is_rolling) ? (
+                        <span className="mt-1 inline-block rounded-full bg-ink-100 px-2 py-0.5 text-xs font-medium text-ink-700">
+                          {formatDeadlineNote(row.deadline, row.is_rolling)}
+                        </span>
+                      ) : null}
                       {row.featured ? (
                         <span className="mt-1 inline-block rounded-full bg-accent-50 px-2 py-0.5 text-xs font-medium text-accent-800">
                           Featured
