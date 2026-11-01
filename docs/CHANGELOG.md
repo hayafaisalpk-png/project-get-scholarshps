@@ -10,6 +10,18 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Added — social profile icons in the site footer (2026-11-01)
+
+- `src/components/layout/site-footer.tsx`: the footer now reads the four
+  `social.*` settings (`facebook_url`, `instagram_url`, `linkedin_url`,
+  `youtube_url`) and renders an icon link for each non-empty value
+  immediately after the copyright line on the left. Icons are inline SVGs
+  (Lucide ships no brand icons in this version) with accessible labels and
+  `target="_blank" rel="noopener noreferrer"`. Empty values render nothing,
+  so the footer stays unchanged until an editor actually saves a profile URL.
+  Verified: `npm run typecheck`, `npm run lint`, `npm run test` (520/520),
+  `npm run build` (exit 0).
+
 ### Fixed — stale taxonomy redirect rules shadowing real landing pages (2026-10-30)
 
 - The catalogue is no longer empty, so the 26 placeholder 301 redirects created
