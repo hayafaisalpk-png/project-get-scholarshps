@@ -109,11 +109,13 @@ export function ButtonExternal({
   size,
   className,
   children,
+  target = '_blank',
   ...props
 }: ButtonProps & ComponentProps<'a'>) {
   return (
     <a
       className={buttonClasses({ variant, size, className })}
+      target={target}
       rel="noopener noreferrer sponsored"
       {...props}
     >
