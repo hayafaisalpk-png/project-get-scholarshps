@@ -69,8 +69,6 @@ try {
 
   // The whole brand row must stay inside the 288px sidebar.
   const fit = await page.evaluate(() => {
-    const sidebar = document.querySelector('#admin-sidebar') ??
-      document.querySelector('[aria-label="Administration"]')?.closest('div')
     const link = document.querySelector('a[href="/admin"]')
     if (!link) return null
     const lr = link.getBoundingClientRect()
@@ -108,7 +106,8 @@ try {
       .catch(() => null)
     const ok = res.status() === 200 && size === 20.8
     console.log(`${ok ? 'PASS' : 'FAIL'}  ${res.status()}  name=${size}px  ${route}`)
-    ok ? pass++ : failures.push(`${route} (${res.status()}, ${size}px)`)
+    if (ok) pass++
+    else failures.push(`${route} (${res.status()}, ${size}px)`)
   }
 
   console.log('\n=== CLIPPING ===')

@@ -47,7 +47,18 @@ export async function SiteHeader() {
   ])
 
   return (
-    <header className="sticky top-0 z-50 border-b border-ink-200 bg-white/90 backdrop-blur-sm">
+    <header
+      className="sticky top-0 z-50 border-b border-ink-200 bg-white/90 backdrop-blur-sm"
+      /*
+       * A browser extension (or the browser's own translation/a11y tooling) can
+       * inject an inline `style` attribute onto this element before React
+       * hydrates, which would otherwise surface as a hydration mismatch even
+       * though the server-rendered markup is correct. Suppressing the warning
+       * here does not hide a real bug: the header's own props are stable and
+       * come from the server, and no child relies on this element's style.
+       */
+      suppressHydrationWarning
+    >
       <div className="flex w-full flex-col items-start gap-4 px-4 pt-4 pb-[5px] sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-6 lg:px-8">
         <div className="flex items-center gap-2">
           {/* Toggle first in the DOM so it sits left of the wordmark on
