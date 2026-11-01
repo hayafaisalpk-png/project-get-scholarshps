@@ -100,39 +100,37 @@ export async function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-ink-200 bg-white/90 backdrop-blur-sm">
       <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col items-center gap-4 py-6 text-center sm:flex-row sm:items-center sm:justify-between sm:text-left">
-          <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-center">
-            <p className="text-sm text-ink-500">
-              &copy; {new Date().getUTCFullYear()} {siteName}.online
-            </p>
+        <div className="flex flex-col items-center gap-4 py-6 text-center sm:flex-row sm:items-center sm:text-left">
+          <p className="text-sm text-ink-500 sm:flex-1">
+            &copy; {new Date().getUTCFullYear()} {siteName}.online
+          </p>
 
-            {socialLinks.length > 0 ? (
-              <ul
-                className="flex items-center gap-2"
-                aria-label="Social media"
-              >
-                {socialLinks.map((item) => {
-                  const Icon = item.icon
-                  return (
-                    <li key={item.key}>
-                      <a
-                        href={item.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        aria-label={item.label}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-500 transition-colors hover:text-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-                      >
-                        <Icon className="h-4 w-4" />
-                      </a>
-                    </li>
-                  )
-                })}
-              </ul>
-            ) : null}
-          </div>
+          {socialLinks.length > 0 ? (
+            <ul
+              className="flex items-center justify-center gap-2 sm:flex-none"
+              aria-label="Social media"
+            >
+              {socialLinks.map((item) => {
+                const Icon = item.icon
+                return (
+                  <li key={item.key}>
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={item.label}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-ink-500 transition-colors hover:text-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+                    >
+                      <Icon className="h-4 w-4" />
+                    </a>
+                  </li>
+                )
+              })}
+            </ul>
+          ) : null}
 
           {legal.length > 0 ? (
-            <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+            <ul className="flex flex-wrap justify-center gap-x-6 gap-y-2 sm:flex-1 sm:justify-end">
               {legal.filter((item) => item.href !== '/editorial-standards').map((item) => (
                 <li key={item.id}>
                   <Link
