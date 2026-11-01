@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 
 import { Alert } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { ButtonLink } from '@/components/ui/button'
 import { EmptyState } from '@/components/ui/empty-state'
 import { Pagination } from '@/components/ui/pagination'
@@ -16,7 +17,7 @@ import {
   scholarshipStatusCounts,
 } from '@/features/scholarships/admin/queries'
 import { requirePermission } from '@/lib/auth/guards'
-import { formatDate, formatDeadlineNote } from '@/lib/format'
+import { formatDate, formatDeadlineNote, getDeadlineState } from '@/lib/format'
 import {
   type ScholarshipStatus,
   SCHOLARSHIP_STATUSES,
@@ -238,11 +239,18 @@ export default async function AdminScholarshipsPage({
                         {row.title}
                       </Link>
                       <p className="text-xs text-ink-500">{row.sponsor_name}</p>
-                      {formatDeadlineNote(row.deadline, row.is_rolling) ? (
-                        <span className="mt-1 inline-block rounded-full bg-ink-100 px-2 py-0.5 text-xs font-medium text-ink-700">
-                          {formatDeadlineNote(row.deadline, row.is_rolling)}
-                        </span>
-                      ) : null}
+                      {(() => {
+                        const note = formatDeadlineNote(row.deadline, row.is_rolling)
+                        if (!note) return null
+                        const state = getDeadlineState(row.deadline, row.is_rolling)
+                        const tone =
+                          state === 'closed' ? 'neutral' : 'success'
+                        return (
+                          <span className="mt-1 inline-block">
+                            <Badge tone={tone}>{note}</Badge>
+                          </span>
+                        )
+                      })()}
                       {row.featured ? (
                         <span className="mt-1 inline-block rounded-full bg-accent-50 px-2 py-0.5 text-xs font-medium text-accent-800">
                           Featured
