@@ -7,6 +7,7 @@ import { requirePermission } from '@/lib/auth/guards'
 import { deriveArticleContent } from '@/lib/sanitize'
 import { createClient } from '@/lib/supabase/server'
 import { uploadMediaAction } from '@/features/media/actions'
+import { parseKeywords } from '@/lib/utils/keywords'
 import {
   type ArticleRelations,
 } from '@/features/articles/admin/queries'
@@ -111,6 +112,7 @@ function buildInput(formData: FormData) {
     seo_title: text(formData, 'seo_title'),
     seo_description: text(formData, 'seo_description'),
     canonical_url: text(formData, 'canonical_url'),
+    keywords: text(formData, 'keywords'),
     article_category_ids: idList(formData, 'article_category_ids'),
     article_tag_ids: idList(formData, 'article_tag_ids'),
     scholarship_ids: idList(formData, 'scholarship_ids'),
@@ -187,6 +189,7 @@ function buildRow(
     seo_title: value.seo_title,
     seo_description: value.seo_description,
     canonical_url: value.canonical_url,
+    keywords: parseKeywords(value.keywords),
     // The FAQ block is stored whole. It is read and written as one value, never
     // queried across articles, so a child table would cost a second query on
     // the page that has to render it.

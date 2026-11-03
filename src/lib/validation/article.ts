@@ -149,6 +149,9 @@ export const articleSchema = z
     seo_description: optionalText(500),
     canonical_url: optionalHttpsUrl,
 
+    /** Comma-separated in the form; stored as text[]. */
+    keywords: z.string().trim().max(2000).optional().default(''),
+
     article_category_ids: z.array(z.string().uuid()).optional().default([]),
     article_tag_ids: z.array(z.string().uuid()).optional().default([]),
     scholarship_ids: z.array(z.string().uuid()).optional().default([]),

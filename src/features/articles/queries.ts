@@ -271,6 +271,7 @@ export type PublicArticle = {
   seoDescription: string | null
   canonicalUrl: string | null
   noindex: boolean
+  keywords: string[] | null
   /**
    * The article's frequently-asked-questions block.
    *
@@ -302,7 +303,7 @@ export const getPublishedArticleBySlug = cache(
     const { data, error } = await supabase
       .from('articles')
       .select(
-        'id, slug, title, excerpt, content, published_at, reading_time_minutes, word_count, seo_title, seo_description, canonical_url, noindex, featured_image_id, faq_items, author:authors(full_name, title)',
+        'id, slug, title, excerpt, content, published_at, reading_time_minutes, word_count, seo_title, seo_description, canonical_url, noindex, featured_image_id, faq_items, author:authors(full_name, title), keywords',
       )
       .eq('slug', slug)
       // Belt and braces with RLS: see the note at the top of this file. Without
@@ -378,6 +379,7 @@ export const getPublishedArticleBySlug = cache(
         seoDescription: data.seo_description,
         canonicalUrl: data.canonical_url,
         noindex: data.noindex,
+        keywords: data.keywords ?? null,
         // Normalised on read: a malformed entry in the database is dropped
         // rather than rendered as an empty question.
         faqs: normalizeFaqItems(data.faq_items),

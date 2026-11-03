@@ -15,6 +15,7 @@ import { FAQSection } from '@/features/articles/components/faq-section'
 import { getPublishedArticleBySlug } from '@/features/articles/queries'
 import { formatTimestamp, readingTime } from '@/lib/format'
 import { getString } from '@/lib/settings'
+import { getFallbackKeywords } from '@/lib/seo/get-fallback-keywords'
 import {
   articleLd,
   breadcrumbLd,
@@ -50,9 +51,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const article = result.data
   const siteName = await getString('general.site_name', 'GetScholarship')
 
+  const keywords =
+    (article.keywords ?? []).length > 0
+      ? article.keywords
+      : getFallbackKeywords(article.title, "article");
+
   return {
     title: articleTitle(article),
     description: articleDescription(article),
+    keywords,
     alternates: {
       canonical: article.canonicalUrl ?? `/articles/${article.slug}`,
     },

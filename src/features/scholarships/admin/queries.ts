@@ -21,7 +21,7 @@ import { createClient } from '@/lib/supabase/server'
  *      result set is never pulled into memory to be filtered in the browser.
  */
 
-export const ADMIN_PAGE_SIZE = 20
+export const ADMIN_PAGE_SIZE = 25
 
 export type AdminScholarshipRow = {
   id: string
@@ -219,6 +219,7 @@ export type AdminScholarshipDetail = {
   seo_description: string | null
   social_media_share_image_url: string | null
   noindex: boolean
+  keywords: string[] | null
   created_at: string
   updated_at: string
   created_by: string | null

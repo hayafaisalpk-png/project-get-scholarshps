@@ -16,6 +16,7 @@ import type {
 import { MediaPicker } from '@/features/media/components/media-picker'
 import type { SelectableAsset } from '@/features/media/selection'
 import { isoToLocalDateTime, slugifyArticle } from '@/lib/validation/article'
+import MetaKeywordsInput from '@/components/admin/MetaKeywordsInput'
 
 import {
   type ArticleActionResult,
@@ -436,6 +437,11 @@ function ArticleFormFields({
               aria-invalid={Boolean(fieldErrors?.canonical_url)}
             />
           </FormField>
+
+          <MetaKeywordsInput
+            id="keywords"
+            defaultValue={record?.keywords?.join(', ') ?? ''}
+          />
 
           <FormField
             id="change_note"

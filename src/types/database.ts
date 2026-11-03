@@ -445,6 +445,7 @@ export type Database = {
           updated_at: string
           updated_by: string | null
           word_count: number
+          keywords: string[] | null
         }
         Insert: {
           allow_sitemap?: boolean
@@ -460,6 +461,7 @@ export type Database = {
           faq_items?: Json
           featured_image_id?: string | null
           id?: string
+          keywords?: string[] | null
           noindex?: boolean
           published_at?: string | null
           reading_time_minutes?: number
@@ -490,6 +492,7 @@ export type Database = {
           faq_items?: Json
           featured_image_id?: string | null
           id?: string
+          keywords?: string[] | null
           noindex?: boolean
           published_at?: string | null
           reading_time_minutes?: number
@@ -1703,6 +1706,7 @@ export type Database = {
           verification_status: Database["public"]["Enums"]["verification_status"]
           verified_at: string | null
           verified_by: string | null
+          keywords: string[] | null
         }
         Insert: {
           application_fee_cents?: number
@@ -1727,6 +1731,7 @@ export type Database = {
           internal_notes?: string | null
           is_renewable?: boolean
           is_rolling?: boolean
+          keywords?: string[] | null
           last_reviewed_at?: string | null
           max_renewals?: number | null
           noindex?: boolean
@@ -1773,6 +1778,7 @@ export type Database = {
           internal_notes?: string | null
           is_renewable?: boolean
           is_rolling?: boolean
+          keywords?: string[] | null
           last_reviewed_at?: string | null
           max_renewals?: number | null
           noindex?: boolean

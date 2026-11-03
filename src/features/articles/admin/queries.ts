@@ -146,6 +146,7 @@ export type AdminArticleDetail = {
   seo_description: string | null
   canonical_url: string | null
   noindex: boolean
+  keywords: string[] | null
   allow_sitemap: boolean
   /** The FAQ block, normalised into typed items. */
   faq_items: FAQItem[]

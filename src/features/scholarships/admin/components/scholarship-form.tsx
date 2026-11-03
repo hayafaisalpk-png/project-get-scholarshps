@@ -18,6 +18,7 @@ import type {
 } from '@/features/scholarships/admin/queries'
 import { fromCents, slugify } from '@/lib/validation/scholarship'
 import { RichTextEditor } from '@/features/articles/admin/components/rich-text-editor'
+import MetaKeywordsInput from '@/components/admin/MetaKeywordsInput'
 
 /**
  * Scholarship create / edit form.
@@ -91,6 +92,7 @@ type Draft = {
   seo_title: string
   seo_description: string
   social_media_share_image_url: string
+  keywords: string
   category_ids: string[]
   education_level_ids: string[]
   field_ids: string[]
@@ -123,6 +125,7 @@ const TEXT_KEYS: (keyof Draft)[] = [
   'seo_title',
   'seo_description',
   'social_media_share_image_url',
+  'keywords',
 ]
 
 const BOOL_KEYS: (keyof Draft)[] = [
@@ -197,6 +200,7 @@ function ScholarshipFormFields({
     social_media_share_image_url: record
       ? (record.social_media_share_image_url ?? '')
       : 'https://getscholarship.online/media/9b773adf-a249-4559-a4fe-cb65e69a2378',
+    keywords: record?.keywords?.join(', ') ?? '',
     category_ids: selected.category_ids,
     education_level_ids: selected.education_level_ids,
     field_ids: selected.field_ids,
@@ -778,6 +782,13 @@ function ScholarshipFormFields({
               )}
             />
           </FormField>
+
+          <MetaKeywordsInput
+            id="keywords"
+            value={draft.keywords}
+            onChange={(v) => setField('keywords', v)}
+            error={fieldErrors?.keywords}
+          />
 
           <FormField
             id="internal_notes"

@@ -286,6 +286,9 @@ export const scholarshipSchema = z
     seo_description: optionalText(500),
 
     social_media_share_image_url: optionalHttpUrl(2000),
+
+    /** Comma-separated in the form; stored as text[]. */
+    keywords: z.string().trim().max(2000).optional().default(''),
     // Taxonomy assignment: arrays of UUIDs.
     category_ids: z.array(z.string().uuid()).optional().default([]),
     education_level_ids: z.array(z.string().uuid()).optional().default([]),

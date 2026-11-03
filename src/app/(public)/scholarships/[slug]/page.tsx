@@ -24,6 +24,7 @@ import {
 } from '@/lib/format'
 import { breadcrumbLd, graph, webPageLd } from '@/lib/structured-data'
 import { absoluteUrl } from '@/lib/env'
+import { getFallbackKeywords } from '@/lib/seo/get-fallback-keywords'
 import {
   resolveScholarshipSocialImage,
 } from '@/features/scholarships/metadata'
@@ -66,9 +67,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
   const socialImageUrl = resolveScholarshipSocialImage(scholarship)
 
+  const keywords =
+    (scholarship.keywords ?? []).length > 0
+      ? scholarship.keywords
+      : getFallbackKeywords(scholarship.title, "scholarship");
+
   return {
     title,
     description: description.slice(0, 300),
+    keywords,
     alternates: { canonical: `/scholarships/${scholarship.slug}` },
     /*
      * An editor can tick `noindex` on a PUBLISHED scholarship — a duplicate, a

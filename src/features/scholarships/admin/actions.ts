@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import { requirePermission } from '@/lib/auth/guards'
 import { fieldErrorsFrom } from '@/lib/validation/auth'
 import { sanitizeArticleHtml } from '@/lib/sanitize'
+import { parseKeywords } from '@/lib/utils/keywords'
 import {
   type ScholarshipStatus,
   scholarshipSchema,
@@ -114,7 +115,9 @@ function buildInput(formData: FormData) {
     noindex: flag(formData, 'noindex'),
     seo_title: text(formData, 'seo_title'),
     seo_description: text(formData, 'seo_description'),
-    social_media_share_image_url: text(formData, 'social_media_share_image_url'),    category_ids: idList(formData, 'category_ids'),
+    social_media_share_image_url: text(formData, 'social_media_share_image_url'),
+    keywords: text(formData, 'keywords'),
+    category_ids: idList(formData, 'category_ids'),
     education_level_ids: idList(formData, 'education_level_ids'),
     field_ids: idList(formData, 'field_ids'),
     location_ids: idList(formData, 'location_ids'),
@@ -153,6 +156,7 @@ function echoValues(formData: FormData): Record<string, string | string[]> {
     'seo_title',
     'seo_description',
     'social_media_share_image_url',
+    'keywords',
   ]
   const checkboxKeys = [
     'award_per_year',
@@ -262,6 +266,7 @@ function toRow(
     seo_title: value.seo_title,
     seo_description: value.seo_description,
     social_media_share_image_url: value.social_media_share_image_url,
+    keywords: parseKeywords(value.keywords),
     updated_by: userId,
 
     // Timestamps that only make sense when entering or leaving a state.
