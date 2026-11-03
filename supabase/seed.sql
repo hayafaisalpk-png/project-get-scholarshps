@@ -329,9 +329,9 @@ on conflict do nothing;
 insert into public.authors (slug, full_name, title, bio)
 values (
   'getscholarship-editorial-team',
-  'GetScholarship Editorial Team',
-  'Scholarship and Financial Aid Writers',
-  'Our editors research, verify and explain scholarship and financial aid opportunities.'
+  'By : Haya Faisal',
+  'Scholarship and Financial Aid Writer',
+  'Researches, verifies and explains scholarship and financial aid opportunities.'
 )
 on conflict (slug) do update
   set full_name = excluded.full_name,
