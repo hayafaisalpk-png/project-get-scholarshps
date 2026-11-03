@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { notFound } from 'next/navigation'
 
 import { Container, Prose, Section } from '@/components/layout/container'
-import { ButtonLink } from '@/components/ui/button'
 import { JsonLd } from '@/components/structured-data'
 import {
   articleDescription,
@@ -209,36 +208,7 @@ export default async function ArticlePage({ params }: Params) {
             text the reader can actually see.
           */}
           <FAQSection faqs={article.faqs} />
-
-          {article.categories.length > 0 || article.tags.length > 0 ? (
-            <footer className="mt-10 border-t border-ink-200 pt-6">
-              <h2 className="text-sm font-semibold text-ink-900">Filed under</h2>
-              <ul className="mt-3 flex flex-wrap gap-2">
-                {[...article.categories, ...article.tags].map((term) => (
-                  <li key={`${term.slug}-${term.name}`}>
-                    <span className="inline-flex items-center rounded-full bg-ink-100 px-3 py-1 text-xs font-medium text-ink-700 ring-1 ring-inset ring-ink-200">
-                      {term.name}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </footer>
-          ) : null}
         </article>
-
-        <div className="mx-auto mt-12 max-w-3xl border-t border-ink-200 pt-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <ButtonLink href="/articles" variant="outline">
-              All articles
-            </ButtonLink>
-            <Link
-              href={`/contact?type=report&kind=article&slug=${encodeURIComponent(article.slug)}`}
-              className="text-sm text-ink-600 underline underline-offset-4 hover:text-brand-700"
-            >
-              Report incorrect information
-            </Link>
-          </div>
-        </div>
       </Container>
     </Section>
   )
