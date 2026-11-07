@@ -158,7 +158,9 @@ export function articleMetaTags(
     title,
     // Mirrors `alternates.canonical` so og:url and the canonical link can never
     // state two different addresses for the same article.
-    url: article.canonicalUrl ?? `/articles/${article.slug}`,
+    url: article.canonicalUrl
+      ? article.canonicalUrl.replace('https://getscholarship.online', 'https://www.getscholarship.online')
+      : `/articles/${article.slug}`,
     description,
     ...(article.publishedAt ? { publishedTime: article.publishedAt } : {}),
     ...(image ? { images: [image] } : {}),

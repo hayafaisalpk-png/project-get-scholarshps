@@ -37,6 +37,34 @@ import {
  * `src/app/(public)/scholarships/page.tsx`.
  */
 
+/**
+ * Ensures the canonical always uses the canonical host (www), even when the
+ * database stores the apex host. This keeps canonicals, og:url, and all
+ * social signals consistent after the host switch.
+ */
+function canonicalUrlFor(
+  canonicalUrl: string | null,
+  slug: string,
+): string {
+  const base = 'https://www.getscholarship.online'
+  return canonicalUrl
+    ? canonicalUrl.replace('https://getscholarship.online', base)
+    : `/articles/${slug}`
+}
+
+/**
+ * Public article detail page.
+ *
+ * `getPublishedArticleBySlug` returns `null` for a slug that does not exist AND
+ * for one that exists but is not published, so a draft, a scheduled article and
+ * a made-up slug are indistinguishable from outside. All three 404.
+ *
+ * DELIBERATELY NO `loading.tsx` IN THIS SEGMENT — a segment-level loading file
+ * opens a Suspense boundary above `notFound()`, so the shell is flushed with
+ * 200 and the 404 becomes a soft 404. See the note in
+ * `src/app/(public)/scholarships/page.tsx`.
+ */
+
 export const dynamic = 'force-dynamic'
 
 type Params = { params: Promise<{ slug: string }> }
@@ -53,14 +81,16 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const keywords =
     (article.keywords ?? []).length > 0
       ? article.keywords
-      : getFallbackKeywords(article.title, "article");
+      : getFallbackKeywords(article.title, "article")
+
+  const canonical = canonicalUrlFor(article.canonicalUrl, article.slug)
 
   return {
     title: articleTitle(article),
     description: articleDescription(article),
     keywords,
     alternates: {
-      canonical: article.canonicalUrl ?? `/articles/${article.slug}`,
+      canonical,
     },
     robots: article.noindex
       ? { index: false, follow: true }
