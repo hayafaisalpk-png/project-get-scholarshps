@@ -30,10 +30,10 @@ import {
  * Composition follows the measured reference (docs/REFERENCE_ANALYSIS.md):
  *   1. Tinted hero, gradient headline, one dominant search affordance.
  *   2. A four-up statistics band.
- *   3. Scholarship **row** cards, stacked — the reference's listing anatomy.
- *   4. A single browse block expressed as a field of pill chips, rather than
+ *   3. A single browse block expressed as a field of pill chips, rather than
  *      four separate card grids.
- *   5. Recently added (excluding featured records), FAQ, and featured articles.
+ *   4. Featured scholarship **row** cards and featured article cards.
+ *   5. Recently added (excluding featured records), followed by FAQ.
  *
  * Two rules hold throughout:
  *
@@ -217,38 +217,12 @@ export default async function HomePage() {
         </Section>
       ) : null}
 
-      {/* ------------------------------------------------------------ Featured */}
-      {featured.length > 0 ? (
-        <Section>
-          <Container>
-            <SectionHeading
-              title={byKey.get('featured')?.heading ?? 'Featured scholarships'}
-              description={byKey.get('featured')?.subheading}
-              action={
-                <Link
-                  href="/scholarships"
-                  className="text-sm font-semibold text-brand-700 hover:underline underline-offset-4"
-                >
-                  View all
-                  <span aria-hidden="true"> &rarr;</span>
-                </Link>
-              }
-            />
-            <div className="space-y-4">
-              {featured.map((s) => (
-                <ScholarshipRow key={s.id} scholarship={s} />
-              ))}
-            </div>
-          </Container>
-        </Section>
-      ) : null}
-
       {/* ------------------------------------------------------------- Browse */}
       {browseGroups.length > 0 ? (
         <Section>
           <Container>
             <div className="pl-2.5">
-              <SectionHeading title="Explore scholarships" />
+              <SectionHeading title="Explore Scholarships" />
             </div>
 
             <div className="grid gap-x-8 gap-y-0 sm:grid-cols-2 lg:grid-cols-4">
@@ -276,16 +250,25 @@ export default async function HomePage() {
         </Section>
       ) : null}
 
-      {/* --------------------------------------------------------- Recently added */}
-      {recent.length > 0 ? (
+      {/* ------------------------------------------------------------ Featured */}
+      {featured.length > 0 ? (
         <Section className="bg-ink-50">
           <Container>
             <SectionHeading
-              title={byKey.get('recent')?.heading ?? 'Recently added'}
-              description={byKey.get('recent')?.subheading}
+              title={byKey.get('featured')?.heading ?? 'Featured Scholarships'}
+              description={byKey.get('featured')?.subheading}
+              action={
+                <Link
+                  href="/scholarships"
+                  className="text-sm font-semibold text-brand-700 hover:underline underline-offset-4"
+                >
+                  View all
+                  <span aria-hidden="true"> &rarr;</span>
+                </Link>
+              }
             />
             <div className="space-y-4">
-              {recent.map((s) => (
+              {featured.map((s) => (
                 <ScholarshipRow key={s.id} scholarship={s} />
               ))}
             </div>
@@ -293,15 +276,12 @@ export default async function HomePage() {
         </Section>
       ) : null}
 
-      {/* ------------------------------------------------------------------- FAQ */}
-      <FaqSection />
-
-      {/* ------------------------------------------------------ Feature articles */}
+      {/* ----------------------------------------------------- Featured articles */}
       {articles.length > 0 ? (
-        <Section className="bg-ink-50">
+        <Section>
           <Container>
             <SectionHeading
-              title="Feature articles"
+              title="Featured Articles"
               description="Practical guidance for finding and applying for scholarships."
               action={
                 <Link
@@ -321,6 +301,26 @@ export default async function HomePage() {
           </Container>
         </Section>
       ) : null}
+
+      {/* --------------------------------------------------------- Recently added */}
+      {recent.length > 0 ? (
+        <Section className="bg-ink-50">
+          <Container>
+            <SectionHeading
+              title={byKey.get('recent')?.heading ?? 'Recently added'}
+              description={byKey.get('recent')?.subheading}
+            />
+            <div className="space-y-4">
+              {recent.map((s) => (
+                <ScholarshipRow key={s.id} scholarship={s} />
+              ))}
+            </div>
+          </Container>
+        </Section>
+      ) : null}
+
+      {/* ------------------------------------------------------------------- FAQ */}
+      <FaqSection />
 
     </>
   )
@@ -380,7 +380,7 @@ function FaqSection() {
       <Container>
         <div className="mx-auto max-w-3xl">
           <SectionHeading
-            title="Frequently asked questions"
+            title="Frequently Asked Questions (FAQs)"
             description="Common questions from students."
           />
 

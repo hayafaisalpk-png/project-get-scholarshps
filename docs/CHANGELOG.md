@@ -10,6 +10,17 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Changed — homepage section sequence (2026-11-07)
+
+- `src/app/(public)/page.tsx`: reordered the homepage content after the hero and
+  statistics to **Explore Scholarships → Featured Scholarships → Featured
+  Articles → Recently Added → Frequently Asked Questions (FAQs)**. Section
+  backgrounds alternate to keep adjacent content groups visually distinct.
+- The featured/recent scholarship deduplication remains unchanged. Verified the
+  exact rendered `<h2>` order against `http://localhost:3000/` (HTTP 200), and
+  `npm run verify` exits 0 (28 files, 527 tests; production build successful).
+  Not yet deployed.
+
 ### Fixed — repeated scholarship cards on the homepage (2026-11-07)
 
 - `src/app/(public)/page.tsx`: removed the unlabeled Closing Soon card block from

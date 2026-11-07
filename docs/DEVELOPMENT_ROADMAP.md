@@ -5,7 +5,7 @@ only when its acceptance criteria have actually been verified by running them.
 
 Legend: `[ ]` not started · `[~]` in progress · `[x]` complete · `[!]` blocked
 
-Last updated: 2026-11-07 (homepage scholarship lists no longer repeat featured records, and Explore now follows Featured directly; verified locally — 527 unit tests and production build green; not yet deployed.)
+Last updated: 2026-11-07 (homepage now follows Explore → Featured Scholarships → Featured Articles → Recently Added → FAQs, without repeated scholarship records; verified locally — 527 unit tests and production build green; not yet deployed.)
 
 ---
 
@@ -172,9 +172,10 @@ live search and auth verified.
 - [x] Responsive header with dropdown navigation and accessible mobile menu
 - [x] Footer with database-driven columns and legal links
 - [x] Homepage driven by `homepage_sections`; real aggregate statistics only
-- [x] Homepage scholarship lists cleaned up: Featured flows directly into
-      Explore, and Recently Added excludes records already shown as featured
-      (verified locally 2026-11-07; 527 unit tests and production build green)
+- [x] Homepage sequence set to Explore → Featured Scholarships → Featured
+      Articles → Recently Added → FAQs; Recently Added excludes records already
+      shown as featured (verified locally 2026-11-07; 527 unit tests and
+      production build green)
 - [x] Scholarship search: server-side, indexed, full-text relevance, filtering,
       sorting, pagination, shareable URLs, clear-filters, honest empty states
 - [x] Scholarship detail pages at `/scholarships/[slug]`
