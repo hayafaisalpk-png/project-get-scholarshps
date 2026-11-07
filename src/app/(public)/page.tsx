@@ -7,8 +7,8 @@ import { ButtonLink } from '@/components/ui/button'
 import { ArticleCard } from '@/features/articles/components/article-card'
 import { listPublishedArticles } from '@/features/articles/queries'
 import { ScholarshipRow } from '@/features/scholarships/components/scholarship-row'
+import { selectUniqueScholarships } from '@/features/scholarships/homepage-selection'
 import {
-  getClosingSoonScholarships,
   getFeaturedScholarships,
   getRecentScholarships,
 } from '@/features/scholarships/queries'
@@ -24,8 +24,8 @@ import {
 /**
  * Homepage.
  *
- * Assembled from `homepage_sections`, so editors control which blocks appear,
- * their order, headings and item limits without a redeploy.
+ * Reads headings and item limits from `homepage_sections`; the layout order is
+ * fixed here so the public page keeps a deliberate visual hierarchy.
  *
  * Composition follows the measured reference (docs/REFERENCE_ANALYSIS.md):
  *   1. Tinted hero, gradient headline, one dominant search affordance.
@@ -33,7 +33,7 @@ import {
  *   3. Scholarship **row** cards, stacked — the reference's listing anatomy.
  *   4. A single browse block expressed as a field of pill chips, rather than
  *      four separate card grids.
- *   5. Recently added, FAQ, and featured articles.
+ *   5. Recently added (excluding featured records), FAQ, and featured articles.
  *
  * Two rules hold throughout:
  *
@@ -47,13 +47,16 @@ export const dynamic = 'force-dynamic'
 export default async function HomePage() {
   const sections = await getHomepageSections()
   const byKey = new Map(sections.map((s) => [s.key, s]))
+  const featuredLimit = byKey.get('featured')?.config.limit ?? 6
+  const recentLimit = byKey.get('recent')?.config.limit ?? 8
 
-  const [stats, featured, closingSoon, recent, levels, fields, locations, categories, articleResult] =
+  const [stats, featured, recentCandidates, levels, fields, locations, categories, articleResult] =
     await Promise.all([
       getSiteStats(),
-      getFeaturedScholarships(byKey.get('featured')?.config.limit ?? 6),
-      getClosingSoonScholarships(byKey.get('deadlines')?.config.limit ?? 6),
-      getRecentScholarships(byKey.get('recent')?.config.limit ?? 8),
+      getFeaturedScholarships(featuredLimit),
+      // Over-fetch by the featured limit so filtering repeated records can
+      // still leave up to the configured number of genuinely recent items.
+      getRecentScholarships(recentLimit + featuredLimit),
       getEducationLevels(),
       getAcademicFields(),
       getLocations(),
@@ -66,6 +69,11 @@ export default async function HomePage() {
   const articles = articleResult.ok
     ? articleResult.data.items.slice(0, 6)
     : []
+  const recent = selectUniqueScholarships(
+    recentCandidates,
+    new Set(featured.map((scholarship) => scholarship.id)),
+    recentLimit,
+  )
 
   // Taxonomy landing pages intentionally return 404 when they have no
   // published scholarships. Do not render links to those thin pages while the
@@ -228,19 +236,6 @@ export default async function HomePage() {
             />
             <div className="space-y-4">
               {featured.map((s) => (
-                <ScholarshipRow key={s.id} scholarship={s} />
-              ))}
-            </div>
-          </Container>
-        </Section>
-      ) : null}
-
-      {/* -------------------------------------------------------- Closing soon */}
-      {closingSoon.length > 0 ? (
-        <Section className="bg-ink-50">
-          <Container>
-            <div className="space-y-4">
-              {closingSoon.map((s) => (
                 <ScholarshipRow key={s.id} scholarship={s} />
               ))}
             </div>

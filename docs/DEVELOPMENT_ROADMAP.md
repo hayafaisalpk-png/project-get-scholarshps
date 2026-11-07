@@ -5,7 +5,7 @@ only when its acceptance criteria have actually been verified by running them.
 
 Legend: `[ ]` not started · `[~]` in progress · `[x]` complete · `[!]` blocked
 
-Last updated: 2026-10-22 (unpublished articles/scholarships no longer visible on the public site; article FAQ questions + `FAQPage` JSON-LD added, enforced by DB + CMS; verified end-to-end against live DB with throwaway admin — 512 unit tests, build green; FAQ rich results not expected per Google's August 2023 restriction.)
+Last updated: 2026-11-07 (homepage scholarship lists no longer repeat featured records, and Explore now follows Featured directly; verified locally — 527 unit tests and production build green; not yet deployed.)
 
 ---
 
@@ -172,6 +172,9 @@ live search and auth verified.
 - [x] Responsive header with dropdown navigation and accessible mobile menu
 - [x] Footer with database-driven columns and legal links
 - [x] Homepage driven by `homepage_sections`; real aggregate statistics only
+- [x] Homepage scholarship lists cleaned up: Featured flows directly into
+      Explore, and Recently Added excludes records already shown as featured
+      (verified locally 2026-11-07; 527 unit tests and production build green)
 - [x] Scholarship search: server-side, indexed, full-text relevance, filtering,
       sorting, pagination, shareable URLs, clear-filters, honest empty states
 - [x] Scholarship detail pages at `/scholarships/[slug]`

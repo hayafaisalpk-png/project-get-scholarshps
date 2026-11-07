@@ -10,6 +10,22 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Fixed — repeated scholarship cards on the homepage (2026-11-07)
+
+- `src/app/(public)/page.tsx`: removed the unlabeled Closing Soon card block from
+  the current homepage composition, so **Explore scholarships** now follows
+  **Featured Scholarships** directly. Recently Added candidates are over-fetched
+  and filtered against featured IDs before applying their configured limit, so
+  the lower list remains full where enough distinct records exist without
+  repeating cards already shown above.
+- `src/features/scholarships/homepage-selection.ts`: added an order-preserving,
+  bounded selector that excludes earlier records and guards against duplicate
+  candidates. Two unit tests cover exclusion, ordering, deduplication and limits.
+- Verified locally: the rendered heading order is Featured Scholarships → Explore
+  scholarships → Recently Added; no scholarship card URL occurs in more than one
+  rendered card. `npm run verify` exits 0 (28 files, 527 tests; production build
+  successful). Not yet deployed.
+
 ### Added — social profile icons in the site footer (2026-11-01)
 
 - `src/components/layout/site-footer.tsx`: the footer now reads the four
