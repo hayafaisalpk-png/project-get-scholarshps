@@ -118,8 +118,11 @@ function socialImageFor(image: PublicArticle['featuredImage']): SocialImage {
   const hasDimensions =
     width != null && height != null && width > 0 && height > 0
 
+  const base = 'https://www.getscholarship.online'
+  const imageUrl = image.url.replace('https://getscholarship.online', base)
+
   return {
-    url: image.url,
+    url: imageUrl,
     ...(image.alt ? { alt: image.alt } : {}),
     ...(hasDimensions ? { width, height } : {}),
   }

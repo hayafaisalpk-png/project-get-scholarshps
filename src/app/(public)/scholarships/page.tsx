@@ -104,8 +104,7 @@ export async function generateMetadata({
 
   const indexable = !filtered && !sortedUnusually
 
-  const canonical =
-    filtered || sortedUnusually ? '/scholarships' : scholarshipSearchPath(search)
+  const canonical = '/scholarships'
 
   return {
     title: filtered
