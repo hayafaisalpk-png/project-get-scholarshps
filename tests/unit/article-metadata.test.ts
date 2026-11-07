@@ -136,7 +136,7 @@ describe('articleMetaTags', () => {
     const meta = articleMetaTags(
       articleFixture({
         seoTitle: 'SEO Title',
-        canonicalUrl: 'https://getscholarship.online/articles/canonical',
+        canonicalUrl: 'https://www.getscholarship.online/articles/canonical',
         publishedAt: '2026-10-20T00:00:00+00:00',
       }),
       'GetScholarship',
@@ -144,7 +144,7 @@ describe('articleMetaTags', () => {
 
     expect(meta.openGraph).toMatchObject({
       title: 'SEO Title',
-      url: 'https://getscholarship.online/articles/canonical',
+      url: 'https://www.getscholarship.online/articles/canonical',
       publishedTime: '2026-10-20T00:00:00+00:00',
     })
   })

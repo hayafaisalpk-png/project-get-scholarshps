@@ -4,7 +4,7 @@ Reminder set for 20:00–21:00 to process the SEO/performance audit findings.
 
 ## Verdicts
 
-1. **URL canonicalization (HIGH)** — Partially exists. Canonical tags + trailing-slash/HTTP redirects OK. **Gap: `www.getscholarship.online` returns 200 instead of redirecting to apex.** Fix in Vercel domain config.
+1. **URL canonicalization (HIGH)** — Fixed. `NEXT_PUBLIC_SITE_URL` now set to `https://www.getscholarship.online`; all canonical tags, `og:url`, sitemap URLs, and JSON-LD consistently use the `www` host. A 301 redirect from `getscholarship.online` → `www.getscholarship.online` should be configured in Vercel/DNS to complete the canonical host consolidation.
 2. **Keywords in title/meta/heading (HIGH)** — Mostly addressed via CMS `seo_title`/`seo_description`. Editorial task; no code defect.
 3. **CDN for resources (MEDIUM)** — Partial. Own assets on Vercel CDN. Supabase storage not cached (`CF-Cache-Status: DYNAMIC`, `Cache-Control: private, no-cache`). Third-party logos out of control.
 4. **Distorted images (MEDIUM)** — Not found in code (likely false positive). All images use `object-cover`/`object-contain`.

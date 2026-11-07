@@ -198,7 +198,7 @@ on conflict (slug) do update
 -- -----------------------------------------------------------------------------
 insert into public.homepage_sections (key, heading, subheading, sort_order, config) values
   ('hero',                'Find scholarships that actually fit you',
-   'Search thousands of verified scholarships.',
+   'Search an extensive collection of scholarships.',
    1,  '{"layout":"search-first"}'),
   ('stats',               NULL, NULL, 2, '{}'),
   ('featured',            'Featured Scholarships',
