@@ -77,7 +77,7 @@ export function AdminShell({
   }, [open])
 
   return (
-    <div className="min-h-dvh bg-ink-50">
+    <div className="min-h-dvh bg-ink-50" style={{ position: 'relative' }}>
       <a href="#admin-content" className="skip-link">
         Skip to main content
       </a>

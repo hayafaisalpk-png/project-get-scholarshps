@@ -78,15 +78,21 @@ const CARD_COLUMNS =
 /**
  * Same columns, plus an INNER embed of the category link.
  *
- * `!inner` is required, not cosmetic: without it PostgREST left-joins the link
- * table, so filtering on `article_category_links.article_categories.slug` would
- * return every article in the database and merely attach a link to some of them.
- * With `!inner`, rows without a matching link are removed from the result.
+ * `!inner` is required at BOTH levels, and this was measured rather than
+ * assumed. The slug filter below targets the nested
+ * `article_categories.slug`, so `!inner` on `article_category_links` alone is
+ * not enough: it only requires the article to have *some* category link, while
+ * `article_categories` remains left-joined. PostgREST then narrows the embedded
+ * rows without removing the parent, and the filter silently does nothing.
+ *
+ * Measured against the live database: with only the link table inner-joined,
+ * `/articles?category=career-development` returned all 22 articles. Adding
+ * `!inner` to the nested category embed returned the correct single article.
  *
  * The embed is only requested when a category filter is actually in play, so the
  * unfiltered query stays on its index-friendly shape.
  */
-const CARD_COLUMNS_BY_CATEGORY = `${CARD_COLUMNS}, article_category_links!inner(article_categories(slug))`
+const CARD_COLUMNS_BY_CATEGORY = `${CARD_COLUMNS}, article_category_links!inner(article_categories!inner(slug))`
 
 type CardRow = {
   id: string
@@ -163,9 +169,12 @@ function toCard(
 /**
  * A page of published articles, newest first.
  *
- * Category filtering uses an inner join on `article_category_links`, so only
- * articles actually linked to that category are returned. `article_category_links`
- * has its own anon SELECT policy gated on the parent article being public
+ * Category filtering inner-joins `article_category_links` AND its nested
+ * `article_categories` embed, so only articles actually linked to that category
+ * are returned. Both inner joins are needed: the filter is expressed against
+ * the nested `slug`, and an inner join on the link table alone does not remove
+ * rows whose link points at a different category. `article_category_links` has
+ * its own anon SELECT policy gated on the parent article being public
  * (migration 010), so a draft's category membership is not readable either.
  */
 export const listPublishedArticles = cache(

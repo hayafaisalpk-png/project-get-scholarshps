@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 import { requirePermission } from '@/lib/auth/guards'
 import { createClient } from '@/lib/supabase/server'
-import type { TaxonomyKind } from '@/features/taxonomy/queries'
+import { TAXONOMY_TABLES, type TaxonomyKind } from '@/features/taxonomy/tables'
 import { slugify } from '@/lib/slugify'
 
 const createSchema = z.object({
@@ -15,12 +15,32 @@ const createSchema = z.object({
   locationType: z.enum(['country', 'state', 'region']).optional(),
 })
 
-const TABLE: Record<TaxonomyKind, string> = {
-  categories: 'categories',
-  tags: 'tags',
-  education_levels: 'education_levels',
-  academic_fields: 'academic_fields',
-  locations: 'locations',
+const KIND_NOUN: Record<TaxonomyKind, string> = {
+  categories: 'category',
+  tags: 'tag',
+  education_levels: 'education level',
+  academic_fields: 'academic field',
+  locations: 'location',
+}
+
+/**
+ * Map a Postgres error to a message the administrator can act on.
+ *
+ * `23505` is the unique-slug violation. Any other failure is *not* a duplicate
+ * slug, and saying so sent people looking for a conflicting record that did
+ * not exist.
+ */
+function describeCreateError(
+  kind: TaxonomyKind,
+  error: { code?: string },
+): string {
+  if (error.code === '23505') {
+    return `A ${KIND_NOUN[kind]} with that slug already exists. Change the name or slug.`
+  }
+  if (error.code === '42501') {
+    return 'You do not have permission to create taxonomy records.'
+  }
+  return `Could not create the ${KIND_NOUN[kind]}. Please try again.`
 }
 
 export async function createTaxonomyAction(
@@ -52,12 +72,12 @@ export async function createTaxonomyAction(
       ? { name, slug, status: 'active' }
       : { name, slug, status: 'active', sort_order: 0 }
   const { error } = await supabase
-    .from(TABLE[kind] as never)
+    .from(TAXONOMY_TABLES[kind] as never)
     .insert(payload as never)
 
   if (error) {
-    console.error('[taxonomy] create failed:', error.message)
-    return { ok: false, message: 'Could not create the record. The slug may already exist.' }
+    console.error('[taxonomy] create failed:', error.code, error.message)
+    return { ok: false, message: describeCreateError(kind, error) }
   }
 
   revalidatePath('/admin/taxonomy')
@@ -72,7 +92,7 @@ export async function deleteTaxonomyAction(
 
   const supabase = await createClient()
   const { error } = await supabase
-    .from(TABLE[kind] as never)
+    .from(TAXONOMY_TABLES[kind] as never)
     .delete()
     .eq('id', id)
 

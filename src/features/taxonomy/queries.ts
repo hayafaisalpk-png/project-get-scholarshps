@@ -3,8 +3,9 @@ import 'server-only'
 import { cache } from 'react'
 
 import { createClient } from '@/lib/supabase/server'
+import { TAXONOMY_TABLES, type TaxonomyKind } from '@/features/taxonomy/tables'
 
-export type TaxonomyKind = 'categories' | 'tags' | 'education_levels' | 'academic_fields' | 'locations'
+export type { TaxonomyKind } from '@/features/taxonomy/tables'
 
 export type TaxonomyRow = {
   id: string
@@ -16,18 +17,10 @@ export type TaxonomyRow = {
   sortOrder: number
 }
 
-const TABLE: Record<TaxonomyKind, string> = {
-  categories: 'categories',
-  tags: 'tags',
-  education_levels: 'education_levels',
-  academic_fields: 'academic_fields',
-  locations: 'locations',
-}
-
 export const listTaxonomy = cache(
   async (kind: TaxonomyKind): Promise<TaxonomyRow[]> => {
     const supabase = await createClient()
-    const table = TABLE[kind]
+    const table = TAXONOMY_TABLES[kind]
     const query = supabase
       .from(table as never)
       .select(kind === 'tags' ? 'id, slug, name, status' : 'id, slug, name, status, sort_order')

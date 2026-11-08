@@ -27,6 +27,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const { recorded, createFakeBuilder } = vi.hoisted(() => {
   type Recorded = {
     table: string
+    selects: string[]
     filters: [string, unknown][]
     orderings: [string, unknown][]
   }
@@ -37,15 +38,18 @@ const { recorded, createFakeBuilder } = vi.hoisted(() => {
    * A chainable PostgREST stand-in that records what it was asked to do.
    *
    * It resolves to an empty result set, which is enough for the assertions
-   * below: they are about the FILTERS, not about the rows.
+   * below: they are about the FILTERS and the SELECT shape, not about the rows.
    */
   function createFakeBuilder(table: string) {
-    const entry: Recorded = { table, filters: [], orderings: [] }
+    const entry: Recorded = { table, selects: [], filters: [], orderings: [] }
     recorded.push(entry)
 
     const builder: Record<string, unknown> = {}
 
-    builder.select = () => builder
+    builder.select = (columns?: string) => {
+      if (typeof columns === 'string') entry.selects.push(columns)
+      return builder
+    }
     builder.eq = (column: string, value: unknown) => {
       entry.filters.push([column, value])
       return builder
@@ -90,6 +94,12 @@ function filtersFor(table: string): [string, unknown][] {
   return entry.filters
 }
 
+function selectsFor(table: string): string[] {
+  const entry = recorded.find((row) => row.table === table)
+  if (!entry) throw new Error(`no query was made against ${table}`)
+  return entry.selects
+}
+
 beforeEach(() => {
   recorded.length = 0
 })
@@ -99,6 +109,23 @@ describe('public article reads', () => {
     await listPublishedArticles({})
 
     expect(filtersFor('articles')).toContainEqual(['status', 'published'])
+  })
+
+  /*
+   * Regression: `/articles?category=career-development` returned every article.
+   *
+   * The category predicate is expressed against the NESTED embed
+   * (`article_category_links.article_categories.slug`). Marking only the link
+   * table `!inner` leaves the nested category embed left-joined, so PostgREST
+   * narrows the embedded rows without removing the parent — the filter is
+   * accepted and ignored. Both levels must be inner-joined.
+   */
+  it('the category-filtered listing inner-joins both the link and the category', async () => {
+    await listPublishedArticles({ category: 'career-development' })
+
+    const [columns] = selectsFor('articles')
+    expect(columns).toContain('article_category_links!inner')
+    expect(columns).toContain('article_categories!inner(slug)')
   })
 
   it('the article detail page filters to published rows', async () => {

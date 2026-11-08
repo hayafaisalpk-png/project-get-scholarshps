@@ -1,7 +1,6 @@
 import 'server-only'
 
 import { cache } from 'react'
-
 import { type DbResult, toDatabaseError } from '@/lib/db/errors'
 import { createClient } from '@/lib/supabase/server'
 import { type ArticleStatus, ARTICLE_STATUSES } from '@/lib/validation/article'
@@ -243,55 +242,57 @@ export type ArticleFormOptions = {
  * `articles` is fetched with the RLS-scoped session client, so an editor only
  * ever sees published scholarships to link to — linking a reader to an
  * unpublished record would produce a dead link on the public site.
+ *
+ * Deliberately not wrapped in React `cache()`: the form should reflect
+ * taxonomy terms added on `/admin/taxonomy` on the next render rather than
+ * serving a stale request-scoped result.
  */
-export const getArticleFormOptions = cache(
-  async (): Promise<DbResult<ArticleFormOptions>> => {
-    const supabase = await createClient()
+export const getArticleFormOptions = async (): Promise<DbResult<ArticleFormOptions>> => {
+  const supabase = await createClient()
 
-    const [authors, categories, tags, scholarships] = await Promise.all([
-      supabase
-        .from('authors')
-        .select('id, full_name')
-        .eq('is_active', true)
-        .order('full_name'),
-      supabase
-        .from('article_categories')
-        .select('id, name')
-        .eq('status', 'active')
-        .order('name'),
-      supabase
-        .from('article_tags')
-        .select('id, name')
-        .eq('status', 'active')
-        .order('name'),
-      supabase
-        .from('scholarships')
-        .select('id, title')
-        .eq('status', 'published')
-        .order('title')
-        .limit(200),
-    ])
+  const [authors, categories, tags, scholarships] = await Promise.all([
+    supabase
+      .from('authors')
+      .select('id, full_name')
+      .eq('is_active', true)
+      .order('full_name'),
+    supabase
+      .from('article_categories')
+      .select('id, name')
+      .eq('status', 'active')
+      .order('name'),
+    supabase
+      .from('article_tags')
+      .select('id, name')
+      .eq('status', 'active')
+      .order('name'),
+    supabase
+      .from('scholarships')
+      .select('id, title')
+      .eq('status', 'published')
+      .order('title')
+      .limit(200),
+  ])
 
-    const firstError =
-      authors.error ?? categories.error ?? tags.error ?? scholarships.error
-    if (firstError) return { ok: false, error: toDatabaseError(firstError) }
+  const firstError =
+    authors.error ?? categories.error ?? tags.error ?? scholarships.error
+  if (firstError) return { ok: false, error: toDatabaseError(firstError) }
 
-    return {
-      ok: true,
-      data: {
-        authors: (authors.data ?? []).map((a) => ({
-          id: a.id,
-          name: a.full_name,
-        })),
-        categories: (categories.data ?? []).map((c) => ({ id: c.id, name: c.name })),
-        tags: (tags.data ?? []).map((t) => ({ id: t.id, name: t.name })),
-        // Normalised to `{ id, name }` so the form's checkbox group does not
-        // need to know which underlying column held the label.
-        scholarships: (scholarships.data ?? []).map((s) => ({
-          id: s.id,
-          name: s.title,
-        })),
-      },
-    }
-  },
-)
+  return {
+    ok: true,
+    data: {
+      authors: (authors.data ?? []).map((a) => ({
+        id: a.id,
+        name: a.full_name,
+      })),
+      categories: (categories.data ?? []).map((c) => ({ id: c.id, name: c.name })),
+      tags: (tags.data ?? []).map((t) => ({ id: t.id, name: t.name })),
+      // Normalised to `{ id, name }` so the form's checkbox group does not
+      // need to know which underlying column held the label.
+      scholarships: (scholarships.data ?? []).map((s) => ({
+        id: s.id,
+        name: s.title,
+      })),
+    },
+  }
+}

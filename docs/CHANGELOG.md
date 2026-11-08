@@ -10,6 +10,55 @@ verified by running the relevant command.
 
 ## [Unreleased]
 
+### Fixed — article category filter returned every article (2026-11-08)
+
+- `/articles?category=<slug>` ignored the category. The live page returned
+  **22 articles for `?category=career-development` and 22 for the unfiltered
+  listing**, with the correct category selected in the control.
+- Root cause in `src/features/articles/queries.ts`:
+  `CARD_COLUMNS_BY_CATEGORY` marked only `article_category_links` as `!inner`,
+  while the predicate targets the **nested** embed
+  (`article_category_links.article_categories.slug`). PostgREST then left-joined
+  `article_categories`, narrowed the embedded rows, and kept every parent that
+  had *any* category link — so the filter was accepted and silently discarded.
+- Fixed by requiring `!inner` at both levels:
+  `article_category_links!inner(article_categories!inner(slug))`.
+- Measured against the live database before/after: the old shape returned
+  **22** rows for `career-development`; the corrected shape returns **1**, which
+  matches the category's one visible `article_category_links` row. Filtering by
+  the resolved `article_category_id` returns the same single article, which
+  independently confirms the expected result.
+- Added a regression test in `tests/unit/public-visibility.test.ts` that records
+  the generated `select` string and asserts both `!inner` levels are present
+  when a category filter is supplied.
+- Verified: `npm run verify` exits 0 (typecheck, lint, tests, production build).
+  **Not yet deployed** — the live site still runs the old query until the next
+  deployment.
+
+### Fixed - taxonomy save wrote to the wrong tables (2026-11-08)
+
+- `src/features/taxonomy/actions.ts` wrote categories and tags to
+  `public.categories` / `public.tags` while `src/features/taxonomy/queries.ts`
+  read `article_categories` / `article_tags`. The two maps were defined
+  separately and drifted. A tag created on `/admin/taxonomy` was therefore
+  inserted successfully, never appeared in the taxonomy list, and never
+  appeared in the article form's Classification section — then failed with
+  "the slug may already exist" on the second attempt, because the row was
+  already in `public.tags`.
+- The mapping now lives once, in `src/features/taxonomy/tables.ts`
+  (`TAXONOMY_TABLES`), and both reads and writes import it, so they cannot
+  disagree again. Delete follows the same map.
+- `supabase/migrations/20260101000047_backfill_article_tags.sql` copies rows
+  that the bug left in `public.tags` into `article_tags`. It only inserts,
+  leaves the originals untouched, and is safe to re-run. `public.categories` is
+  deliberately not copied: it is the seeded scholarship vocabulary, not
+  article classification.
+- The create action's error message now distinguishes a real duplicate slug
+  (`23505`) from a permission failure (`42501`) or any other error, instead of
+  blaming the slug for every failure.
+- Verified: `npm run verify` exits 0 (typecheck, lint, 527 tests, production
+  build). The backfill migration has not been applied to any database.
+
 ### Changed — homepage section sequence (2026-11-07)
 
 - `src/app/(public)/page.tsx`: reordered the homepage content after the hero and
